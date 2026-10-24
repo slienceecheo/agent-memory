@@ -123,6 +123,27 @@
       与 `openspec validate eval-harness-baseline`，
       验证：四条命令均以 0 退出并贴出原始输出
 
+## 10. LLM 响应缓存（9.2 发现不可复现后追加）
+
+> 起因：基线是 LLM 生成的，天然有随机性。仅缓存 embedding 不足以保证
+> "两次运行逐位一致"。这一组任务让 A2 真正可满足。
+
+- [x] 10.1 先写测试：请求键对 `stream` 不敏感、对模型/消息/温度/工具敏感，
+      验证：`uv run pytest tests/test_llm_cache.py -q` 中键相关用例全绿
+- [x] 10.2 实现 `memory/llm/cache.py`（SQLite 存正文、usage、finish_reason、tool_calls），
+      验证：往返、损坏降级两类测试通过
+- [x] 10.3 把缓存接入 `LLMClient`，失败调用不得写入缓存，
+      验证：二次调用网络请求数为 0；400 响应后缓存条目数为 0
+- [x] 10.4 端到端验证 A2：真跑一次评测后重跑，结果 JSON 逐位一致且零网络，
+      验证：`tests/test_reproducibility.py` 两条均通过
+- [x] 10.5 反证测试：改动系统提示词必须导致缓存未命中与新结果，
+      验证：`test_changing_prompt_breaks_reproducibility_on_purpose` 通过
+- [x] 10.6 扩展 `--check-cache` 同时校验两类缓存，
+      验证：两类齐全退出码 0；缺 LLM 缓存时非零
+- [x] 10.7 修正基线报告：去掉解法泄露的提示词后重跑，更新全部数字并记录
+      "多答案导致指标高估"的拆解，
+      验证：`tests/test_report_consistency.py` 全绿
+
 ## Workflow follow-up
 
 - 审稿通过后归档该变更，确认 `openspec list` 无活动变更。

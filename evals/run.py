@@ -18,6 +18,7 @@ from evals.datasets.factconsolidation import FactConsolidationAdapter, iter_ques
 from evals.types import BaselineResult, SampleResult
 from memory.config import PROJECT_ROOT, Settings
 from memory.embedding.cache import EmbeddingCache
+from memory.llm.cache import ResponseCache
 from memory.llm.client import LLMClient
 from memory.tracing.jsonl import JsonlTracer
 
@@ -46,37 +47,46 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
 
 
 def _check_cache(settings: Settings, dataset: Path, limit: int | None) -> int:
-    """校验缓存：报告条目数、损坏数，并在缺失时以非零码退出。
+    """校验两种缓存：embedding 与 LLM 响应。
 
-    **注意**：C1 的三条基线都用词面检索（`naive-rag` 是词重合度），
-    不产生 embedding，因此本命令在 C1 阶段预期返回非零。
-    向量缓存要到 C4 引入 dense 检索后才会被填充。
-    这不是缺陷，是变更范围尚未覆盖到。
+    退出码语义：全部完整=0，任一缺失/损坏=非零。
+    LLM 缓存是 A2（两次运行逐位一致）的前提——模型本身有随机性。
     """
-    cache_path = settings.cache_dir / "cache.db"
-    if not cache_path.exists():
-        print(f"缓存不存在：{cache_path}", file=sys.stderr)
-        print(
-            "提示：先运行一次评测以生成缓存，或确认 MEMORY_CACHE_DIR 指向正确位置。",
-            file=sys.stderr,
-        )
-        return 2
-
-    cache = EmbeddingCache(cache_path)
-    stats = cache.stats()
-    checked, corrupt = cache.verify_all()
-    print(f"缓存条目数：{stats.entries}")
-    print(f"已校验：{checked}")
-    print(f"损坏条目：{len(corrupt)}")
-
     exit_code = 0
-    if corrupt:
-        for key in corrupt:
-            print(f"  损坏：{key}", file=sys.stderr)
+
+    embed_path = settings.cache_dir / "cache.db"
+    if not embed_path.exists():
+        print(f"[embedding] 缓存不存在：{embed_path}")
         exit_code = 1
-    if stats.entries == 0:
-        print("缓存为空，视为不完整。", file=sys.stderr)
+    else:
+        embed = EmbeddingCache(embed_path)
+        stats = embed.stats()
+        checked, corrupt = embed.verify_all()
+        print(f"[embedding] 条目={stats.entries} 已校验={checked} 损坏={len(corrupt)}")
+        if corrupt:
+            for key in corrupt:
+                print(f"  损坏：{key}", file=sys.stderr)
+            exit_code = 1
+        if stats.entries == 0:
+            print("[embedding] 缓存为空，视为不完整。")
+            exit_code = 1
+
+    response_path = settings.cache_dir / "responses.db"
+    if not response_path.exists():
+        print(f"[llm] 缓存不存在：{response_path}")
         exit_code = 1
+    else:
+        responses = ResponseCache(response_path)
+        entries, corrupt = responses.verify_all()
+        print(f"[llm] 条目={entries} 已校验={entries} 损坏={len(corrupt)}")
+        if corrupt:
+            for key in corrupt:
+                print(f"  损坏：{key}", file=sys.stderr)
+            exit_code = 1
+        if entries == 0:
+            print("[llm] 缓存为空，视为不完整。")
+            exit_code = 1
+
     return exit_code
 
 
@@ -96,7 +106,7 @@ def _run_one(
     settings.cache_dir.mkdir(parents=True, exist_ok=True)
     llm = LLMClient(
         settings=settings,
-        client=None,
+        response_cache=ResponseCache(settings.cache_dir / "responses.db"),
     )
     baseline = build_baseline(
         baseline_name, llm=llm, tracer=tracer, top_k=args.top_k

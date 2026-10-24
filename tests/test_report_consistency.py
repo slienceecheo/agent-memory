@@ -79,8 +79,8 @@ def test_multi_answer_share_matches_report_claim() -> None:
     samples = payload["samples"]
     correct = [s for s in samples if s.get("correct")]
     correct_multi = [s for s in correct if _is_multi_answer(s.get("prediction", ""))]
-    assert len(correct_multi) == 65, (
-        f"多答案命中数实际为 {len(correct_multi)}，报告写的是 65"
+    assert len(correct_multi) == 66, (
+        f"多答案命中数实际为 {len(correct_multi)}，报告写的是 66"
     )
 
 
@@ -102,6 +102,6 @@ def test_single_answer_accuracy_matches_report() -> None:
     """只给单一答案时的准确率是报告的核心论点，必须可复算。"""
     payload = _load("naive-rag")
     single = [s for s in payload["samples"] if not _is_multi_answer(s.get("prediction", ""))]
-    assert len(single) == 35, f"单答案样本数实际为 {len(single)}，报告写的是 35"
+    assert len(single) == 34, f"单答案样本数实际为 {len(single)}，报告写的是 34"
     accuracy = sum(1 for s in single if s.get("correct")) / len(single)
-    assert round(accuracy * 100, 1) == 62.9, f"单答案准确率实际为 {accuracy:.4f}"
+    assert round(accuracy * 100, 1) == 64.7, f"单答案准确率实际为 {accuracy:.4f}"

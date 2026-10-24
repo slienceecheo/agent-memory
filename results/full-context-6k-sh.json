@@ -10,8 +10,8 @@
       "prediction": "Ice hockey",
       "correct": false,
       "prompt_tokens": 5344,
-      "completion_tokens": 198,
-      "reasoning_tokens": 195,
+      "completion_tokens": 369,
+      "reasoning_tokens": 366,
       "error": null
     },
     {
@@ -21,8 +21,8 @@
       "prediction": "Rurouni Kenshin",
       "correct": false,
       "prompt_tokens": 5346,
-      "completion_tokens": 339,
-      "reasoning_tokens": 332,
+      "completion_tokens": 186,
+      "reasoning_tokens": 180,
       "error": null
     },
     {
@@ -32,8 +32,8 @@
       "prediction": "England",
       "correct": false,
       "prompt_tokens": 5343,
-      "completion_tokens": 227,
-      "reasoning_tokens": 225,
+      "completion_tokens": 56,
+      "reasoning_tokens": 54,
       "error": null
     },
     {
@@ -43,30 +43,30 @@
       "prediction": "Shahnameh",
       "correct": true,
       "prompt_tokens": 5343,
-      "completion_tokens": 30,
-      "reasoning_tokens": 25,
+      "completion_tokens": 49,
+      "reasoning_tokens": 44,
       "error": null
     },
     {
       "sample_id": "factconsolidation_sh_6k_no4",
       "question": "Which university was Joan Didion educated at?",
       "gold": "University of California, Berkeley",
-      "prediction": "University of California, Berkeley",
+      "prediction": "University of California, Berkeley.",
       "correct": true,
       "prompt_tokens": 5344,
-      "completion_tokens": 81,
-      "reasoning_tokens": 75,
+      "completion_tokens": 51,
+      "reasoning_tokens": 44,
       "error": null
     },
     {
       "sample_id": "factconsolidation_sh_6k_no5",
       "question": "Who is the author of The Marriage of Figaro?",
       "gold": "Thomas Kyd",
-      "prediction": "Pierre Beaumarchais.",
+      "prediction": "Pierre Beaumarchais",
       "correct": false,
       "prompt_tokens": 5346,
-      "completion_tokens": 215,
-      "reasoning_tokens": 208,
+      "completion_tokens": 482,
+      "reasoning_tokens": 476,
       "error": null
     },
     {
@@ -76,8 +76,8 @@
       "prediction": "association football",
       "correct": false,
       "prompt_tokens": 5345,
-      "completion_tokens": 259,
-      "reasoning_tokens": 256,
+      "completion_tokens": 99,
+      "reasoning_tokens": 96,
       "error": null
     },
     {
@@ -87,8 +87,8 @@
       "prediction": "American football",
       "correct": false,
       "prompt_tokens": 5342,
-      "completion_tokens": 81,
-      "reasoning_tokens": 78,
+      "completion_tokens": 130,
+      "reasoning_tokens": 127,
       "error": null
     },
     {
@@ -98,8 +98,8 @@
       "prediction": "Japanese",
       "correct": false,
       "prompt_tokens": 5343,
-      "completion_tokens": 160,
-      "reasoning_tokens": 158,
+      "completion_tokens": 48,
+      "reasoning_tokens": 46,
       "error": null
     },
     {
@@ -109,8 +109,8 @@
       "prediction": "Jonathan Rothschild",
       "correct": true,
       "prompt_tokens": 5348,
-      "completion_tokens": 35,
-      "reasoning_tokens": 31,
+      "completion_tokens": 32,
+      "reasoning_tokens": 28,
       "error": null
     },
     {
@@ -120,8 +120,8 @@
       "prediction": "Giuseppe Conte",
       "correct": true,
       "prompt_tokens": 5348,
-      "completion_tokens": 45,
-      "reasoning_tokens": 40,
+      "completion_tokens": 32,
+      "reasoning_tokens": 27,
       "error": null
     },
     {
@@ -131,8 +131,8 @@
       "prediction": "Ellen Pompeo",
       "correct": true,
       "prompt_tokens": 5340,
-      "completion_tokens": 50,
-      "reasoning_tokens": 45,
+      "completion_tokens": 34,
+      "reasoning_tokens": 29,
       "error": null
     },
     {
@@ -142,8 +142,8 @@
       "prediction": "center",
       "correct": false,
       "prompt_tokens": 5342,
-      "completion_tokens": 177,
-      "reasoning_tokens": 175,
+      "completion_tokens": 108,
+      "reasoning_tokens": 106,
       "error": null
     },
     {
@@ -153,8 +153,8 @@
       "prediction": "France",
       "correct": false,
       "prompt_tokens": 5349,
-      "completion_tokens": 169,
-      "reasoning_tokens": 167,
+      "completion_tokens": 253,
+      "reasoning_tokens": 251,
       "error": null
     },
     {
@@ -164,8 +164,8 @@
       "prediction": "Galileo Galilei",
       "correct": false,
       "prompt_tokens": 5347,
-      "completion_tokens": 143,
-      "reasoning_tokens": 137,
+      "completion_tokens": 147,
+      "reasoning_tokens": 141,
       "error": null
     },
     {
@@ -175,8 +175,8 @@
       "prediction": "Europe",
       "correct": false,
       "prompt_tokens": 5342,
-      "completion_tokens": 131,
-      "reasoning_tokens": 129,
+      "completion_tokens": 122,
+      "reasoning_tokens": 120,
       "error": null
     },
     {
@@ -186,8 +186,8 @@
       "prediction": "Catholic Church",
       "correct": false,
       "prompt_tokens": 5344,
-      "completion_tokens": 131,
-      "reasoning_tokens": 127,
+      "completion_tokens": 256,
+      "reasoning_tokens": 252,
       "error": null
     },
     {
@@ -197,8 +197,8 @@
       "prediction": "England",
       "correct": false,
       "prompt_tokens": 5343,
-      "completion_tokens": 55,
-      "reasoning_tokens": 53,
+      "completion_tokens": 178,
+      "reasoning_tokens": 176,
       "error": null
     },
     {
@@ -208,8 +208,8 @@
       "prediction": "Microsoft",
       "correct": true,
       "prompt_tokens": 5343,
-      "completion_tokens": 26,
-      "reasoning_tokens": 24,
+      "completion_tokens": 28,
+      "reasoning_tokens": 26,
       "error": null
     },
     {
@@ -219,8 +219,8 @@
       "prediction": "Satya Nadella",
       "correct": false,
       "prompt_tokens": 5344,
-      "completion_tokens": 70,
-      "reasoning_tokens": 65,
+      "completion_tokens": 174,
+      "reasoning_tokens": 169,
       "error": null
     },
     {
@@ -230,8 +230,8 @@
       "prediction": "Lawrence S. Bacow",
       "correct": false,
       "prompt_tokens": 5344,
-      "completion_tokens": 178,
-      "reasoning_tokens": 172,
+      "completion_tokens": 145,
+      "reasoning_tokens": 139,
       "error": null
     },
     {
@@ -241,19 +241,19 @@
       "prediction": "John Knox",
       "correct": true,
       "prompt_tokens": 5341,
-      "completion_tokens": 42,
-      "reasoning_tokens": 39,
+      "completion_tokens": 23,
+      "reasoning_tokens": 20,
       "error": null
     },
     {
       "sample_id": "factconsolidation_sh_6k_no22",
       "question": "Which sport is Galwegians RFC associated with?",
       "gold": "rugby union",
-      "prediction": "Rugby union",
+      "prediction": "rugby union",
       "correct": true,
       "prompt_tokens": 5345,
-      "completion_tokens": 29,
-      "reasoning_tokens": 24,
+      "completion_tokens": 33,
+      "reasoning_tokens": 29,
       "error": null
     },
     {
@@ -263,8 +263,8 @@
       "prediction": "Bob Iger",
       "correct": false,
       "prompt_tokens": 5344,
-      "completion_tokens": 236,
-      "reasoning_tokens": 232,
+      "completion_tokens": 334,
+      "reasoning_tokens": 330,
       "error": null
     },
     {
@@ -274,8 +274,8 @@
       "prediction": "Moscow",
       "correct": false,
       "prompt_tokens": 5349,
-      "completion_tokens": 70,
-      "reasoning_tokens": 67,
+      "completion_tokens": 78,
+      "reasoning_tokens": 75,
       "error": null
     },
     {
@@ -285,19 +285,19 @@
       "prediction": "Chang'an",
       "correct": false,
       "prompt_tokens": 5343,
-      "completion_tokens": 153,
-      "reasoning_tokens": 150,
+      "completion_tokens": 133,
+      "reasoning_tokens": 130,
       "error": null
     },
     {
       "sample_id": "factconsolidation_sh_6k_no26",
       "question": "Who is the director of British Broadcasting Corporation?",
       "gold": "Narendra Modi",
-      "prediction": "Tony Hall, Baron Hall of Birkenhead",
+      "prediction": "Tony Hall, Baron Hall of Birkenhead.",
       "correct": false,
       "prompt_tokens": 5344,
-      "completion_tokens": 157,
-      "reasoning_tokens": 147,
+      "completion_tokens": 107,
+      "reasoning_tokens": 96,
       "error": null
     },
     {
@@ -307,8 +307,8 @@
       "prediction": "Israel",
       "correct": true,
       "prompt_tokens": 5346,
-      "completion_tokens": 28,
-      "reasoning_tokens": 26,
+      "completion_tokens": 29,
+      "reasoning_tokens": 27,
       "error": null
     },
     {
@@ -318,8 +318,8 @@
       "prediction": "jazz",
       "correct": false,
       "prompt_tokens": 5345,
-      "completion_tokens": 155,
-      "reasoning_tokens": 152,
+      "completion_tokens": 351,
+      "reasoning_tokens": 348,
       "error": null
     },
     {
@@ -329,8 +329,8 @@
       "prediction": "Paris",
       "correct": false,
       "prompt_tokens": 5343,
-      "completion_tokens": 134,
-      "reasoning_tokens": 132,
+      "completion_tokens": 150,
+      "reasoning_tokens": 148,
       "error": null
     },
     {
@@ -340,8 +340,8 @@
       "prediction": "United States of America",
       "correct": false,
       "prompt_tokens": 5342,
-      "completion_tokens": 68,
-      "reasoning_tokens": 63,
+      "completion_tokens": 272,
+      "reasoning_tokens": 268,
       "error": null
     },
     {
@@ -351,8 +351,8 @@
       "prediction": "Germany",
       "correct": false,
       "prompt_tokens": 5346,
-      "completion_tokens": 126,
-      "reasoning_tokens": 124,
+      "completion_tokens": 177,
+      "reasoning_tokens": 175,
       "error": null
     },
     {
@@ -362,8 +362,8 @@
       "prediction": "Philadelphia",
       "correct": true,
       "prompt_tokens": 5350,
-      "completion_tokens": 36,
-      "reasoning_tokens": 34,
+      "completion_tokens": 37,
+      "reasoning_tokens": 35,
       "error": null
     },
     {
@@ -373,8 +373,8 @@
       "prediction": "United States of America",
       "correct": false,
       "prompt_tokens": 5343,
-      "completion_tokens": 66,
-      "reasoning_tokens": 61,
+      "completion_tokens": 180,
+      "reasoning_tokens": 175,
       "error": null
     },
     {
@@ -384,8 +384,8 @@
       "prediction": "Jerusalem",
       "correct": false,
       "prompt_tokens": 5340,
-      "completion_tokens": 120,
-      "reasoning_tokens": 117,
+      "completion_tokens": 145,
+      "reasoning_tokens": 142,
       "error": null
     },
     {
@@ -395,8 +395,8 @@
       "prediction": "American English",
       "correct": false,
       "prompt_tokens": 5346,
-      "completion_tokens": 185,
-      "reasoning_tokens": 183,
+      "completion_tokens": 225,
+      "reasoning_tokens": 222,
       "error": null
     },
     {
@@ -406,8 +406,8 @@
       "prediction": "The Beatles",
       "correct": false,
       "prompt_tokens": 5340,
-      "completion_tokens": 178,
-      "reasoning_tokens": 175,
+      "completion_tokens": 128,
+      "reasoning_tokens": 125,
       "error": null
     },
     {
@@ -417,8 +417,8 @@
       "prediction": "Tokyo",
       "correct": true,
       "prompt_tokens": 5342,
-      "completion_tokens": 59,
-      "reasoning_tokens": 57,
+      "completion_tokens": 36,
+      "reasoning_tokens": 34,
       "error": null
     },
     {
@@ -428,8 +428,8 @@
       "prediction": "Paris",
       "correct": false,
       "prompt_tokens": 5342,
-      "completion_tokens": 42,
-      "reasoning_tokens": 40,
+      "completion_tokens": 65,
+      "reasoning_tokens": 63,
       "error": null
     },
     {
@@ -439,8 +439,8 @@
       "prediction": "Valve Corporation",
       "correct": false,
       "prompt_tokens": 5343,
-      "completion_tokens": 53,
-      "reasoning_tokens": 49,
+      "completion_tokens": 87,
+      "reasoning_tokens": 83,
       "error": null
     },
     {
@@ -450,8 +450,8 @@
       "prediction": "Bucharest",
       "correct": false,
       "prompt_tokens": 5349,
-      "completion_tokens": 90,
-      "reasoning_tokens": 86,
+      "completion_tokens": 73,
+      "reasoning_tokens": 69,
       "error": null
     },
     {
@@ -461,8 +461,8 @@
       "prediction": "American football",
       "correct": false,
       "prompt_tokens": 5343,
-      "completion_tokens": 80,
-      "reasoning_tokens": 77,
+      "completion_tokens": 155,
+      "reasoning_tokens": 152,
       "error": null
     },
     {
@@ -472,8 +472,8 @@
       "prediction": "wide receiver",
       "correct": false,
       "prompt_tokens": 5343,
-      "completion_tokens": 187,
-      "reasoning_tokens": 184,
+      "completion_tokens": 209,
+      "reasoning_tokens": 206,
       "error": null
     },
     {
@@ -483,8 +483,8 @@
       "prediction": "Canberra",
       "correct": false,
       "prompt_tokens": 5342,
-      "completion_tokens": 107,
-      "reasoning_tokens": 104,
+      "completion_tokens": 122,
+      "reasoning_tokens": 119,
       "error": null
     },
     {
@@ -494,8 +494,8 @@
       "prediction": "Asia",
       "correct": false,
       "prompt_tokens": 5342,
-      "completion_tokens": 137,
-      "reasoning_tokens": 135,
+      "completion_tokens": 240,
+      "reasoning_tokens": 238,
       "error": null
     },
     {
@@ -505,8 +505,8 @@
       "prediction": "Ursula K. Le Guin",
       "correct": false,
       "prompt_tokens": 5346,
-      "completion_tokens": 131,
-      "reasoning_tokens": 123,
+      "completion_tokens": 128,
+      "reasoning_tokens": 120,
       "error": null
     },
     {
@@ -516,8 +516,8 @@
       "prediction": "The Beatles",
       "correct": true,
       "prompt_tokens": 5342,
-      "completion_tokens": 33,
-      "reasoning_tokens": 30,
+      "completion_tokens": 31,
+      "reasoning_tokens": 28,
       "error": null
     },
     {
@@ -527,8 +527,8 @@
       "prediction": "Charles Dickens",
       "correct": false,
       "prompt_tokens": 5344,
-      "completion_tokens": 115,
-      "reasoning_tokens": 112,
+      "completion_tokens": 130,
+      "reasoning_tokens": 127,
       "error": null
     },
     {
@@ -538,8 +538,8 @@
       "prediction": "United States of America",
       "correct": false,
       "prompt_tokens": 5342,
-      "completion_tokens": 101,
-      "reasoning_tokens": 96,
+      "completion_tokens": 224,
+      "reasoning_tokens": 219,
       "error": null
     },
     {
@@ -549,8 +549,8 @@
       "prediction": "United States of America",
       "correct": true,
       "prompt_tokens": 5346,
-      "completion_tokens": 42,
-      "reasoning_tokens": 37,
+      "completion_tokens": 31,
+      "reasoning_tokens": 26,
       "error": null
     },
     {
@@ -560,8 +560,8 @@
       "prediction": "Asia",
       "correct": false,
       "prompt_tokens": 5343,
-      "completion_tokens": 88,
-      "reasoning_tokens": 86,
+      "completion_tokens": 66,
+      "reasoning_tokens": 64,
       "error": null
     },
     {
@@ -571,8 +571,8 @@
       "prediction": "association football",
       "correct": false,
       "prompt_tokens": 5345,
-      "completion_tokens": 60,
-      "reasoning_tokens": 57,
+      "completion_tokens": 237,
+      "reasoning_tokens": 234,
       "error": null
     },
     {
@@ -582,8 +582,8 @@
       "prediction": "Donald Trump",
       "correct": false,
       "prompt_tokens": 5351,
-      "completion_tokens": 152,
-      "reasoning_tokens": 149,
+      "completion_tokens": 99,
+      "reasoning_tokens": 96,
       "error": null
     },
     {
@@ -593,19 +593,19 @@
       "prediction": "Catholicism",
       "correct": false,
       "prompt_tokens": 5345,
-      "completion_tokens": 137,
-      "reasoning_tokens": 133,
+      "completion_tokens": 442,
+      "reasoning_tokens": 438,
       "error": null
     },
     {
       "sample_id": "factconsolidation_sh_6k_no54",
       "question": "What type of music does Dana International play?",
       "gold": "Australian hip hop",
-      "prediction": "Pop music.",
+      "prediction": "pop music",
       "correct": false,
       "prompt_tokens": 5344,
-      "completion_tokens": 113,
-      "reasoning_tokens": 109,
+      "completion_tokens": 151,
+      "reasoning_tokens": 148,
       "error": null
     },
     {
@@ -615,8 +615,8 @@
       "prediction": "United States of America",
       "correct": false,
       "prompt_tokens": 5345,
-      "completion_tokens": 97,
-      "reasoning_tokens": 92,
+      "completion_tokens": 163,
+      "reasoning_tokens": 158,
       "error": null
     },
     {
@@ -626,8 +626,8 @@
       "prediction": "France",
       "correct": false,
       "prompt_tokens": 5344,
-      "completion_tokens": 57,
-      "reasoning_tokens": 55,
+      "completion_tokens": 99,
+      "reasoning_tokens": 97,
       "error": null
     },
     {
@@ -637,8 +637,8 @@
       "prediction": "Priscilla Presley",
       "correct": false,
       "prompt_tokens": 5343,
-      "completion_tokens": 81,
-      "reasoning_tokens": 74,
+      "completion_tokens": 188,
+      "reasoning_tokens": 181,
       "error": null
     },
     {
@@ -648,8 +648,8 @@
       "prediction": "Emma Watson",
       "correct": false,
       "prompt_tokens": 5341,
-      "completion_tokens": 93,
-      "reasoning_tokens": 90,
+      "completion_tokens": 119,
+      "reasoning_tokens": 116,
       "error": null
     },
     {
@@ -659,8 +659,8 @@
       "prediction": "basketball",
       "correct": false,
       "prompt_tokens": 5343,
-      "completion_tokens": 164,
-      "reasoning_tokens": 160,
+      "completion_tokens": 322,
+      "reasoning_tokens": 318,
       "error": null
     },
     {
@@ -670,8 +670,8 @@
       "prediction": "rock music",
       "correct": false,
       "prompt_tokens": 5346,
-      "completion_tokens": 229,
-      "reasoning_tokens": 226,
+      "completion_tokens": 327,
+      "reasoning_tokens": 324,
       "error": null
     },
     {
@@ -681,8 +681,8 @@
       "prediction": "goalkeeper",
       "correct": false,
       "prompt_tokens": 5344,
-      "completion_tokens": 114,
-      "reasoning_tokens": 110,
+      "completion_tokens": 40,
+      "reasoning_tokens": 36,
       "error": null
     },
     {
@@ -692,8 +692,8 @@
       "prediction": "Jack Dorsey",
       "correct": false,
       "prompt_tokens": 5344,
-      "completion_tokens": 258,
-      "reasoning_tokens": 254,
+      "completion_tokens": 175,
+      "reasoning_tokens": 171,
       "error": null
     },
     {
@@ -703,8 +703,8 @@
       "prediction": "English",
       "correct": false,
       "prompt_tokens": 5344,
-      "completion_tokens": 191,
-      "reasoning_tokens": 189,
+      "completion_tokens": 336,
+      "reasoning_tokens": 334,
       "error": null
     },
     {
@@ -714,8 +714,8 @@
       "prediction": "baseball",
       "correct": true,
       "prompt_tokens": 5345,
-      "completion_tokens": 24,
-      "reasoning_tokens": 21,
+      "completion_tokens": 36,
+      "reasoning_tokens": 33,
       "error": null
     },
     {
@@ -725,19 +725,19 @@
       "prediction": "American football",
       "correct": false,
       "prompt_tokens": 5344,
-      "completion_tokens": 59,
-      "reasoning_tokens": 56,
+      "completion_tokens": 162,
+      "reasoning_tokens": 159,
       "error": null
     },
     {
       "sample_id": "factconsolidation_sh_6k_no66",
       "question": "What kind of work does Stephen McNeil do?",
       "gold": "journalist",
-      "prediction": "politician",
+      "prediction": "Politician.",
       "correct": false,
       "prompt_tokens": 5345,
-      "completion_tokens": 305,
-      "reasoning_tokens": 302,
+      "completion_tokens": 182,
+      "reasoning_tokens": 177,
       "error": null
     },
     {
@@ -747,8 +747,8 @@
       "prediction": "Lucasfilm",
       "correct": false,
       "prompt_tokens": 5344,
-      "completion_tokens": 102,
-      "reasoning_tokens": 98,
+      "completion_tokens": 59,
+      "reasoning_tokens": 55,
       "error": null
     },
     {
@@ -758,8 +758,8 @@
       "prediction": "North America",
       "correct": true,
       "prompt_tokens": 5343,
-      "completion_tokens": 34,
-      "reasoning_tokens": 31,
+      "completion_tokens": 26,
+      "reasoning_tokens": 23,
       "error": null
     },
     {
@@ -769,8 +769,8 @@
       "prediction": "Montreal",
       "correct": false,
       "prompt_tokens": 5341,
-      "completion_tokens": 76,
-      "reasoning_tokens": 73,
+      "completion_tokens": 217,
+      "reasoning_tokens": 214,
       "error": null
     },
     {
@@ -780,8 +780,8 @@
       "prediction": "Westinghouse Electric",
       "correct": false,
       "prompt_tokens": 5344,
-      "completion_tokens": 357,
-      "reasoning_tokens": 352,
+      "completion_tokens": 156,
+      "reasoning_tokens": 151,
       "error": null
     },
     {
@@ -791,8 +791,8 @@
       "prediction": "Japan",
       "correct": true,
       "prompt_tokens": 5347,
-      "completion_tokens": 40,
-      "reasoning_tokens": 38,
+      "completion_tokens": 30,
+      "reasoning_tokens": 28,
       "error": null
     },
     {
@@ -802,8 +802,8 @@
       "prediction": "placekicker",
       "correct": true,
       "prompt_tokens": 5342,
-      "completion_tokens": 38,
-      "reasoning_tokens": 34,
+      "completion_tokens": 35,
+      "reasoning_tokens": 31,
       "error": null
     },
     {
@@ -813,8 +813,8 @@
       "prediction": "Cherie Blair",
       "correct": false,
       "prompt_tokens": 5342,
-      "completion_tokens": 56,
-      "reasoning_tokens": 52,
+      "completion_tokens": 70,
+      "reasoning_tokens": 66,
       "error": null
     },
     {
@@ -824,8 +824,8 @@
       "prediction": "John Keats",
       "correct": true,
       "prompt_tokens": 5344,
-      "completion_tokens": 44,
-      "reasoning_tokens": 40,
+      "completion_tokens": 35,
+      "reasoning_tokens": 31,
       "error": null
     },
     {
@@ -835,8 +835,8 @@
       "prediction": "Oscar Wilde",
       "correct": true,
       "prompt_tokens": 5347,
-      "completion_tokens": 46,
-      "reasoning_tokens": 42,
+      "completion_tokens": 35,
+      "reasoning_tokens": 31,
       "error": null
     },
     {
@@ -846,8 +846,8 @@
       "prediction": "Shinzō Abe",
       "correct": true,
       "prompt_tokens": 5348,
-      "completion_tokens": 48,
-      "reasoning_tokens": 43,
+      "completion_tokens": 38,
+      "reasoning_tokens": 33,
       "error": null
     },
     {
@@ -857,8 +857,8 @@
       "prediction": "Denis Sassou-Nguesso",
       "correct": false,
       "prompt_tokens": 5348,
-      "completion_tokens": 119,
-      "reasoning_tokens": 111,
+      "completion_tokens": 55,
+      "reasoning_tokens": 47,
       "error": null
     },
     {
@@ -868,8 +868,8 @@
       "prediction": "rugby union",
       "correct": true,
       "prompt_tokens": 5343,
-      "completion_tokens": 50,
-      "reasoning_tokens": 46,
+      "completion_tokens": 39,
+      "reasoning_tokens": 35,
       "error": null
     },
     {
@@ -879,8 +879,8 @@
       "prediction": "Prague",
       "correct": true,
       "prompt_tokens": 5343,
-      "completion_tokens": 42,
-      "reasoning_tokens": 39,
+      "completion_tokens": 27,
+      "reasoning_tokens": 24,
       "error": null
     },
     {
@@ -890,8 +890,8 @@
       "prediction": "center",
       "correct": false,
       "prompt_tokens": 5342,
-      "completion_tokens": 180,
-      "reasoning_tokens": 178,
+      "completion_tokens": 170,
+      "reasoning_tokens": 168,
       "error": null
     },
     {
@@ -901,8 +901,8 @@
       "prediction": "Mikhail Gorbachev",
       "correct": false,
       "prompt_tokens": 5349,
-      "completion_tokens": 91,
-      "reasoning_tokens": 85,
+      "completion_tokens": 129,
+      "reasoning_tokens": 123,
       "error": null
     },
     {
@@ -912,8 +912,8 @@
       "prediction": "Germany",
       "correct": false,
       "prompt_tokens": 5348,
-      "completion_tokens": 145,
-      "reasoning_tokens": 143,
+      "completion_tokens": 95,
+      "reasoning_tokens": 93,
       "error": null
     },
     {
@@ -923,8 +923,8 @@
       "prediction": "Catholic Church",
       "correct": false,
       "prompt_tokens": 5343,
-      "completion_tokens": 312,
-      "reasoning_tokens": 308,
+      "completion_tokens": 348,
+      "reasoning_tokens": 344,
       "error": null
     },
     {
@@ -934,8 +934,8 @@
       "prediction": "Mario Puzo",
       "correct": false,
       "prompt_tokens": 5345,
-      "completion_tokens": 153,
-      "reasoning_tokens": 147,
+      "completion_tokens": 168,
+      "reasoning_tokens": 162,
       "error": null
     },
     {
@@ -945,8 +945,8 @@
       "prediction": "Bucharest",
       "correct": false,
       "prompt_tokens": 5342,
-      "completion_tokens": 56,
-      "reasoning_tokens": 52,
+      "completion_tokens": 167,
+      "reasoning_tokens": 163,
       "error": null
     },
     {
@@ -956,8 +956,8 @@
       "prediction": "Asia",
       "correct": false,
       "prompt_tokens": 5342,
-      "completion_tokens": 143,
-      "reasoning_tokens": 141,
+      "completion_tokens": 55,
+      "reasoning_tokens": 53,
       "error": null
     },
     {
@@ -967,8 +967,8 @@
       "prediction": "Kyiv",
       "correct": false,
       "prompt_tokens": 5344,
-      "completion_tokens": 178,
-      "reasoning_tokens": 175,
+      "completion_tokens": 59,
+      "reasoning_tokens": 56,
       "error": null
     },
     {
@@ -978,8 +978,8 @@
       "prediction": "Ardashir I",
       "correct": false,
       "prompt_tokens": 5342,
-      "completion_tokens": 138,
-      "reasoning_tokens": 132,
+      "completion_tokens": 78,
+      "reasoning_tokens": 72,
       "error": null
     },
     {
@@ -989,8 +989,8 @@
       "prediction": "Washington, D.C.",
       "correct": true,
       "prompt_tokens": 5345,
-      "completion_tokens": 45,
-      "reasoning_tokens": 39,
+      "completion_tokens": 67,
+      "reasoning_tokens": 61,
       "error": null
     },
     {
@@ -1000,8 +1000,8 @@
       "prediction": "association football",
       "correct": false,
       "prompt_tokens": 5344,
-      "completion_tokens": 178,
-      "reasoning_tokens": 175,
+      "completion_tokens": 138,
+      "reasoning_tokens": 135,
       "error": null
     },
     {
@@ -1011,8 +1011,8 @@
       "prediction": "India",
       "correct": false,
       "prompt_tokens": 5345,
-      "completion_tokens": 225,
-      "reasoning_tokens": 224,
+      "completion_tokens": 78,
+      "reasoning_tokens": 76,
       "error": null
     },
     {
@@ -1022,8 +1022,8 @@
       "prediction": "David Beckham",
       "correct": true,
       "prompt_tokens": 5343,
-      "completion_tokens": 29,
-      "reasoning_tokens": 25,
+      "completion_tokens": 34,
+      "reasoning_tokens": 30,
       "error": null
     },
     {
@@ -1033,8 +1033,8 @@
       "prediction": "France",
       "correct": false,
       "prompt_tokens": 5346,
-      "completion_tokens": 115,
-      "reasoning_tokens": 113,
+      "completion_tokens": 167,
+      "reasoning_tokens": 165,
       "error": null
     },
     {
@@ -1044,8 +1044,8 @@
       "prediction": "Robert Jordan",
       "correct": false,
       "prompt_tokens": 5344,
-      "completion_tokens": 148,
-      "reasoning_tokens": 145,
+      "completion_tokens": 181,
+      "reasoning_tokens": 178,
       "error": null
     },
     {
@@ -1055,8 +1055,8 @@
       "prediction": "point guard",
       "correct": true,
       "prompt_tokens": 5345,
-      "completion_tokens": 26,
-      "reasoning_tokens": 23,
+      "completion_tokens": 36,
+      "reasoning_tokens": 33,
       "error": null
     },
     {
@@ -1066,8 +1066,8 @@
       "prediction": "United Kingdom",
       "correct": false,
       "prompt_tokens": 5345,
-      "completion_tokens": 235,
-      "reasoning_tokens": 232,
+      "completion_tokens": 192,
+      "reasoning_tokens": 189,
       "error": null
     },
     {
@@ -1077,8 +1077,8 @@
       "prediction": "Walter Percy Chrysler Jr.",
       "correct": false,
       "prompt_tokens": 5343,
-      "completion_tokens": 217,
-      "reasoning_tokens": 210,
+      "completion_tokens": 108,
+      "reasoning_tokens": 101,
       "error": null
     },
     {
@@ -1088,8 +1088,8 @@
       "prediction": "Emma Darwin",
       "correct": false,
       "prompt_tokens": 5342,
-      "completion_tokens": 140,
-      "reasoning_tokens": 137,
+      "completion_tokens": 105,
+      "reasoning_tokens": 102,
       "error": null
     },
     {
@@ -1099,8 +1099,8 @@
       "prediction": "wide receiver",
       "correct": true,
       "prompt_tokens": 5343,
-      "completion_tokens": 35,
-      "reasoning_tokens": 32,
+      "completion_tokens": 32,
+      "reasoning_tokens": 29,
       "error": null
     }
   ]

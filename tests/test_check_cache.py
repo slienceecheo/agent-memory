@@ -14,6 +14,8 @@ from evals.run import main
 
 from memory.config import Settings
 from memory.embedding.cache import EmbeddingCache
+from memory.llm.cache import CachedResponse, ResponseCache
+from memory.llm.sse import Usage
 
 
 def _settings(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Settings:
@@ -51,15 +53,35 @@ def test_empty_cache_exits_nonzero(tmp_path: Path, monkeypatch: pytest.MonkeyPat
 
 
 def test_complete_cache_exits_zero(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    """这是 A2 的正例：缓存有条目且无损坏时必须通过。"""
+    """这是 A2 的正例：两种缓存都有条目且无损坏时必须通过。"""
     _settings(tmp_path, monkeypatch)
-    cache = EmbeddingCache(tmp_path / "cache.db")
-    cache.put("k1", np.asarray([1.0, 2.0, 3.0, 4.0], dtype=np.float32))
-    cache.close()
+    emb = EmbeddingCache(tmp_path / "cache.db")
+    emb.put("k1", np.asarray([1.0, 2.0, 3.0, 4.0], dtype=np.float32))
+    emb.close()
+    responses = ResponseCache(tmp_path / "responses.db")
+    responses.put(
+        "r1",
+        CachedResponse(content="x", usage=Usage(), finish_reason="stop", tool_calls=()),
+    )
+    responses.close()
 
     code = main(["--check-cache"])
 
     assert code == 0
+
+
+def test_missing_llm_cache_exits_nonzero(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """只有 embedding 缓存不够：没有 LLM 缓存，重跑结果必然不同。"""
+    _settings(tmp_path, monkeypatch)
+    emb = EmbeddingCache(tmp_path / "cache.db")
+    emb.put("k1", np.asarray([1.0, 2.0, 3.0, 4.0], dtype=np.float32))
+    emb.close()
+
+    code = main(["--check-cache"])
+
+    assert code != 0
 
 
 def test_corrupt_entry_exits_nonzero(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:

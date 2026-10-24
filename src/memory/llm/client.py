@@ -15,6 +15,7 @@ from dataclasses import dataclass, field
 import httpx
 
 from memory.config import Settings
+from memory.llm.cache import CachedResponse, ResponseCache, request_key
 from memory.llm.sse import ToolCall, Usage, collect
 
 _RETRYABLE_STATUS = frozenset({408, 409, 425, 429, 500, 502, 503, 504})
@@ -62,6 +63,7 @@ class LLMClient:
         client: httpx.Client | None = None,
         max_retries: int = 3,
         backoff_seconds: float = 1.0,
+        response_cache: ResponseCache | None = None,
     ) -> None:
         self._settings = settings
         self._client = client or httpx.Client(
@@ -70,7 +72,9 @@ class LLMClient:
         )
         self._max_retries = max_retries
         self._backoff_seconds = backoff_seconds
+        self._cache = response_cache
         self.network_calls = 0
+        self.cache_hits = 0
 
     def complete(
         self,
@@ -92,12 +96,26 @@ class LLMClient:
         if response_format is not None:
             payload["response_format"] = response_format
 
+        key: str | None = None
+        if self._cache is not None:
+            key = request_key(payload)
+            cached = self._cache.get(key)
+            if cached is not None:
+                self.cache_hits += 1
+                return LLMResult(
+                    content=cached.content,
+                    usage=cached.usage,
+                    finish_reason=cached.finish_reason,
+                    tool_calls=cached.tool_calls_list(),
+                    retries=0,
+                )
+
         last_error: Exception | None = None
         attempts = self._max_retries + 1
 
         for attempt in range(attempts):
             try:
-                return self._attempt(payload, retries=attempt)
+                result = self._attempt(payload, retries=attempt)
             except httpx.HTTPStatusError as exc:
                 last_error = exc
                 if exc.response.status_code not in _RETRYABLE_STATUS:
@@ -113,6 +131,18 @@ class LLMClient:
                     raise RetryExhaustedError(
                         f"重试 {attempts} 次后仍失败（最后一次：{exc}），请检查网关是否可用。"
                     ) from exc
+            else:
+                if key is not None and self._cache is not None:
+                    self._cache.put(
+                        key,
+                        CachedResponse(
+                            content=result.content,
+                            usage=result.usage,
+                            finish_reason=result.finish_reason,
+                            tool_calls=tuple(result.tool_calls),
+                        ),
+                    )
+                return result
             if self._backoff_seconds:
                 time.sleep(self._backoff_seconds * (2**attempt))
 

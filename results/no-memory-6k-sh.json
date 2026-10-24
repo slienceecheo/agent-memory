@@ -7,22 +7,22 @@
       "sample_id": "factconsolidation_sh_6k_no0",
       "question": "Which sport is goaltender associated with?",
       "gold": "pesäpallo",
-      "prediction": "Ice hockey",
+      "prediction": "Ice hockey.",
       "correct": false,
       "prompt_tokens": 59,
-      "completion_tokens": 67,
-      "reasoning_tokens": 64,
+      "completion_tokens": 61,
+      "reasoning_tokens": 57,
       "error": null
     },
     {
       "sample_id": "factconsolidation_sh_6k_no1",
       "question": "What is Nobuhiro Watsuki famous for?",
       "gold": "The Fairly OddParents",
-      "prediction": "Nobuhiro Watsuki is famous for creating the manga series *Rurouni Kenshin*.",
+      "prediction": "Insufficient information provided.",
       "correct": false,
       "prompt_tokens": 61,
-      "completion_tokens": 86,
-      "reasoning_tokens": 63,
+      "completion_tokens": 130,
+      "reasoning_tokens": 123,
       "error": null
     },
     {
@@ -32,41 +32,41 @@
       "prediction": "England",
       "correct": false,
       "prompt_tokens": 58,
-      "completion_tokens": 50,
-      "reasoning_tokens": 48,
+      "completion_tokens": 56,
+      "reasoning_tokens": 54,
       "error": null
     },
     {
       "sample_id": "factconsolidation_sh_6k_no3",
       "question": "What is Ferdowsi famous for?",
       "gold": "Shahnameh",
-      "prediction": "I don’t know based on the provided facts.",
-      "correct": false,
+      "prediction": "Ferdowsi is famous for writing the *Shahnameh* (*Book of Kings*), the Persian national epic.",
+      "correct": true,
       "prompt_tokens": 58,
-      "completion_tokens": 98,
-      "reasoning_tokens": 86,
+      "completion_tokens": 117,
+      "reasoning_tokens": 90,
       "error": null
     },
     {
       "sample_id": "factconsolidation_sh_6k_no4",
       "question": "Which university was Joan Didion educated at?",
       "gold": "University of California, Berkeley",
-      "prediction": "Not provided.",
-      "correct": false,
+      "prediction": "University of California, Berkeley",
+      "correct": true,
       "prompt_tokens": 59,
-      "completion_tokens": 169,
-      "reasoning_tokens": 165,
+      "completion_tokens": 49,
+      "reasoning_tokens": 43,
       "error": null
     },
     {
       "sample_id": "factconsolidation_sh_6k_no5",
       "question": "Who is the author of The Marriage of Figaro?",
       "gold": "Thomas Kyd",
-      "prediction": "Pierre-Augustin Caron de Beaumarchais",
+      "prediction": "Pierre Beaumarchais",
       "correct": false,
       "prompt_tokens": 61,
-      "completion_tokens": 132,
-      "reasoning_tokens": 121,
+      "completion_tokens": 70,
+      "reasoning_tokens": 64,
       "error": null
     },
     {
@@ -76,19 +76,19 @@
       "prediction": "Football",
       "correct": false,
       "prompt_tokens": 60,
-      "completion_tokens": 34,
-      "reasoning_tokens": 32,
+      "completion_tokens": 30,
+      "reasoning_tokens": 28,
       "error": null
     },
     {
       "sample_id": "factconsolidation_sh_6k_no7",
       "question": "Which sport is quarterback associated with?",
       "gold": "Muay Thai",
-      "prediction": "American football",
+      "prediction": "American football.",
       "correct": false,
       "prompt_tokens": 57,
-      "completion_tokens": 40,
-      "reasoning_tokens": 37,
+      "completion_tokens": 20,
+      "reasoning_tokens": 16,
       "error": null
     },
     {
@@ -98,8 +98,8 @@
       "prediction": "Japanese",
       "correct": false,
       "prompt_tokens": 58,
-      "completion_tokens": 46,
-      "reasoning_tokens": 44,
+      "completion_tokens": 19,
+      "reasoning_tokens": 17,
       "error": null
     },
     {
@@ -109,8 +109,8 @@
       "prediction": "Regina Romero",
       "correct": false,
       "prompt_tokens": 63,
-      "completion_tokens": 48,
-      "reasoning_tokens": 44,
+      "completion_tokens": 34,
+      "reasoning_tokens": 30,
       "error": null
     },
     {
@@ -120,8 +120,8 @@
       "prediction": "Giorgia Meloni",
       "correct": false,
       "prompt_tokens": 63,
-      "completion_tokens": 63,
-      "reasoning_tokens": 57,
+      "completion_tokens": 46,
+      "reasoning_tokens": 40,
       "error": null
     },
     {
@@ -131,8 +131,8 @@
       "prediction": "Ellen Pompeo",
       "correct": true,
       "prompt_tokens": 55,
-      "completion_tokens": 89,
-      "reasoning_tokens": 84,
+      "completion_tokens": 35,
+      "reasoning_tokens": 30,
       "error": null
     },
     {
@@ -142,8 +142,8 @@
       "prediction": "Center",
       "correct": false,
       "prompt_tokens": 57,
-      "completion_tokens": 92,
-      "reasoning_tokens": 90,
+      "completion_tokens": 133,
+      "reasoning_tokens": 131,
       "error": null
     },
     {
@@ -153,8 +153,8 @@
       "prediction": "France",
       "correct": false,
       "prompt_tokens": 64,
-      "completion_tokens": 35,
-      "reasoning_tokens": 33,
+      "completion_tokens": 36,
+      "reasoning_tokens": 34,
       "error": null
     },
     {
@@ -164,8 +164,8 @@
       "prediction": "Galileo Galilei",
       "correct": false,
       "prompt_tokens": 62,
-      "completion_tokens": 30,
-      "reasoning_tokens": 24,
+      "completion_tokens": 44,
+      "reasoning_tokens": 38,
       "error": null
     },
     {
@@ -175,19 +175,19 @@
       "prediction": "Europe",
       "correct": false,
       "prompt_tokens": 57,
-      "completion_tokens": 14,
-      "reasoning_tokens": 12,
+      "completion_tokens": 24,
+      "reasoning_tokens": 22,
       "error": null
     },
     {
       "sample_id": "factconsolidation_sh_6k_no16",
       "question": "Which religion is Kingdom of Ireland affiliated with?",
       "gold": "Zoroastrianism",
-      "prediction": "Christianity",
+      "prediction": "Anglicanism (Church of Ireland)",
       "correct": false,
       "prompt_tokens": 59,
-      "completion_tokens": 124,
-      "reasoning_tokens": 121,
+      "completion_tokens": 100,
+      "reasoning_tokens": 91,
       "error": null
     },
     {
@@ -197,8 +197,8 @@
       "prediction": "England",
       "correct": false,
       "prompt_tokens": 58,
-      "completion_tokens": 45,
-      "reasoning_tokens": 43,
+      "completion_tokens": 29,
+      "reasoning_tokens": 27,
       "error": null
     },
     {
@@ -208,30 +208,30 @@
       "prediction": "Microsoft",
       "correct": true,
       "prompt_tokens": 58,
-      "completion_tokens": 40,
-      "reasoning_tokens": 38,
+      "completion_tokens": 17,
+      "reasoning_tokens": 15,
       "error": null
     },
     {
       "sample_id": "factconsolidation_sh_6k_no19",
       "question": "Who is the chief executive officer of Microsoft?",
       "gold": "Steve Jobs",
-      "prediction": "Not enough information.",
+      "prediction": "I don’t know.",
       "correct": false,
       "prompt_tokens": 59,
-      "completion_tokens": 119,
-      "reasoning_tokens": 114,
+      "completion_tokens": 66,
+      "reasoning_tokens": 59,
       "error": null
     },
     {
       "sample_id": "factconsolidation_sh_6k_no20",
       "question": "Who is the chairperson of Harvard University?",
       "gold": "Peter Diamandis",
-      "prediction": "Not provided.",
+      "prediction": "I don’t know; no facts were provided.",
       "correct": false,
       "prompt_tokens": 59,
-      "completion_tokens": 84,
-      "reasoning_tokens": 80,
+      "completion_tokens": 287,
+      "reasoning_tokens": 275,
       "error": null
     },
     {
@@ -241,30 +241,30 @@
       "prediction": "John Knox",
       "correct": true,
       "prompt_tokens": 56,
-      "completion_tokens": 83,
-      "reasoning_tokens": 80,
+      "completion_tokens": 54,
+      "reasoning_tokens": 51,
       "error": null
     },
     {
       "sample_id": "factconsolidation_sh_6k_no22",
       "question": "Which sport is Galwegians RFC associated with?",
       "gold": "rugby union",
-      "prediction": "Rugby union",
+      "prediction": "Rugby union.",
       "correct": true,
       "prompt_tokens": 60,
-      "completion_tokens": 51,
-      "reasoning_tokens": 46,
+      "completion_tokens": 56,
+      "reasoning_tokens": 50,
       "error": null
     },
     {
       "sample_id": "factconsolidation_sh_6k_no23",
       "question": "Who is the director of American Broadcasting Company?",
       "gold": "Ernst Heinkel",
-      "prediction": "I don’t know.",
+      "prediction": "I don’t have that information.",
       "correct": false,
       "prompt_tokens": 59,
-      "completion_tokens": 59,
-      "reasoning_tokens": 52,
+      "completion_tokens": 54,
+      "reasoning_tokens": 45,
       "error": null
     },
     {
@@ -274,30 +274,30 @@
       "prediction": "Moscow",
       "correct": false,
       "prompt_tokens": 64,
-      "completion_tokens": 52,
-      "reasoning_tokens": 49,
+      "completion_tokens": 71,
+      "reasoning_tokens": 68,
       "error": null
     },
     {
       "sample_id": "factconsolidation_sh_6k_no25",
       "question": "What is the capital of Tang Empire?",
       "gold": "Beaumont",
-      "prediction": "Chang'an",
+      "prediction": "Unknown.",
       "correct": false,
       "prompt_tokens": 58,
-      "completion_tokens": 77,
-      "reasoning_tokens": 74,
+      "completion_tokens": 113,
+      "reasoning_tokens": 110,
       "error": null
     },
     {
       "sample_id": "factconsolidation_sh_6k_no26",
       "question": "Who is the director of British Broadcasting Corporation?",
       "gold": "Narendra Modi",
-      "prediction": "Not enough information.",
+      "prediction": "Tim Davie",
       "correct": false,
       "prompt_tokens": 59,
-      "completion_tokens": 59,
-      "reasoning_tokens": 54,
+      "completion_tokens": 126,
+      "reasoning_tokens": 122,
       "error": null
     },
     {
@@ -307,30 +307,30 @@
       "prediction": "Israel",
       "correct": true,
       "prompt_tokens": 61,
-      "completion_tokens": 76,
-      "reasoning_tokens": 74,
+      "completion_tokens": 29,
+      "reasoning_tokens": 27,
       "error": null
     },
     {
       "sample_id": "factconsolidation_sh_6k_no28",
       "question": "What type of music does Michael Mantler play?",
       "gold": "post-punk",
-      "prediction": "Jazz",
+      "prediction": "I don’t have enough information to answer that.",
       "correct": false,
       "prompt_tokens": 60,
-      "completion_tokens": 119,
-      "reasoning_tokens": 116,
+      "completion_tokens": 185,
+      "reasoning_tokens": 173,
       "error": null
     },
     {
       "sample_id": "factconsolidation_sh_6k_no29",
       "question": "Which city did Oscar Wilde die in?",
       "gold": "Guangzhou",
-      "prediction": "Paris",
+      "prediction": "I don’t have that information.",
       "correct": false,
       "prompt_tokens": 58,
-      "completion_tokens": 35,
-      "reasoning_tokens": 33,
+      "completion_tokens": 146,
+      "reasoning_tokens": 137,
       "error": null
     },
     {
@@ -340,8 +340,8 @@
       "prediction": "United States",
       "correct": false,
       "prompt_tokens": 57,
-      "completion_tokens": 41,
-      "reasoning_tokens": 38,
+      "completion_tokens": 48,
+      "reasoning_tokens": 45,
       "error": null
     },
     {
@@ -351,8 +351,8 @@
       "prediction": "Germany",
       "correct": false,
       "prompt_tokens": 61,
-      "completion_tokens": 90,
-      "reasoning_tokens": 88,
+      "completion_tokens": 28,
+      "reasoning_tokens": 26,
       "error": null
     },
     {
@@ -362,30 +362,30 @@
       "prediction": "Philadelphia",
       "correct": true,
       "prompt_tokens": 65,
-      "completion_tokens": 53,
-      "reasoning_tokens": 51,
+      "completion_tokens": 43,
+      "reasoning_tokens": 41,
       "error": null
     },
     {
       "sample_id": "factconsolidation_sh_6k_no33",
       "question": "Which country was rap rock created in?",
       "gold": "Russian Empire",
-      "prediction": "Unknown",
+      "prediction": "I don’t know.",
       "correct": false,
       "prompt_tokens": 58,
-      "completion_tokens": 177,
-      "reasoning_tokens": 175,
+      "completion_tokens": 163,
+      "reasoning_tokens": 156,
       "error": null
     },
     {
       "sample_id": "factconsolidation_sh_6k_no34",
       "question": "Where was Christianity founded?",
       "gold": "Taipei",
-      "prediction": "Not provided.",
+      "prediction": "Christianity was founded in 1st-century Judea, centered in Jerusalem.",
       "correct": false,
       "prompt_tokens": 55,
-      "completion_tokens": 98,
-      "reasoning_tokens": 94,
+      "completion_tokens": 68,
+      "reasoning_tokens": 51,
       "error": null
     },
     {
@@ -395,8 +395,8 @@
       "prediction": "English",
       "correct": false,
       "prompt_tokens": 61,
-      "completion_tokens": 115,
-      "reasoning_tokens": 113,
+      "completion_tokens": 109,
+      "reasoning_tokens": 107,
       "error": null
     },
     {
@@ -406,8 +406,8 @@
       "prediction": "The Beatles",
       "correct": false,
       "prompt_tokens": 55,
-      "completion_tokens": 39,
-      "reasoning_tokens": 36,
+      "completion_tokens": 34,
+      "reasoning_tokens": 31,
       "error": null
     },
     {
@@ -417,8 +417,8 @@
       "prediction": "Tokyo",
       "correct": true,
       "prompt_tokens": 57,
-      "completion_tokens": 44,
-      "reasoning_tokens": 42,
+      "completion_tokens": 38,
+      "reasoning_tokens": 36,
       "error": null
     },
     {
@@ -428,8 +428,8 @@
       "prediction": "Paris",
       "correct": false,
       "prompt_tokens": 57,
-      "completion_tokens": 28,
-      "reasoning_tokens": 26,
+      "completion_tokens": 30,
+      "reasoning_tokens": 28,
       "error": null
     },
     {
@@ -439,8 +439,8 @@
       "prediction": "Valve",
       "correct": false,
       "prompt_tokens": 58,
-      "completion_tokens": 25,
-      "reasoning_tokens": 22,
+      "completion_tokens": 21,
+      "reasoning_tokens": 18,
       "error": null
     },
     {
@@ -450,8 +450,8 @@
       "prediction": "Bucharest",
       "correct": false,
       "prompt_tokens": 64,
-      "completion_tokens": 36,
-      "reasoning_tokens": 32,
+      "completion_tokens": 56,
+      "reasoning_tokens": 52,
       "error": null
     },
     {
@@ -461,19 +461,19 @@
       "prediction": "American football",
       "correct": false,
       "prompt_tokens": 58,
-      "completion_tokens": 21,
-      "reasoning_tokens": 18,
+      "completion_tokens": 18,
+      "reasoning_tokens": 15,
       "error": null
     },
     {
       "sample_id": "factconsolidation_sh_6k_no42",
       "question": "What position does Hines Ward play?",
       "gold": "cornerback",
-      "prediction": "Unknown",
+      "prediction": "Wide receiver",
       "correct": false,
       "prompt_tokens": 58,
-      "completion_tokens": 82,
-      "reasoning_tokens": 80,
+      "completion_tokens": 28,
+      "reasoning_tokens": 24,
       "error": null
     },
     {
@@ -483,8 +483,8 @@
       "prediction": "Canberra",
       "correct": false,
       "prompt_tokens": 57,
-      "completion_tokens": 37,
-      "reasoning_tokens": 34,
+      "completion_tokens": 31,
+      "reasoning_tokens": 28,
       "error": null
     },
     {
@@ -494,19 +494,19 @@
       "prediction": "Asia",
       "correct": false,
       "prompt_tokens": 57,
-      "completion_tokens": 62,
-      "reasoning_tokens": 60,
+      "completion_tokens": 14,
+      "reasoning_tokens": 12,
       "error": null
     },
     {
       "sample_id": "factconsolidation_sh_6k_no45",
       "question": "Who is the author of A Wizard of Earthsea?",
       "gold": "Pius XII",
-      "prediction": "Not enough information.",
+      "prediction": "Ursula K. Le Guin",
       "correct": false,
       "prompt_tokens": 61,
-      "completion_tokens": 209,
-      "reasoning_tokens": 204,
+      "completion_tokens": 60,
+      "reasoning_tokens": 52,
       "error": null
     },
     {
@@ -516,8 +516,8 @@
       "prediction": "The Beatles",
       "correct": true,
       "prompt_tokens": 57,
-      "completion_tokens": 42,
-      "reasoning_tokens": 39,
+      "completion_tokens": 74,
+      "reasoning_tokens": 71,
       "error": null
     },
     {
@@ -527,8 +527,8 @@
       "prediction": "Charles Dickens",
       "correct": false,
       "prompt_tokens": 59,
-      "completion_tokens": 31,
-      "reasoning_tokens": 28,
+      "completion_tokens": 19,
+      "reasoning_tokens": 16,
       "error": null
     },
     {
@@ -549,8 +549,8 @@
       "prediction": "United States",
       "correct": false,
       "prompt_tokens": 61,
-      "completion_tokens": 33,
-      "reasoning_tokens": 30,
+      "completion_tokens": 36,
+      "reasoning_tokens": 33,
       "error": null
     },
     {
@@ -560,8 +560,8 @@
       "prediction": "Asia",
       "correct": false,
       "prompt_tokens": 58,
-      "completion_tokens": 45,
-      "reasoning_tokens": 43,
+      "completion_tokens": 17,
+      "reasoning_tokens": 15,
       "error": null
     },
     {
@@ -571,8 +571,8 @@
       "prediction": "Football",
       "correct": false,
       "prompt_tokens": 60,
-      "completion_tokens": 27,
-      "reasoning_tokens": 25,
+      "completion_tokens": 25,
+      "reasoning_tokens": 23,
       "error": null
     },
     {
@@ -582,8 +582,8 @@
       "prediction": "Donald Trump",
       "correct": false,
       "prompt_tokens": 66,
-      "completion_tokens": 53,
-      "reasoning_tokens": 50,
+      "completion_tokens": 51,
+      "reasoning_tokens": 48,
       "error": null
     },
     {
@@ -601,22 +601,22 @@
       "sample_id": "factconsolidation_sh_6k_no54",
       "question": "What type of music does Dana International play?",
       "gold": "Australian hip hop",
-      "prediction": "Pop.",
+      "prediction": "I don’t know.",
       "correct": false,
       "prompt_tokens": 59,
-      "completion_tokens": 87,
-      "reasoning_tokens": 84,
+      "completion_tokens": 68,
+      "reasoning_tokens": 61,
       "error": null
     },
     {
       "sample_id": "factconsolidation_sh_6k_no55",
       "question": "What is the country of citizenship of Sable?",
       "gold": "Czech Republic",
-      "prediction": "Not provided.",
+      "prediction": "Unknown",
       "correct": false,
       "prompt_tokens": 60,
-      "completion_tokens": 94,
-      "reasoning_tokens": 90,
+      "completion_tokens": 68,
+      "reasoning_tokens": 66,
       "error": null
     },
     {
@@ -626,8 +626,8 @@
       "prediction": "France",
       "correct": false,
       "prompt_tokens": 59,
-      "completion_tokens": 20,
-      "reasoning_tokens": 18,
+      "completion_tokens": 24,
+      "reasoning_tokens": 22,
       "error": null
     },
     {
@@ -637,19 +637,19 @@
       "prediction": "Priscilla Presley",
       "correct": false,
       "prompt_tokens": 58,
-      "completion_tokens": 90,
-      "reasoning_tokens": 83,
+      "completion_tokens": 48,
+      "reasoning_tokens": 41,
       "error": null
     },
     {
       "sample_id": "factconsolidation_sh_6k_no58",
       "question": "Who performed Hermione Granger?",
       "gold": "Kylie Minogue",
-      "prediction": "Emma Watson.",
+      "prediction": "Emma Watson",
       "correct": false,
       "prompt_tokens": 56,
-      "completion_tokens": 84,
-      "reasoning_tokens": 80,
+      "completion_tokens": 31,
+      "reasoning_tokens": 28,
       "error": null
     },
     {
@@ -659,52 +659,52 @@
       "prediction": "Basketball",
       "correct": false,
       "prompt_tokens": 58,
-      "completion_tokens": 22,
-      "reasoning_tokens": 18,
+      "completion_tokens": 25,
+      "reasoning_tokens": 21,
       "error": null
     },
     {
       "sample_id": "factconsolidation_sh_6k_no60",
       "question": "What type of music does John McVie play?",
       "gold": "rap rock",
-      "prediction": "Unknown.",
+      "prediction": "Cannot determine from the provided facts.",
       "correct": false,
       "prompt_tokens": 61,
-      "completion_tokens": 83,
-      "reasoning_tokens": 80,
+      "completion_tokens": 115,
+      "reasoning_tokens": 107,
       "error": null
     },
     {
       "sample_id": "factconsolidation_sh_6k_no61",
       "question": "What position does Rogério Ceni play?",
       "gold": "flanker",
-      "prediction": "Goalkeeper",
+      "prediction": "Goalkeeper.",
       "correct": false,
       "prompt_tokens": 59,
-      "completion_tokens": 27,
-      "reasoning_tokens": 23,
+      "completion_tokens": 104,
+      "reasoning_tokens": 99,
       "error": null
     },
     {
       "sample_id": "factconsolidation_sh_6k_no62",
       "question": "Who is the chief executive officer of Twitter?",
       "gold": "Bernard Arnault",
-      "prediction": "Linda Yaccarino",
+      "prediction": "Not enough information.",
       "correct": false,
       "prompt_tokens": 59,
-      "completion_tokens": 192,
-      "reasoning_tokens": 186,
+      "completion_tokens": 141,
+      "reasoning_tokens": 136,
       "error": null
     },
     {
       "sample_id": "factconsolidation_sh_6k_no63",
       "question": "What language does Kylie Minogue speak?",
       "gold": "German",
-      "prediction": "Unknown",
+      "prediction": "Cannot determine from the provided facts.",
       "correct": false,
       "prompt_tokens": 59,
-      "completion_tokens": 106,
-      "reasoning_tokens": 104,
+      "completion_tokens": 147,
+      "reasoning_tokens": 139,
       "error": null
     },
     {
@@ -714,8 +714,8 @@
       "prediction": "Baseball",
       "correct": true,
       "prompt_tokens": 60,
-      "completion_tokens": 21,
-      "reasoning_tokens": 18,
+      "completion_tokens": 50,
+      "reasoning_tokens": 47,
       "error": null
     },
     {
@@ -725,52 +725,52 @@
       "prediction": "American football",
       "correct": false,
       "prompt_tokens": 59,
-      "completion_tokens": 30,
-      "reasoning_tokens": 27,
+      "completion_tokens": 41,
+      "reasoning_tokens": 38,
       "error": null
     },
     {
       "sample_id": "factconsolidation_sh_6k_no66",
       "question": "What kind of work does Stephen McNeil do?",
       "gold": "journalist",
-      "prediction": "No facts were provided.",
+      "prediction": "Politician",
       "correct": false,
       "prompt_tokens": 60,
-      "completion_tokens": 148,
-      "reasoning_tokens": 142,
+      "completion_tokens": 85,
+      "reasoning_tokens": 81,
       "error": null
     },
     {
       "sample_id": "factconsolidation_sh_6k_no67",
       "question": "Who is the employer of Dave Filoni?",
       "gold": "British Broadcasting Corporation",
-      "prediction": "Not enough information.",
+      "prediction": "Lucasfilm",
       "correct": false,
       "prompt_tokens": 59,
-      "completion_tokens": 91,
-      "reasoning_tokens": 86,
+      "completion_tokens": 66,
+      "reasoning_tokens": 62,
       "error": null
     },
     {
       "sample_id": "factconsolidation_sh_6k_no68",
       "question": "Which continent is San Francisco located in?",
       "gold": "North America",
-      "prediction": "North America",
-      "correct": true,
+      "prediction": "Cannot determine from the provided information.",
+      "correct": false,
       "prompt_tokens": 58,
-      "completion_tokens": 22,
-      "reasoning_tokens": 19,
+      "completion_tokens": 112,
+      "reasoning_tokens": 104,
       "error": null
     },
     {
       "sample_id": "factconsolidation_sh_6k_no69",
       "question": "Where was Canadair founded?",
       "gold": "Tucson",
-      "prediction": "Montreal, Quebec, Canada.",
+      "prediction": "Montreal, Quebec, Canada",
       "correct": false,
       "prompt_tokens": 56,
-      "completion_tokens": 124,
-      "reasoning_tokens": 116,
+      "completion_tokens": 120,
+      "reasoning_tokens": 113,
       "error": null
     },
     {
@@ -780,8 +780,8 @@
       "prediction": "Westinghouse",
       "correct": false,
       "prompt_tokens": 59,
-      "completion_tokens": 32,
-      "reasoning_tokens": 28,
+      "completion_tokens": 49,
+      "reasoning_tokens": 45,
       "error": null
     },
     {
@@ -791,8 +791,8 @@
       "prediction": "Japan",
       "correct": true,
       "prompt_tokens": 62,
-      "completion_tokens": 42,
-      "reasoning_tokens": 40,
+      "completion_tokens": 36,
+      "reasoning_tokens": 34,
       "error": null
     },
     {
@@ -802,8 +802,8 @@
       "prediction": "Placekicker",
       "correct": true,
       "prompt_tokens": 57,
-      "completion_tokens": 37,
-      "reasoning_tokens": 33,
+      "completion_tokens": 53,
+      "reasoning_tokens": 49,
       "error": null
     },
     {
@@ -813,8 +813,8 @@
       "prediction": "Cherie Blair",
       "correct": false,
       "prompt_tokens": 57,
-      "completion_tokens": 38,
-      "reasoning_tokens": 34,
+      "completion_tokens": 21,
+      "reasoning_tokens": 17,
       "error": null
     },
     {
@@ -824,8 +824,8 @@
       "prediction": "John Keats",
       "correct": true,
       "prompt_tokens": 59,
-      "completion_tokens": 64,
-      "reasoning_tokens": 60,
+      "completion_tokens": 84,
+      "reasoning_tokens": 80,
       "error": null
     },
     {
@@ -835,8 +835,8 @@
       "prediction": "Oscar Wilde",
       "correct": true,
       "prompt_tokens": 62,
-      "completion_tokens": 18,
-      "reasoning_tokens": 14,
+      "completion_tokens": 52,
+      "reasoning_tokens": 48,
       "error": null
     },
     {
@@ -846,8 +846,8 @@
       "prediction": "Shigeru Ishiba",
       "correct": false,
       "prompt_tokens": 63,
-      "completion_tokens": 125,
-      "reasoning_tokens": 118,
+      "completion_tokens": 116,
+      "reasoning_tokens": 109,
       "error": null
     },
     {
@@ -857,8 +857,8 @@
       "prediction": "Denis Sassou Nguesso",
       "correct": false,
       "prompt_tokens": 63,
-      "completion_tokens": 164,
-      "reasoning_tokens": 156,
+      "completion_tokens": 403,
+      "reasoning_tokens": 395,
       "error": null
     },
     {
@@ -879,8 +879,8 @@
       "prediction": "Prague",
       "correct": true,
       "prompt_tokens": 58,
-      "completion_tokens": 18,
-      "reasoning_tokens": 15,
+      "completion_tokens": 17,
+      "reasoning_tokens": 14,
       "error": null
     },
     {
@@ -890,19 +890,19 @@
       "prediction": "Center",
       "correct": false,
       "prompt_tokens": 57,
-      "completion_tokens": 71,
-      "reasoning_tokens": 69,
+      "completion_tokens": 108,
+      "reasoning_tokens": 106,
       "error": null
     },
     {
       "sample_id": "factconsolidation_sh_6k_no81",
       "question": "What is the name of the current head of state in Soviet Union?",
       "gold": "Elizabeth II",
-      "prediction": "I don’t know based on the provided facts.",
+      "prediction": "There is no current head of state of the Soviet Union; the Soviet Union no longer exists.",
       "correct": false,
       "prompt_tokens": 64,
-      "completion_tokens": 136,
-      "reasoning_tokens": 124,
+      "completion_tokens": 109,
+      "reasoning_tokens": 89,
       "error": null
     },
     {
@@ -912,19 +912,19 @@
       "prediction": "Germany",
       "correct": false,
       "prompt_tokens": 63,
-      "completion_tokens": 49,
-      "reasoning_tokens": 47,
+      "completion_tokens": 33,
+      "reasoning_tokens": 31,
       "error": null
     },
     {
       "sample_id": "factconsolidation_sh_6k_no83",
       "question": "Which religion is Karen Armstrong affiliated with?",
       "gold": "Church of Scotland",
-      "prediction": "I don’t have that information.",
+      "prediction": "Insufficient information.",
       "correct": false,
       "prompt_tokens": 58,
-      "completion_tokens": 118,
-      "reasoning_tokens": 109,
+      "completion_tokens": 67,
+      "reasoning_tokens": 61,
       "error": null
     },
     {
@@ -934,8 +934,8 @@
       "prediction": "Mario Puzo",
       "correct": false,
       "prompt_tokens": 60,
-      "completion_tokens": 29,
-      "reasoning_tokens": 23,
+      "completion_tokens": 43,
+      "reasoning_tokens": 37,
       "error": null
     },
     {
@@ -945,8 +945,8 @@
       "prediction": "Bucharest",
       "correct": false,
       "prompt_tokens": 57,
-      "completion_tokens": 39,
-      "reasoning_tokens": 35,
+      "completion_tokens": 17,
+      "reasoning_tokens": 13,
       "error": null
     },
     {
@@ -956,8 +956,8 @@
       "prediction": "Asia",
       "correct": false,
       "prompt_tokens": 57,
-      "completion_tokens": 16,
-      "reasoning_tokens": 14,
+      "completion_tokens": 20,
+      "reasoning_tokens": 18,
       "error": null
     },
     {
@@ -967,8 +967,8 @@
       "prediction": "Kiev",
       "correct": false,
       "prompt_tokens": 59,
-      "completion_tokens": 64,
-      "reasoning_tokens": 61,
+      "completion_tokens": 32,
+      "reasoning_tokens": 29,
       "error": null
     },
     {
@@ -978,19 +978,19 @@
       "prediction": "Ardashir I",
       "correct": false,
       "prompt_tokens": 57,
-      "completion_tokens": 44,
-      "reasoning_tokens": 38,
+      "completion_tokens": 32,
+      "reasoning_tokens": 26,
       "error": null
     },
     {
       "sample_id": "factconsolidation_sh_6k_no89",
       "question": "Which city did Pedro Pierluisi work in?",
       "gold": "Washington, D.C.",
-      "prediction": "San Juan",
+      "prediction": "Not enough information.",
       "correct": false,
       "prompt_tokens": 60,
-      "completion_tokens": 116,
-      "reasoning_tokens": 113,
+      "completion_tokens": 279,
+      "reasoning_tokens": 274,
       "error": null
     },
     {
@@ -1000,8 +1000,8 @@
       "prediction": "Football",
       "correct": false,
       "prompt_tokens": 59,
-      "completion_tokens": 34,
-      "reasoning_tokens": 32,
+      "completion_tokens": 46,
+      "reasoning_tokens": 44,
       "error": null
     },
     {
@@ -1011,8 +1011,8 @@
       "prediction": "India",
       "correct": false,
       "prompt_tokens": 60,
-      "completion_tokens": 34,
-      "reasoning_tokens": 32,
+      "completion_tokens": 20,
+      "reasoning_tokens": 18,
       "error": null
     },
     {
@@ -1022,8 +1022,8 @@
       "prediction": "David Beckham",
       "correct": true,
       "prompt_tokens": 58,
-      "completion_tokens": 49,
-      "reasoning_tokens": 45,
+      "completion_tokens": 24,
+      "reasoning_tokens": 20,
       "error": null
     },
     {
@@ -1033,8 +1033,8 @@
       "prediction": "France",
       "correct": false,
       "prompt_tokens": 61,
-      "completion_tokens": 29,
-      "reasoning_tokens": 27,
+      "completion_tokens": 27,
+      "reasoning_tokens": 25,
       "error": null
     },
     {
@@ -1044,52 +1044,52 @@
       "prediction": "Robert Jordan",
       "correct": false,
       "prompt_tokens": 59,
-      "completion_tokens": 52,
-      "reasoning_tokens": 49,
+      "completion_tokens": 43,
+      "reasoning_tokens": 40,
       "error": null
     },
     {
       "sample_id": "factconsolidation_sh_6k_no95",
       "question": "What position does Mike D'Antoni play?",
       "gold": "point guard",
-      "prediction": "Point guard",
-      "correct": true,
+      "prediction": "I don’t have that information.",
+      "correct": false,
       "prompt_tokens": 60,
-      "completion_tokens": 45,
-      "reasoning_tokens": 42,
+      "completion_tokens": 131,
+      "reasoning_tokens": 122,
       "error": null
     },
     {
       "sample_id": "factconsolidation_sh_6k_no96",
       "question": "What is the country of citizenship of Colin Irwin?",
       "gold": "Israel",
-      "prediction": "Cannot be determined from the provided facts.",
+      "prediction": "Unknown",
       "correct": false,
       "prompt_tokens": 60,
-      "completion_tokens": 77,
-      "reasoning_tokens": 68,
+      "completion_tokens": 333,
+      "reasoning_tokens": 331,
       "error": null
     },
     {
       "sample_id": "factconsolidation_sh_6k_no97",
       "question": "Who is Walter Chrysler's child?",
       "gold": "Charles Frederick, Duke of Holstein-Gottorp",
-      "prediction": "I don’t know.",
+      "prediction": "Not enough information.",
       "correct": false,
       "prompt_tokens": 58,
-      "completion_tokens": 72,
-      "reasoning_tokens": 65,
+      "completion_tokens": 105,
+      "reasoning_tokens": 100,
       "error": null
     },
     {
       "sample_id": "factconsolidation_sh_6k_no98",
       "question": "Who is Charles Darwin married to?",
       "gold": "Amala Paul",
-      "prediction": "Emma Darwin (née Wedgwood).",
+      "prediction": "Not enough information provided.",
       "correct": false,
       "prompt_tokens": 57,
-      "completion_tokens": 99,
-      "reasoning_tokens": 90,
+      "completion_tokens": 132,
+      "reasoning_tokens": 126,
       "error": null
     },
     {
@@ -1099,8 +1099,8 @@
       "prediction": "Wide receiver",
       "correct": true,
       "prompt_tokens": 58,
-      "completion_tokens": 32,
-      "reasoning_tokens": 28,
+      "completion_tokens": 35,
+      "reasoning_tokens": 31,
       "error": null
     }
   ]
