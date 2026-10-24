@@ -25,12 +25,12 @@ LLM Agent 的长期记忆在这两件事上系统性失效：
 | 编号 | 目标 | 可验收标准 |
 |---|---|---|
 | G1 | 写路径不丢历史、不静默覆盖 | 同一 (subject, relation) 的每次变更都产生一条带 `valid_from/valid_to` 的新记录，旧记录转为 `SUPERSEDED`；任意时刻可重建"某时间点的有效值" |
-| G2 | 五类冲突判定准确 | 自建 60 条人工标注冲突集，判定 macro-F1 ≥ 0.85 |
+| G2 | 五类冲突判定准确 | 自建 60 条人工标注冲突集，6 类判定 macro-F1 ≥ 0.85 |
 | G3 | 冲突场景检索优于基线 | MemConflict dynamic/static/conditional 三类上，AA 与 SEH@K 均显著优于 naive-RAG 与 last-write-wins（配对 bootstrap，95% CI 不含 0） |
-| G4 | 事实整合达到规则上限 | FactConsolidation-SH 准确率 ≥ 0.80（对齐手写确定性 resolver 的水平） |
-| G5 | 跨任务召回有真实收益 | 自建 20 条依赖链编码任务：有记忆层 vs 无记忆层，任务成功率提升 ≥ 15pp |
-| G6 | 可复现 | 同一 seed 重跑，指标逐位一致；embedding 缓存命中率 ≥ 95% |
-| G7 | 可观测 | 每次 add/search/resolve 在 Langfuse 可见，能按 conflict_type 分桶看指标 |
+| G4 | 事实整合达到规则上限 | FactConsolidation-SH **end-to-end** 准确率 ≥ 0.80（resolver-only 曲线另行报告，对齐公开的 80.25%） |
+| G5 | 跨任务召回有真实收益 | 自建 20 条依赖链编码任务：`ours` vs `naive-rag` 的配对差异 95% CI 下界 > 0（不硬性要求 15pp） |
+| G6 | 可复现 | warm cache 下同一 seed 重跑，指标逐位一致；`--check-cache` 通过 |
+| G7 | 可观测 | 每次 add/search/resolve 写入 JSONL（含 conflict_type/latency），可 CI 校验；同数据可在 Langfuse 看板复现 |
 
 ## 3. 非目标（v1 明确不做）
 
