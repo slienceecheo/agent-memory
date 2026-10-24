@@ -1,0 +1,39 @@
+schema: spec-driven
+
+context: |
+  这是一个求职作品集项目：冲突感知的长期记忆层（Conflict-Aware Memory）。
+  核心主张：抽取交给 LLM，但"哪条记忆现在有效"由符号化状态跟踪裁决。
+
+  技术栈：Python 3.12 + uv + pydantic v2 + SQLite(FTS5/sqlite-vec) + pytest + hypothesis。
+  LLM 用 DeepSeek V4.1 Flash（本地 OpenAI 兼容网关，强制 SSE）。
+  Embedding 用阿里云 qwen3.7-text-embedding-flash（1024 维，仅北京端点，必须缓存）。
+
+  产物一律用中文写；代码与标识符用英文。目标平台 Windows/macOS/Linux。
+
+rules:
+  proposal:
+    - 必须写清"本次不做什么"（范围边界），以及为什么这条变更可以独立验收。
+    - 必须给出可测量的验收标准（指标 + 阈值），不要用"能正常工作"这类模糊表述。
+  specs:
+    - 每个 Requirement 至少一个 Scenario，用 WHEN/THEN 描述可观察行为。
+    - 必须覆盖边界：空输入、单条记忆、矛盾事实、并发写入、时间回退。
+    - 涉及冲突判定的 Requirement 必须写明五类冲突（重复/补充/取代/未决矛盾/条件冲突）
+      各自的期望结果。
+  design:
+    - 必须包含 Non-Goals。
+    - 涉及取舍时必须写明被否决的备选方案和否决理由。
+    - 必须说明该设计如何被测量（对应哪个指标）。
+  tasks:
+    - 每条任务带可执行的验证方式（具体命令 + 期望输出），不能只写"实现 X"。
+    - 按 TDD 顺序拆：先写失败测试，再实现。
+    - 单条任务控制在半天以内，超出则继续拆。
+
+operations:
+  apply:
+    guidance:
+      - 遵循 TDD：先跑失败测试，确认红，再写最小实现，确认绿。
+      - 遇到 bug 先 `systematic-debugging` 找根因，不要靠猜改代码。
+      - 任何 embedding / LLM 调用都必须走缓存层，不要在测试里打真实网络。
+  archive:
+    guidance:
+      - 归档前贴出 `openspec validate` 与 pytest 的原始输出。
