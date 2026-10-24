@@ -217,6 +217,35 @@
 - [x] 10.10 清理临时标注副本并加入 `.gitignore`，
       验证：`data/conflict-set/` 只剩 `dev.jsonl` 与 `test.jsonl`
 
+## 11. 独立复核模式（第二标注者的可用性缺陷）
+
+> 起因：`review` 只挑 `proposed` 条目。副本从已标注文件复制而来会继承
+> `confirmed` 状态，第二标注者只被问到剩下那一两条，κ 退化成 n=1。
+
+- [x] 11.1 先写测试：`include_confirmed=True` 时问全部条目并覆盖原标注者；
+      默认模式仍只问 `proposed`（补充标注的行为不能被破坏），
+      验证：`uv run pytest tests/resolver/test_review_all.py -q` 全绿
+- [x] 11.2 实现 `ReviewSession(include_confirmed=...)` 与 `review(...)` 的透传，
+      验证：`uv run pytest tests/resolver/test_review_all.py -q` 全绿
+- [x] 11.3 先写测试：`--all` 必须拒绝作用于主标注文件（`test.jsonl`），
+      只允许副本（`test.bob.jsonl` 这类），`--force` 可显式绕过，
+      验证：主文件被拒时抛 `ValueError` 且消息含"副本"
+- [x] 11.4 实现 `_looks_like_copy()` 文件名判断与 `force` 开关，
+      验证：`echo x | uv run python -m evals.tools.label --split test review
+      --labeler bob --all` 退出码 2
+- [x] 11.5 先写测试：`new-annotator` 一条命令完成"复制 + 重置"，
+      重置 `label_status`/`labeler`/`confirmed_at` 但保留内容；
+      副本已存在时拒绝覆盖，`--force` 可覆盖，
+      验证：`uv run pytest tests/resolver/test_review_all.py -q` 全绿
+- [x] 11.6 实现 `create_annotator_copy()` 与 `new-annotator` 子命令，
+      验证：对 test 跑一次后副本为 20 条全 `proposed`
+- [x] 11.7 端到端验证：主文件用 `--all` 被拒（退出码 2）、
+      副本用 `--all` 可逐条重标 20 条、主文件的 37/19 条确认未被污染，
+      验证：跑完后 `summary` 显示 dev 37/40、test 19/20
+- [x] 11.8 更新 `docs/resolver.md`：说明为什么不能直接 `Copy-Item`、
+      两种模式的区别、`--all` 的安全约束，
+      验证：文档中的命令按原样可执行
+
 ## Workflow follow-up
 
 - 标签人工确认后重跑并更新报告，再归档该变更。

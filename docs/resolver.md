@@ -183,17 +183,46 @@ uv run python -m evals.tools.label --split test summary
 ### 双人标注与 κ
 
 一条场景只有一个 `labeler` 字段，两人标同一份文件会互相覆盖。
-真双人标注必须用**两份副本**：
+真双人标注必须用**副本**，且副本的标签必须先重置：
 
 ```bash
-Copy-Item "data\conflict-set\test.jsonl" "data\conflict-set\test.alice.jsonl"
-Copy-Item "data\conflict-set\test.jsonl" "data\conflict-set\test.bob.jsonl"
+# 一条命令完成"复制 + 重置为全 proposed"
+uv run python -m evals.tools.label --split test new-annotator --name bob
 
-# 两人各自盲标，互不看对方
-uv run python -m evals.tools.label --file data\conflict-set\test.alice.jsonl review --labeler alice
+# 然后 bob 独立盲标（默认模式，此时全部都是 proposed，所以会问全部 20 条）
 uv run python -m evals.tools.label --file data\conflict-set\test.bob.jsonl review --labeler bob
+```
 
-# 算 κ 并列出不一致条目
+**为什么不能直接 `Copy-Item`**：副本会继承主文件的 `confirmed` 状态，
+而 `review` 默认只问未确认条目。第二标注者打开后只会被问到剩下那一两条，
+κ 的样本量退化成没有意义。
+
+`new-annotator` 会重置 `label_status` / `labeler` / `confirmed_at`
+三个字段，内容原样保留。
+
+### 独立复核模式（`--all`）
+
+如果副本已经存在且带有别人的标注，用 `--all` 强制逐条重标：
+
+```bash
+uv run python -m evals.tools.label --file data\conflict-set\test.bob.jsonl `
+    review --labeler bob --all
+```
+
+**安全约束**：`--all` 会覆盖已有标注，所以只允许用在副本文件上
+（文件名形如 `test.bob.jsonl`）。误对主文件 `test.jsonl` 使用会被拒绝
+（退出码 2）。确实要重标主文件必须显式加 `--force`。
+
+两种模式的差别：
+
+| 模式 | 问什么 | 用途 |
+|---|---|---|
+| 默认 | 只问 `proposed` | 自己接着上次标 |
+| `--all` | 问全部并覆盖 | 第二标注者独立复核 |
+
+### 计算 κ
+
+```bash
 uv run python -m evals.tools.label kappa `
     --a-file data\conflict-set\test.alice.jsonl `
     --b-file data\conflict-set\test.bob.jsonl

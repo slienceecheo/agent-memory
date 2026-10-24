@@ -11,6 +11,7 @@ CSV 手工编辑会丢失这个信息，也会让"改了但没记录"变得无�
 from __future__ import annotations
 
 import argparse
+import dataclasses
 import sys
 from collections import Counter
 from collections.abc import Callable, Iterator
@@ -146,21 +147,97 @@ def parse_input(raw: str) -> DecisionKind | None:
         return None
 
 
+def _looks_like_copy(path: Path) -> bool:
+    """判断文件名是否像"标注者副本"（如 `test.bob.jsonl`）。
+
+    主文件是 `test.jsonl` / `dev.jsonl`；副本在中间多一段标注者名字。
+    这个判断刻意保守：宁可要求加 `--force`，也不能因为误判冲掉主标注。
+    """
+    return path.stem.count(".") >= 1
+
+
+def create_annotator_copy(
+    source: Path | str, *, name: str, force: bool = False
+) -> Path:
+    """从主标注文件生成一份全 `proposed` 的标注者副本。
+
+    手工 `Copy-Item` 最容易忘的就是重置标签：副本会继承 `confirmed` 状态，
+    第二标注者打开后只会被问到剩下那一两条，κ 的样本量退化到没有意义。
+
+    参数：
+        source: 主文件（如 `test.jsonl`）
+        name:   标注者名字，用于生成 `test.bob.jsonl`
+        force:  副本已存在时是否覆盖（默认拒绝，避免丢掉别人的标注）
+    """
+    if not name.strip():
+        raise ValueError("name 不能为空：需要标注者名字来命名副本")
+
+    src = Path(source)
+    target = src.with_name(f"{src.stem}.{name.strip()}.jsonl")
+    if target.exists() and not force:
+        raise FileExistsError(f"{target.name} 已存在；如需覆盖请加 --force")
+
+    dataset = load_conflict_set(src)
+    reset = ConflictSet(
+        tuple(
+            dataclasses.replace(
+                case, label_status="proposed", labeler=None, confirmed_at=None
+            )
+            for case in dataset.cases
+        )
+    )
+    save_conflict_set(reset, target)
+    return target
+
+
 class ReviewSession:
     """一次标注会话的状态。
 
     把状态放进对象而不是散在循环里，是为了让"回退"这类跨步行为可测。
+
+    两种模式严格区分：
+
+    - **补充标注**（`include_confirmed=False`）：只问 `proposed`，
+      用于自己接着上次标。
+    - **独立复核**（`include_confirmed=True`）：问全部并覆盖，
+      用于第二标注者。副本从已标注文件复制而来会继承 `confirmed` 状态，
+      若只问 `proposed`，第二标注者只会被问到剩下那一两条，κ 退化成 n=1。
+
+    安全约束：覆盖已有标注只允许发生在**副本文件**上
+    （`test.alice.jsonl` 这类）。误对主文件用会冲掉别人的工作。
     """
 
-    def __init__(self, path: Path | str, *, labeler: str, blind: bool = True) -> None:
+    def __init__(
+        self,
+        path: Path | str,
+        *,
+        labeler: str,
+        blind: bool = True,
+        include_confirmed: bool = False,
+        force: bool = False,
+    ) -> None:
         if not labeler.strip():
             raise ValueError("labeler 不能为空：没有确认者就算不出双人一致性")
         self.path = Path(path)
         self.labeler = labeler.strip()
         self.blind = blind
+
+        if include_confirmed and not force and not _looks_like_copy(self.path):
+            raise ValueError(
+                f"{self.path.name} 看起来是主标注文件，不是副本。"
+                "--all 会覆盖已有标注，只允许在副本（如 test.bob.jsonl）上使用。"
+                "确实要重标主文件请显式加 --force。"
+            )
+
+        self._include_confirmed = include_confirmed
         dataset = load_conflict_set(self.path)
-        # 只处理尚未确认的条目，保持文件中的原始顺序
-        self._pending = [case for case in dataset.cases if case.label_status != "confirmed"]
+        if include_confirmed:
+            self._pending = list(dataset.cases)
+        else:
+            # 只处理尚未确认的条目，保持文件中的原始顺序
+            self._pending = [
+                case for case in dataset.cases if case.label_status != "confirmed"
+            ]
         self._position = 0
         self._history: list[tuple[str, str]] = []
 
@@ -244,13 +321,23 @@ def review(
     inputs: Iterator[str],
     output: Callable[[str], None],
     blind: bool = True,
+    include_confirmed: bool = False,
+    force: bool = False,
 ) -> ReviewSession:
     """逐条交互式标注。
 
     `inputs` 与 `output` 通过参数注入，使整个流程可在测试中驱动，
     不必依赖真实 stdin/stdout。
+
+    `include_confirmed=True` 时问全部并覆盖，用于第二标注者的独立复核。
     """
-    session = ReviewSession(path, labeler=labeler, blind=blind)
+    session = ReviewSession(
+        path,
+        labeler=labeler,
+        blind=blind,
+        include_confirmed=include_confirmed,
+        force=force,
+    )
 
     if session.current() is None:
         output("没有待确认的条目。")
@@ -447,12 +534,35 @@ def _cmd_summary(args: argparse.Namespace) -> int:
 
 def _cmd_review(args: argparse.Namespace) -> int:
     path = _dataset_path(args.split, args.file)
-    review(
-        path,
-        labeler=args.labeler,
-        inputs=iter(lambda: input(), "q"),
-        output=print,
-        blind=not args.show_expected,
+    try:
+        review(
+            path,
+            labeler=args.labeler,
+            inputs=iter(lambda: input(), "q"),
+            output=print,
+            blind=not args.show_expected,
+            include_confirmed=args.all,
+            force=args.force,
+        )
+    except (ValueError, FileExistsError) as exc:
+        print(str(exc), file=sys.stderr)
+        return 2
+    return 0
+
+
+def _cmd_new_annotator(args: argparse.Namespace) -> int:
+    source = _dataset_path(args.split)
+    try:
+        target = create_annotator_copy(source, name=args.name, force=args.force)
+    except (ValueError, FileExistsError) as exc:
+        print(str(exc), file=sys.stderr)
+        return 2
+    print(f"已创建副本：{target}")
+    print(f"全部 {len(load_conflict_set(target))} 条已重置为 proposed。")
+    print("下一步：")
+    print(
+        f"  uv run python -m evals.tools.label --file {target} "
+        f"review --labeler {args.name}"
     )
     return 0
 
@@ -475,7 +585,26 @@ def main(argv: list[str] | None = None) -> int:
         action="store_true",
         help="显示提案标签；默认不显示，避免被带偏",
     )
+    review_parser.add_argument(
+        "--all",
+        action="store_true",
+        help="问全部条目并覆盖已有标签（第二标注者独立复核用）",
+    )
+    review_parser.add_argument(
+        "--force",
+        action="store_true",
+        help="允许 --all 作用于主标注文件（危险，会覆盖别人的标注）",
+    )
     review_parser.set_defaults(func=_cmd_review)
+
+    new_annotator_parser = sub.add_parser(
+        "new-annotator", help="生成一份全 proposed 的标注者副本"
+    )
+    new_annotator_parser.add_argument("--name", required=True, help="标注者名字")
+    new_annotator_parser.add_argument(
+        "--force", action="store_true", help="副本已存在时覆盖"
+    )
+    new_annotator_parser.set_defaults(func=_cmd_new_annotator)
 
     list_parser = sub.add_parser("list", help="列出场景")
     list_parser.add_argument("--status", choices=["proposed", "confirmed"], default=None)
