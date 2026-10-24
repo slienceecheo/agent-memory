@@ -175,6 +175,76 @@ def test_rule4_old_contains_new_is_not_merge() -> None:
     assert decision.kind is not DecisionKind.MERGE
 
 
+@pytest.mark.parametrize(
+    ("candidate_value", "existing_value"),
+    [
+        ("不吃牛肉", "吃牛肉"),
+        ("不能吃海鲜", "能吃海鲜"),
+        ("不用 ruff", "用 ruff"),
+        ("没有 workspace", "workspace"),
+        ("cannot use pnpm", "use pnpm"),
+    ],
+)
+def test_rule4_negation_is_never_merge(
+    candidate_value: str, existing_value: str
+) -> None:
+    """中文加一个"不"字就把肯定变否定，但字符串包含关系仍然成立。
+
+    若不排除否定词，"吃牛肉" 是 "不吃牛肉" 的子串，会被判成"补充"，
+    语义上却是完全相反。这是最容易静默出错的一类。
+    """
+    decision = decide_by_rules(
+        _candidate(value=candidate_value),
+        existing=_existing(value=existing_value),
+    )
+
+    assert decision.kind is not DecisionKind.MERGE, (
+        f"{existing_value!r} → {candidate_value!r} 被判成 MERGE，"
+        "但两者否定状态不同，语义已反转"
+    )
+
+
+def test_rule4_same_negation_can_still_merge() -> None:
+    """两侧都不带否定时，正常的补充关系仍然成立。"""
+    decision = decide_by_rules(
+        _candidate(value="不吃牛肉 只吃鸡肉"),
+        existing=_existing(value="不吃牛肉"),
+    )
+
+    assert decision.kind is DecisionKind.MERGE
+
+
+def test_rule4_mid_value_negation_does_not_block_merge() -> None:
+    """否定词出现在值的**中间**时不是否定，而是补充说明。
+
+    这是修正否定词检测时踩的坑：最初用"前 N 个字符里包含否定词"，
+    导致 `"张三 周三不在"` 被判成否定，把 MERGE 错判成 SUPERSEDE。
+    正确做法是只检查开头。
+    """
+    decision = decide_by_rules(
+        _candidate(value="张三 周三不在"),
+        existing=_existing(value="张三"),
+    )
+
+    assert decision.kind is DecisionKind.MERGE, (
+        "「周三不在」是对值班安排的补充，不是对「张三是值班人」的否定"
+    )
+
+
+def test_rule4_mid_value_negation_with_other_markers() -> None:
+    """同类情形：否定词出现在中间的多条变体都不该阻断合并。"""
+    cases = [
+        ("k8s 不用 helm", "k8s"),
+        ("pnpm 不锁版本", "pnpm"),
+        ("pytest 不要覆盖率", "pytest"),
+    ]
+    for candidate, existing in cases:
+        decision = decide_by_rules(
+            _candidate(value=candidate), existing=_existing(value=existing)
+        )
+        assert decision.kind is DecisionKind.MERGE, candidate
+
+
 # ---------- 规则 5：CONFLICT（权威更低） ----------
 
 

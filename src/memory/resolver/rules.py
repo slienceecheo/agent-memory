@@ -109,15 +109,50 @@ def _norm_condition(condition: str | None) -> str | None:
     return trimmed or None
 
 
+_NEGATION_PREFIXES: tuple[str, ...] = (
+    "不",
+    "没",
+    "无",
+    "非",
+    "别",
+    "未",
+    "cannot",
+    "can't",
+    "can not",
+    "doesn't",
+    "don't",
+    "not ",
+    "no ",
+    "without ",
+)
+
+
+def _is_negated(value: str) -> bool:
+    """判断值是否**以否定词开头**。
+
+    只检查开头，不做全文匹配：`"张三 周三不在"` 里的"不"出现在中间，
+    它是补充说明而不是对整条的否定。若全文匹配，这条会被误判成否定，
+    进而把"补充"错判成"取代"。
+    """
+    head = value.casefold().strip()
+    return any(head.startswith(marker) for marker in _NEGATION_PREFIXES)
+
+
 def _contains(candidate_value: str, existing_value: str) -> bool:
     """新值是否包含旧值的信息（旧值仍成立，只是不完整）。
 
     只做两种判定：字符串包含与词集包含。不做词形还原——
     那引入的误判比解决的问题多。
+
+    **否定词例外**：中文里加一个"不"字就把肯定变否定，
+    但字符串包含关系仍然成立（"吃牛肉" 是 "不吃牛肉" 的子串）。
+    若两侧否定状态不同，绝不能判为"补充"——那是语义反转，不是信息增加。
     """
     new = candidate_value.casefold().strip()
     old = existing_value.casefold().strip()
     if not new or not old or new == old:
+        return False
+    if _is_negated(new) != _is_negated(old):
         return False
     if old in new:
         return True

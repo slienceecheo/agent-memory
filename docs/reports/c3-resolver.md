@@ -3,33 +3,44 @@
 > 生成日期：2026-10-25
 > 场景集：60 条（dev 40 / test 20），六类均衡
 > 模型：DeepSeek V4.1 Flash（本地网关，强制 SSE，响应缓存）
-> 状态：**标签全部为 `proposed`，尚未人工确认（60/60 待确认）**
+> 状态：**56/60 已人工确认，4 条 CONFLICT 修正后待重新确认**
 
 ## 标签确认状态（验收前置条件）
 
 ```
 $ uv run python -m evals.tools.label --split dev summary
-dev: 40 条，已确认 0 条
+dev.jsonl: 40 条，已确认 37 条
 
 $ uv run python -m evals.tools.label --split test summary
-test: 20 条，已确认 0 条
+test.jsonl: 20 条，已确认 19 条
 ```
 
-**D6（macro-F1 ≥ 0.85）目前不成立**，因为没有任何标签被人工确认。
-下面的数字全部是"在机器提议标签上的参考值"，不能作为验收依据。
+待确认的 4 条全部是 CONFLICT 类，原因见下一节。
 
-确认命令：
+**D6（macro-F1 ≥ 0.85）目前仍不成立**：CONFLICT 类只剩 5 条已确认样本，
+不足以支撑该类的 F1 结论。下面的数字全部是"在机器提议标签上的参考值"。
 
-```bash
-uv run python -m evals.tools.label --split test confirm \
-    --id test-sup-01 --label SUPERSEDE --labeler <name>
-```
+## 修正：4 条 CONFLICT 配对不成立
 
-全部确认后重跑：
+标注过程中发现 9 条 CONFLICT 里有 4 条**不满足 CONFLICT 的前提**
+（同一属性、同一对象、同一取值槽位上的两个竞争值）：
 
-```bash
-uv run python -m evals.run_conflict --split test
-```
+| id | 原配对 | 问题 | 修正后 |
+|---|---|---|---|
+| `dev-conf-01` | 喜欢花生酱 / 对花生过敏 | 偏好 vs 医学限制，维度不同 | 能吃花生 / 对花生过敏 |
+| `dev-conf-02` | 能接受海鲜 / 对海鲜过敏 | "能接受"语义模糊，不构成互斥 | 不能吃海鲜 / 能吃海鲜 |
+| `dev-conf-05` | 阿里云 / k8s | 云厂商 vs 编排平台，可同时成立 | 阿里云 / AWS |
+| `test-conf-01` | 不吃牛肉 / 对乳制品过敏 | 同类不同对象，可并存 | 不吃牛肉 / 吃牛肉 |
+
+**根因**：生成 CONFLICT 时用的是"把 candidate 的 authority 调低"这个语法操作，
+没有检查两个值在语义上是否互斥。`lower_authority` 规则会忠实地把它们判成
+CONFLICT，所以**这个错误不会让任何测试失败**。
+
+**采取修正而非删除**：删除后 dev 只剩 3 条、test 剩 2 条 CONFLICT，
+每类 2~3 条的 F1 方差会大到没有意义。
+
+一个值得记录的事实：**这 4 条正是标注时被跳过的条目**。dev 轮的目的就是
+校准标准，它在起作用。
 
 ## 0. 先说结论：这次的 100% 不能用来证明什么
 
@@ -106,7 +117,7 @@ SUPERSEDE 4、BRANCH 4、CONFLICT 3）。这说明**规则没有系统性偏向�
 
 ## 3. 修掉的真实缺陷（这些与标签无关）
 
-实现过程中发现并修复了四个会导致系统错误的问题：
+实现过程中发现并修复了**五个**会导致系统错误的问题：
 
 | 缺陷 | 后果 | 修复 |
 |---|---|---|
@@ -114,26 +125,40 @@ SUPERSEDE 4、BRANCH 4、CONFLICT 3）。这说明**规则没有系统性偏向�
 | `_find_existing` 只按精确 condition 查找 | 带条件的候选看不到同键其他分支，误判为 ADD | 增加 `active_all()`，按"同条件 → 无条件 → 任意条件"三级回退 |
 | `resolve_conflict` 用胜者的 valid_from 关闭败者 | 胜者原本是 CONFLICTED 时会产生零长度区间 | 关闭时刻取两者起点的较大值，并把胜者起点推进到关闭之后 |
 | 评测复用同一个库 | 场景互相污染，第二条 ADD 撞上第一条的 ACTIVE | 每条场景独立临时库 |
+| **否定词被误判成"补充"** | `"吃牛肉"` 是 `"不吃牛肉"` 的子串，规则 4 把语义反转判成 MERGE | 检测值的**开头**是否带否定词；两侧否定状态不同则绝不判 MERGE |
 
-最后一条尤其重要：**评估隔离是前提，不是优化**。共享库时"ADD 场景"
-会在第三条上失败，而失败会被误读成"判定错误"。
+### 第五个缺陷的修复过程本身值得记录
+
+第一次修复用了"前 8 个字符里包含否定词"，结果引入了新回归：
+`"张三 周三不在"` 中"不"在中间，被误判成否定，把 MERGE 错判成 SUPERSEDE，
+dev 准确率从 100% 掉到 97.5%。
+
+**是评测把这个回归抓出来的**，不是代码审查。修正为只检查开头后恢复 100%。
+这个坑现在有专门的回归测试（`test_rule4_mid_value_negation_does_not_block_merge`）。
+
 
 ## 4. 要得出可信结论，需要做什么
 
 按重要性排序：
 
-1. **人工确认 60 条标签**（当前全部 `proposed`）。
-   这是唯一能让 macro-F1 有意义的动作。确认命令：
+1. ~~**人工确认 60 条标签**~~ **已完成 56/60**。
+   剩余的 4 条是刚修正的 CONFLICT 配对，需要重新确认：
    ```
-   uv run python -m evals.tools.label --split test confirm \
-       --id test-sup-01 --label SUPERSEDE --labeler <name>
+   uv run python -m evals.tools.label --split dev review --labeler <name>
+   uv run python -m evals.tools.label --split test review --labeler <name>
    ```
-   全部确认后跑 `uv run python -m evals.run_conflict --split test`。
-2. **引入第二标注者并计算 κ**。
+   交互式模式默认盲标，只显示尚未确认的条目。
+2. **引入第二标注者并计算 κ**（未开始）。
    一个人确认的标签仍有主观性；κ 能暴露"两个人的判定口径是否一致"。
-3. **扩充场景集的来源**。当前 60 条全部出自我一人。
+   ```bash
+   Copy-Item "data\conflict-set\test.jsonl" "data\conflict-set\test.alice.jsonl"
+   uv run python -m evals.tools.label --file data\conflict-set\test.alice.jsonl review --labeler alice
+   uv run python -m evals.tools.label kappa --a-file ...alice.jsonl --b-file ...bob.jsonl
+   ```
+3. **扩充场景集的来源**（未开始）。当前 60 条全部出自我一人。
    应该从真实对话日志里采样，或者请第二个人独立写一批场景。
-4. **让模型成为决定性因素**。构造一批"文本不含变更标记、且判定结果
+   本次 CONFLICT 的 4 条错误正是"自写自测"的典型代价。
+4. **让模型成为决定性因素**（未开始）。构造一批"文本不含变更标记、且判定结果
    确实取决于是否新状态"的场景，才能测出 `--no-llm` 的真实差距。
 
 ## 5. 已锁定的实现契约（与标签无关，可独立信任）
@@ -149,7 +174,13 @@ SUPERSEDE 4、BRANCH 4、CONFLICT 3）。这说明**规则没有系统性偏向�
 | 归一化不合并不同主体 | `test_normalize.py` |
 | 稀有类失败会拉低 macro-F1 | `test_classification_metrics.py` |
 | 无样本类别不计入分母 | `test_classification_metrics.py` |
-| κ 完全相反时为负而非 0 | `test_kappa.py` |
+| κ 完全相反时为负而非 0，且为多类别口径 | `test_kappa.py` |
+| 否定词翻转不判为补充 | `test_rules.py`（5 条变体） |
+| 值中间的否定词不阻断合并 | `test_rules.py`（回归） |
+| CONFLICT 配对不会被规则判成 MERGE | `test_report_consistency.py` |
+| 交互式标注默认盲标 | `test_label_review.py` |
+| 双人 κ 用 expected 而非 labeler | `test_kappa_files.py` |
+| 修场景内容不丢已确认标签 | `test_preserve_labels.py` |
 
 ## 6. 原始结果
 

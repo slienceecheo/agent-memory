@@ -95,13 +95,75 @@ def test_llm_call_count_is_seventeen() -> None:
     assert llm.calls == 17, f"模型调用数实际为 {llm.calls}，报告写的是 17"
 
 
-def test_all_labels_are_still_proposed() -> None:
-    """若有人确认了标签，报告第 0 节的"尚未确认"声明必须更新。"""
-    dataset = load_conflict_set(ROOT / "data" / "conflict-set" / "test.jsonl")
+def test_label_confirmation_progress_matches_report() -> None:
+    """报告声称 56/60 已确认。若进度变了，报告需要更新。"""
+    dev = load_conflict_set(ROOT / "data" / "conflict-set" / "dev.jsonl")
+    test = load_conflict_set(ROOT / "data" / "conflict-set" / "test.jsonl")
 
-    assert len(dataset.confirmed()) == 0, (
-        "已有标签被确认，报告开头的状态声明需要更新，并重跑评测"
+    confirmed = len(dev.confirmed()) + len(test.confirmed())
+
+    assert confirmed == 56, (
+        f"已确认数实际为 {confirmed}，报告写的是 56。"
+        "若刚确认完剩余条目，请更新报告并重跑评测。"
     )
+
+
+def test_the_four_repaired_cases_are_still_pending() -> None:
+    """修正过的 4 条必须重新确认，不能沿用旧标签。"""
+    pending = {"dev-conf-01", "dev-conf-02", "dev-conf-05", "test-conf-01"}
+    for split in ("dev", "test"):
+        dataset = load_conflict_set(ROOT / "data" / "conflict-set" / f"{split}.jsonl")
+        for case in dataset.cases:
+            if case.id in pending:
+                assert case.label_status == "proposed", (
+                    f"{case.id} 已修正内容，必须重新人工确认"
+                )
+
+
+def test_conflict_pairs_are_not_merge_candidates() -> None:
+    """CONFLICT 的一对值不能被规则判成 MERGE。
+
+    注意不能简单断言"两个值互不为子串"：中文里否定词会让短串成为长串的子串
+    （"能吃海鲜" 是 "不能吃海鲜" 的子串），但语义上它们是互斥的。
+    正确的检查是**跑一遍规则**，确认它不是 MERGE。
+    """
+    from memory.resolver.rules import Candidate, ExistingSnapshot, decide_by_rules
+
+    for split in ("dev", "test"):
+        dataset = load_conflict_set(ROOT / "data" / "conflict-set" / f"{split}.jsonl")
+        for case in dataset.cases:
+            if case.expected.value != "CONFLICT":
+                continue
+            decision = decide_by_rules(
+                Candidate(
+                    subject=case.subject,
+                    relation=case.relation,
+                    value=case.candidate_value,
+                    condition=case.condition,
+                    authority=case.authority,  # type: ignore[arg-type]
+                ),
+                existing=ExistingSnapshot(
+                    id="seed",
+                    subject=case.subject,
+                    relation=case.relation,
+                    value=case.existing_value or "",
+                    condition=case.existing_condition,
+                ),
+            )
+            assert decision.kind.value == "CONFLICT", (
+                f"{case.id} 被判成 {decision.kind.value}（规则 {decision.rule}），"
+                "不是 CONFLICT"
+            )
+
+
+def test_report_documents_the_conflict_repair() -> None:
+    """修正记录必须留在报告与实现文档里，否则下次还会犯同样的错。"""
+    report = REPORT.read_text(encoding="utf-8")
+    design_doc = (ROOT / "docs" / "resolver.md").read_text(encoding="utf-8")
+
+    for doc in (report, design_doc):
+        assert "dev-conf-01" in doc
+        assert "互斥" in doc
 
 
 def test_report_states_the_caveat() -> None:
@@ -110,7 +172,7 @@ def test_report_states_the_caveat() -> None:
 
     assert "不能用来证明什么" in text
     assert "循环论证" in text
-    assert "proposed" in text
+    assert "proposed" in text or "待重新确认" in text
 
 
 def test_normalized_false_is_zero_after_alias_fix() -> None:

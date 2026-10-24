@@ -72,11 +72,11 @@ DEV: list[Case] = [
     ("dev-branch-06", "前端目录用 prettier", _PROJ, "code_style", "prettier", "ruff", "BRANCH", "frontend", "backend", "user_direct", "目录不同"),
 
     # ---- CONFLICT（权威不足或无法裁决）6 条 ----
-    ("dev-conf-01", "客户喜欢花生酱饼干", "user:alice", "dietary_restriction", "喜欢花生酱", "对花生过敏", "CONFLICT", None, None, "third_party", "工单备注 vs 用户自述"),
-    ("dev-conf-02", "工单里说客户能接受海鲜", "user:alice", "dietary_restriction", "能接受海鲜", "对海鲜过敏", "CONFLICT", None, None, "third_party", "工单备注 vs 用户自述"),
+    ("dev-conf-01", "客户吃花生会过敏", "user:alice", "dietary_restriction", "对花生过敏", "能吃花生", "CONFLICT", None, None, "third_party", "工单备注 vs 用户自述"),
+    ("dev-conf-02", "工单里说客户能吃海鲜", "user:alice", "dietary_restriction", "能吃海鲜", "不能吃海鲜", "CONFLICT", None, None, "third_party", "工单备注 vs 用户自述"),
     ("dev-conf-03", "用的应该是 yarn 吧", _PROJ, _PM, "yarn", "pnpm", "CONFLICT", None, None, "system_inferred", "系统推断 vs 用户自述"),
     ("dev-conf-04", "有人说测试命令是 jest", _PROJ, "test_command", "jest", "pytest", "CONFLICT", None, None, "third_party", "他人转述"),
-    ("dev-conf-05", "可能部署在阿里云", _PROJ, "deploy_target", "阿里云", "k8s", "CONFLICT", None, None, "system_inferred", "不确定的推断"),
+    ("dev-conf-05", "可能部署在阿里云", _PROJ, "deploy_target", "阿里云", "AWS", "CONFLICT", None, None, "system_inferred", "不确定的推断"),
     ("dev-conf-06", "外部审计说默认分支是 develop", _PROJ, "default_branch", "develop", "main", "CONFLICT", None, None, "third_party", "外部来源"),
 ]
 
@@ -104,7 +104,7 @@ TEST: list[Case] = [
     ("test-branch-03", "重构时用 mypy strict", _PROJ, "code_style", "mypy strict", "ruff", "BRANCH", "refactor", "feature", "user_direct", ""),
     ("test-branch-04", "晚上值班找小李", _PROJ, "oncall_owner", "小李", "张三", "BRANCH", "night", "day", "user_direct", ""),
     # CONFLICT 3
-    ("test-conf-01", "客户助理说他不吃牛肉", "user:bob", "dietary_restriction", "不吃牛肉", "对乳制品过敏", "CONFLICT", None, None, "third_party", ""),
+    ("test-conf-01", "客户助理说他不吃牛肉", "user:bob", "dietary_restriction", "不吃牛肉", "吃牛肉", "CONFLICT", None, None, "third_party", ""),
     ("test-conf-02", "看起来用的是 deno", "project:new", _PM, "deno", "bun", "CONFLICT", None, None, "system_inferred", ""),
     ("test-conf-03", "转述说默认分支是 master", "project:new", "default_branch", "master", "main", "CONFLICT", None, None, "third_party", ""),
 ]

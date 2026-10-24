@@ -175,6 +175,48 @@
       回退语义、双人副本流程、κ 阈值表），
       验证：文档中的命令按原样可执行
 
+## 10. 场景集修正（标注时发现的真实错误）
+
+> 起因：人工标注时跳过 4 条，核对后确认它们的配对不满足 CONFLICT 的前提
+> （同一属性、同一对象、同一取值槽位上的两个竞争值）。
+
+- [x] 10.1 定位并分析 4 条无效 CONFLICT 配对：
+      `dev-conf-01`（偏好 vs 医学限制）、`dev-conf-02`（"能接受"语义模糊）、
+      `dev-conf-05`（云厂商 vs 编排平台）、`test-conf-01`（同类不同对象），
+      验证：报告中逐条列出原配对、问题类型与修正后的配对
+- [x] 10.2 修正 4 条场景内容（**修而不删**——删掉后每类只剩 2~3 条，
+      F1 方差会大到没有意义），
+      验证：`uv run python -m evals.tools.build_conflict_set` 后
+      4 条的新配对在语义上确实互斥
+- [x] 10.3 先写测试：标签迁移脚本只迁移 `confirmed` 条目的
+      `expected / labeler / confirmed_at` 三个字段，
+      内容字段以新文件为准（防止把修好的内容覆盖回去），
+      且报告旧文件里已不存在的 id，
+      验证：`uv run pytest tests/resolver/test_preserve_labels.py -q` 全绿
+- [x] 10.4 实现 `evals/tools/preserve_labels.py` 并执行：
+      37 条 dev + 19 条 test 的已确认标签成功迁移，4 条修正项保持 `proposed`，
+      验证：`label summary` 显示 dev 37/40、test 19/20
+- [x] 10.5 先写测试：CONFLICT 配对跑一遍规则后必须判成 CONFLICT，
+      不得被判成 MERGE（**不能用"两个值互不为子串"来断言**——
+      中文否定词会让短串成为长串的子串），
+      验证：`uv run pytest tests/resolver/test_report_consistency.py -q` 全绿
+- [x] 10.6 修复测试暴露的真缺陷：`"吃牛肉"` 是 `"不吃牛肉"` 的子串，
+      规则 4 把语义反转判成了 MERGE。改为检测值的**开头**是否带否定词，
+      两侧否定状态不同则绝不判 MERGE，
+      验证：`uv run pytest tests/resolver/test_rules.py -q` 全绿（含 5 条否定变体）
+- [x] 10.7 记录并修复第一次修复引入的回归：用"前 8 字符包含否定词"会让
+      `"张三 周三不在"` 被误判成否定，dev 准确率掉到 97.5%；
+      改为只检查开头后恢复 100%，并补回归测试，
+      验证：`test_rule4_mid_value_negation_does_not_block_merge` 通过
+- [x] 10.8 把 CONFLICT 的构造纪律写进 `docs/resolver.md`
+      （判定前提、三类典型错误、为什么测试抓不到、本次修正记录），
+      验证：报告中同时出现"互斥"与 `dev-conf-01`
+- [x] 10.9 更新报告：标签进度改为 56/60、新增修正章节、
+      待办列表勾掉第 1 项，
+      验证：一致性测试的进度断言通过
+- [x] 10.10 清理临时标注副本并加入 `.gitignore`，
+      验证：`data/conflict-set/` 只剩 `dev.jsonl` 与 `test.jsonl`
+
 ## Workflow follow-up
 
 - 标签人工确认后重跑并更新报告，再归档该变更。

@@ -66,67 +66,11 @@
   },
   "per_case": [
     {
-      "id": "dev-noop-01",
-      "expected": "NOOP",
-      "predicted": "NOOP",
-      "correct": true,
-      "label_status": "proposed",
-      "normalized": true
-    },
-    {
-      "id": "dev-noop-02",
-      "expected": "NOOP",
-      "predicted": "NOOP",
-      "correct": true,
-      "label_status": "proposed",
-      "normalized": true
-    },
-    {
-      "id": "dev-noop-03",
-      "expected": "NOOP",
-      "predicted": "NOOP",
-      "correct": true,
-      "label_status": "proposed",
-      "normalized": true
-    },
-    {
-      "id": "dev-noop-04",
-      "expected": "NOOP",
-      "predicted": "NOOP",
-      "correct": true,
-      "label_status": "proposed",
-      "normalized": true
-    },
-    {
-      "id": "dev-noop-05",
-      "expected": "NOOP",
-      "predicted": "NOOP",
-      "correct": true,
-      "label_status": "proposed",
-      "normalized": true
-    },
-    {
-      "id": "dev-noop-06",
-      "expected": "NOOP",
-      "predicted": "NOOP",
-      "correct": true,
-      "label_status": "proposed",
-      "normalized": true
-    },
-    {
-      "id": "dev-noop-07",
-      "expected": "NOOP",
-      "predicted": "NOOP",
-      "correct": true,
-      "label_status": "proposed",
-      "normalized": true
-    },
-    {
       "id": "dev-add-01",
       "expected": "ADD",
       "predicted": "ADD",
       "correct": true,
-      "label_status": "proposed",
+      "label_status": "confirmed",
       "normalized": true
     },
     {
@@ -134,7 +78,7 @@
       "expected": "ADD",
       "predicted": "ADD",
       "correct": true,
-      "label_status": "proposed",
+      "label_status": "confirmed",
       "normalized": true
     },
     {
@@ -142,7 +86,7 @@
       "expected": "ADD",
       "predicted": "ADD",
       "correct": true,
-      "label_status": "proposed",
+      "label_status": "confirmed",
       "normalized": true
     },
     {
@@ -150,7 +94,7 @@
       "expected": "ADD",
       "predicted": "ADD",
       "correct": true,
-      "label_status": "proposed",
+      "label_status": "confirmed",
       "normalized": true
     },
     {
@@ -158,7 +102,7 @@
       "expected": "ADD",
       "predicted": "ADD",
       "correct": true,
-      "label_status": "proposed",
+      "label_status": "confirmed",
       "normalized": true
     },
     {
@@ -166,7 +110,7 @@
       "expected": "ADD",
       "predicted": "ADD",
       "correct": true,
-      "label_status": "proposed",
+      "label_status": "confirmed",
       "normalized": true
     },
     {
@@ -174,119 +118,7 @@
       "expected": "ADD",
       "predicted": "ADD",
       "correct": true,
-      "label_status": "proposed",
-      "normalized": true
-    },
-    {
-      "id": "dev-merge-01",
-      "expected": "MERGE",
-      "predicted": "MERGE",
-      "correct": true,
-      "label_status": "proposed",
-      "normalized": true
-    },
-    {
-      "id": "dev-merge-02",
-      "expected": "MERGE",
-      "predicted": "MERGE",
-      "correct": true,
-      "label_status": "proposed",
-      "normalized": true
-    },
-    {
-      "id": "dev-merge-03",
-      "expected": "MERGE",
-      "predicted": "MERGE",
-      "correct": true,
-      "label_status": "proposed",
-      "normalized": true
-    },
-    {
-      "id": "dev-merge-04",
-      "expected": "MERGE",
-      "predicted": "MERGE",
-      "correct": true,
-      "label_status": "proposed",
-      "normalized": true
-    },
-    {
-      "id": "dev-merge-05",
-      "expected": "MERGE",
-      "predicted": "MERGE",
-      "correct": true,
-      "label_status": "proposed",
-      "normalized": true
-    },
-    {
-      "id": "dev-merge-06",
-      "expected": "MERGE",
-      "predicted": "MERGE",
-      "correct": true,
-      "label_status": "proposed",
-      "normalized": true
-    },
-    {
-      "id": "dev-merge-07",
-      "expected": "MERGE",
-      "predicted": "MERGE",
-      "correct": true,
-      "label_status": "proposed",
-      "normalized": true
-    },
-    {
-      "id": "dev-sup-01",
-      "expected": "SUPERSEDE",
-      "predicted": "SUPERSEDE",
-      "correct": true,
-      "label_status": "proposed",
-      "normalized": true
-    },
-    {
-      "id": "dev-sup-02",
-      "expected": "SUPERSEDE",
-      "predicted": "SUPERSEDE",
-      "correct": true,
-      "label_status": "proposed",
-      "normalized": true
-    },
-    {
-      "id": "dev-sup-03",
-      "expected": "SUPERSEDE",
-      "predicted": "SUPERSEDE",
-      "correct": true,
-      "label_status": "proposed",
-      "normalized": true
-    },
-    {
-      "id": "dev-sup-04",
-      "expected": "SUPERSEDE",
-      "predicted": "SUPERSEDE",
-      "correct": true,
-      "label_status": "proposed",
-      "normalized": true
-    },
-    {
-      "id": "dev-sup-05",
-      "expected": "SUPERSEDE",
-      "predicted": "SUPERSEDE",
-      "correct": true,
-      "label_status": "proposed",
-      "normalized": true
-    },
-    {
-      "id": "dev-sup-06",
-      "expected": "SUPERSEDE",
-      "predicted": "SUPERSEDE",
-      "correct": true,
-      "label_status": "proposed",
-      "normalized": true
-    },
-    {
-      "id": "dev-sup-07",
-      "expected": "SUPERSEDE",
-      "predicted": "SUPERSEDE",
-      "correct": true,
-      "label_status": "proposed",
+      "label_status": "confirmed",
       "normalized": true
     },
     {
@@ -294,7 +126,7 @@
       "expected": "BRANCH",
       "predicted": "BRANCH",
       "correct": true,
-      "label_status": "proposed",
+      "label_status": "confirmed",
       "normalized": true
     },
     {
@@ -302,7 +134,7 @@
       "expected": "BRANCH",
       "predicted": "BRANCH",
       "correct": true,
-      "label_status": "proposed",
+      "label_status": "confirmed",
       "normalized": true
     },
     {
@@ -310,7 +142,7 @@
       "expected": "BRANCH",
       "predicted": "BRANCH",
       "correct": true,
-      "label_status": "proposed",
+      "label_status": "confirmed",
       "normalized": true
     },
     {
@@ -318,7 +150,7 @@
       "expected": "BRANCH",
       "predicted": "BRANCH",
       "correct": true,
-      "label_status": "proposed",
+      "label_status": "confirmed",
       "normalized": true
     },
     {
@@ -326,7 +158,7 @@
       "expected": "BRANCH",
       "predicted": "BRANCH",
       "correct": true,
-      "label_status": "proposed",
+      "label_status": "confirmed",
       "normalized": true
     },
     {
@@ -334,7 +166,7 @@
       "expected": "BRANCH",
       "predicted": "BRANCH",
       "correct": true,
-      "label_status": "proposed",
+      "label_status": "confirmed",
       "normalized": true
     },
     {
@@ -358,7 +190,7 @@
       "expected": "CONFLICT",
       "predicted": "CONFLICT",
       "correct": true,
-      "label_status": "proposed",
+      "label_status": "confirmed",
       "normalized": true
     },
     {
@@ -366,7 +198,7 @@
       "expected": "CONFLICT",
       "predicted": "CONFLICT",
       "correct": true,
-      "label_status": "proposed",
+      "label_status": "confirmed",
       "normalized": true
     },
     {
@@ -382,20 +214,188 @@
       "expected": "CONFLICT",
       "predicted": "CONFLICT",
       "correct": true,
-      "label_status": "proposed",
+      "label_status": "confirmed",
+      "normalized": true
+    },
+    {
+      "id": "dev-merge-01",
+      "expected": "MERGE",
+      "predicted": "MERGE",
+      "correct": true,
+      "label_status": "confirmed",
+      "normalized": true
+    },
+    {
+      "id": "dev-merge-02",
+      "expected": "MERGE",
+      "predicted": "MERGE",
+      "correct": true,
+      "label_status": "confirmed",
+      "normalized": true
+    },
+    {
+      "id": "dev-merge-03",
+      "expected": "MERGE",
+      "predicted": "MERGE",
+      "correct": true,
+      "label_status": "confirmed",
+      "normalized": true
+    },
+    {
+      "id": "dev-merge-04",
+      "expected": "MERGE",
+      "predicted": "MERGE",
+      "correct": true,
+      "label_status": "confirmed",
+      "normalized": true
+    },
+    {
+      "id": "dev-merge-05",
+      "expected": "MERGE",
+      "predicted": "MERGE",
+      "correct": true,
+      "label_status": "confirmed",
+      "normalized": true
+    },
+    {
+      "id": "dev-merge-06",
+      "expected": "MERGE",
+      "predicted": "MERGE",
+      "correct": true,
+      "label_status": "confirmed",
+      "normalized": true
+    },
+    {
+      "id": "dev-merge-07",
+      "expected": "MERGE",
+      "predicted": "MERGE",
+      "correct": true,
+      "label_status": "confirmed",
+      "normalized": true
+    },
+    {
+      "id": "dev-noop-01",
+      "expected": "NOOP",
+      "predicted": "NOOP",
+      "correct": true,
+      "label_status": "confirmed",
+      "normalized": true
+    },
+    {
+      "id": "dev-noop-02",
+      "expected": "NOOP",
+      "predicted": "NOOP",
+      "correct": true,
+      "label_status": "confirmed",
+      "normalized": true
+    },
+    {
+      "id": "dev-noop-03",
+      "expected": "NOOP",
+      "predicted": "NOOP",
+      "correct": true,
+      "label_status": "confirmed",
+      "normalized": true
+    },
+    {
+      "id": "dev-noop-04",
+      "expected": "NOOP",
+      "predicted": "NOOP",
+      "correct": true,
+      "label_status": "confirmed",
+      "normalized": true
+    },
+    {
+      "id": "dev-noop-05",
+      "expected": "NOOP",
+      "predicted": "NOOP",
+      "correct": true,
+      "label_status": "confirmed",
+      "normalized": true
+    },
+    {
+      "id": "dev-noop-06",
+      "expected": "NOOP",
+      "predicted": "NOOP",
+      "correct": true,
+      "label_status": "confirmed",
+      "normalized": true
+    },
+    {
+      "id": "dev-noop-07",
+      "expected": "NOOP",
+      "predicted": "NOOP",
+      "correct": true,
+      "label_status": "confirmed",
+      "normalized": true
+    },
+    {
+      "id": "dev-sup-01",
+      "expected": "SUPERSEDE",
+      "predicted": "SUPERSEDE",
+      "correct": true,
+      "label_status": "confirmed",
+      "normalized": true
+    },
+    {
+      "id": "dev-sup-02",
+      "expected": "SUPERSEDE",
+      "predicted": "SUPERSEDE",
+      "correct": true,
+      "label_status": "confirmed",
+      "normalized": true
+    },
+    {
+      "id": "dev-sup-03",
+      "expected": "SUPERSEDE",
+      "predicted": "SUPERSEDE",
+      "correct": true,
+      "label_status": "confirmed",
+      "normalized": true
+    },
+    {
+      "id": "dev-sup-04",
+      "expected": "SUPERSEDE",
+      "predicted": "SUPERSEDE",
+      "correct": true,
+      "label_status": "confirmed",
+      "normalized": true
+    },
+    {
+      "id": "dev-sup-05",
+      "expected": "SUPERSEDE",
+      "predicted": "SUPERSEDE",
+      "correct": true,
+      "label_status": "confirmed",
+      "normalized": true
+    },
+    {
+      "id": "dev-sup-06",
+      "expected": "SUPERSEDE",
+      "predicted": "SUPERSEDE",
+      "correct": true,
+      "label_status": "confirmed",
+      "normalized": true
+    },
+    {
+      "id": "dev-sup-07",
+      "expected": "SUPERSEDE",
+      "predicted": "SUPERSEDE",
+      "correct": true,
+      "label_status": "confirmed",
       "normalized": true
     }
   ],
   "predicted_distribution": {
-    "NOOP": 7,
     "ADD": 7,
-    "MERGE": 7,
-    "SUPERSEDE": 7,
     "BRANCH": 6,
-    "CONFLICT": 6
+    "CONFLICT": 6,
+    "MERGE": 7,
+    "NOOP": 7,
+    "SUPERSEDE": 7
   },
   "normalized_false": 0,
-  "label_status": "proposed",
+  "label_status": "confirmed",
   "llm_enabled": false,
   "dataset": "dev.jsonl"
 }

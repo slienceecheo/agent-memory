@@ -32,6 +32,10 @@ runs/
 results/*.jsonl
 !results/README.md
 
+# 双人标注副本（临时产物，不入库；用 --file 指定）
+data/conflict-set/*.alice.jsonl
+data/conflict-set/*.bob.jsonl
+
 # ---------- 编辑器 / 系统 ----------
 .vscode/
 .idea/
