@@ -63,6 +63,21 @@ class MemoryStore(Protocol):
         """插入一条新条目。该键已有 ACTIVE 时抛 `ActiveExists`。"""
         ...
 
+    def insert_conflicted(
+        self,
+        item: MemoryItem,
+        *,
+        reason: str,
+        actor: str,
+        related_ids: Sequence[str] = (),
+    ) -> MemoryItem:
+        """插入一条 CONFLICTED 条目。
+
+        它不占用"当前有效值"的位置，所以不受"同键已有 ACTIVE"的限制，
+        但仍受唯一索引与区间重叠约束保护。
+        """
+        ...
+
     def supersede(
         self,
         old_id: str,
@@ -120,6 +135,22 @@ class MemoryStore(Protocol):
         at: datetime,
     ) -> MemoryItem | None:
         """查询某现实时间点有效的条目。"""
+        ...
+
+    def active_all(
+        self,
+        *,
+        owner: str,
+        scope: Scope,
+        subject: str,
+        relation: str,
+        at: datetime,
+    ) -> list[MemoryItem]:
+        """同键下所有在 `at` 时刻有效的条目（含各条件分支）。
+
+        判定 BRANCH 需要看到全部现存分支；只查精确匹配会把它们漏掉，
+        从而把"并存"误判成"全新事实"。
+        """
         ...
 
     def timeline(

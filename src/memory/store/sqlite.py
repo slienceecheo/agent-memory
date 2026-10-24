@@ -101,7 +101,7 @@ CREATE INDEX IF NOT EXISTS ix_lookup
 -- COALESCE 不可省：裸比较里 NULL 会让未结束区间永远不参与检测。
 CREATE TRIGGER IF NOT EXISTS items_no_overlap_ins
 BEFORE INSERT ON items
-WHEN NEW.status != 'RETRACTED'
+WHEN NEW.status NOT IN ('RETRACTED','CONFLICTED')
 BEGIN
     SELECT RAISE(ABORT, 'overlapping valid interval')
     WHERE EXISTS (
@@ -109,7 +109,7 @@ BEGIN
         WHERE owner = NEW.owner AND scope = NEW.scope
           AND subject = NEW.subject AND relation = NEW.relation
           AND IFNULL(condition,'') = IFNULL(NEW.condition,'')
-          AND status != 'RETRACTED'
+          AND status NOT IN ('RETRACTED','CONFLICTED')
           AND NEW.valid_from < COALESCE(valid_to, '{_FAR_FUTURE}')
           AND COALESCE(NEW.valid_to, '{_FAR_FUTURE}') > valid_from
     );
@@ -117,7 +117,7 @@ END;
 
 CREATE TRIGGER IF NOT EXISTS items_no_overlap_upd
 BEFORE UPDATE OF valid_from, valid_to, status, condition ON items
-WHEN NEW.status != 'RETRACTED'
+WHEN NEW.status NOT IN ('RETRACTED','CONFLICTED')
 BEGIN
     SELECT RAISE(ABORT, 'overlapping valid interval')
     WHERE EXISTS (
@@ -126,7 +126,7 @@ BEGIN
           AND owner = NEW.owner AND scope = NEW.scope
           AND subject = NEW.subject AND relation = NEW.relation
           AND IFNULL(condition,'') = IFNULL(NEW.condition,'')
-          AND status != 'RETRACTED'
+          AND status NOT IN ('RETRACTED','CONFLICTED')
           AND NEW.valid_from < COALESCE(valid_to, '{_FAR_FUTURE}')
           AND COALESCE(NEW.valid_to, '{_FAR_FUTURE}') > valid_from
     );
@@ -397,6 +397,31 @@ class SqliteStore:
         ).fetchone()
         return _row_to_item(row) if row else None
 
+    def active_all(
+        self,
+        *,
+        owner: str,
+        scope: Scope,
+        subject: str,
+        relation: str,
+        at: datetime,
+    ) -> list[MemoryItem]:
+        """同键下所有在 `at` 时刻有效的条目（含各条件分支）。
+
+        判定 BRANCH 需要看到全部现存分支，只看精确匹配会漏掉它们。
+        """
+        at_text = to_utc_text(at)
+        rows = self._conn.execute(
+            "SELECT * FROM items"
+            " WHERE owner = ? AND scope = ? AND subject = ? AND relation = ?"
+            "   AND status = 'ACTIVE'"
+            "   AND valid_from <= ?"
+            "   AND (? < valid_to OR valid_to IS NULL)"
+            " ORDER BY version ASC",
+            (owner, scope.value, subject, relation, at_text, at_text),
+        ).fetchall()
+        return [_row_to_item(row) for row in rows]
+
     def timeline(
         self,
         *,
@@ -422,18 +447,26 @@ class SqliteStore:
         reason: str,
         actor: str,
         embedding: Sequence[float] | None = None,
+        allow_duplicate_active: bool = False,
     ) -> MemoryItem:
+        """插入一条新条目。
+
+        `allow_duplicate_active=True` 时跳过"该键已有 ACTIVE"的前置检查，
+        但仍受唯一索引与区间重叠约束保护。它只用于插入**非 ACTIVE** 的条目
+        （例如冲突候选），调用方必须自己保证 item.status 不是 ACTIVE。
+        """
         with self._write() as conn:
-            existing = self._find_active(conn, item)
-            if existing is not None:
-                if existing["fingerprint"] == fingerprint(item):
-                    # 事件必须挂到已存在条目的 id 上：新构造的 item.id 还是空字符串
-                    self._audit(conn, existing["id"], None, "NOOP", reason, actor)
-                    return _row_to_item(existing)
-                raise ActiveExists(
-                    f"键 {item.key()} 已有 ACTIVE 条目 {existing['id']}；"
-                    "若要替换请使用 supersede()。"
-                )
+            if not allow_duplicate_active:
+                existing = self._find_active(conn, item)
+                if existing is not None:
+                    if existing["fingerprint"] == fingerprint(item):
+                        # 事件必须挂到已存在条目的 id 上：新构造的 item.id 还是空字符串
+                        self._audit(conn, existing["id"], None, "NOOP", reason, actor)
+                        return _row_to_item(existing)
+                    raise ActiveExists(
+                        f"键 {item.key()} 已有 ACTIVE 条目 {existing['id']}；"
+                        "若要替换请使用 supersede()。"
+                    )
 
             stored = self._materialize(conn, item)
             self._write_item(conn, stored, embedding)
@@ -474,6 +507,28 @@ class SqliteStore:
             self._write_fts(conn, stored)
             self._audit(conn, stored.id, old_id, "SUPERSEDE", reason, actor)
             return stored
+
+    def insert_conflicted(
+        self,
+        item: MemoryItem,
+        *,
+        reason: str,
+        actor: str,
+        related_ids: Sequence[str] = (),
+    ) -> MemoryItem:
+        """以 CONFLICTED 状态插入一条条目。
+
+        接受 ACTIVE 条目并自行转换——调用方的意图就是"这条是冲突候选"，
+        要求它先手动改成 CONFLICTED 只是多余的仪式。
+        """
+        import dataclasses
+
+        conflicted = dataclasses.replace(
+            item, status=Status.CONFLICTED, linked_ids=tuple(related_ids)
+        )
+        return self.insert(
+            conflicted, reason=reason, actor=actor, allow_duplicate_active=True
+        )
 
     def mark_conflict(
         self,
@@ -542,14 +597,20 @@ class SqliteStore:
 
             # 败者的 valid_to 必须写入，否则区间仍延伸到无穷远，
             # active_at 会同时返回胜者与败者（审查发现的 P0）。
-            # 若败者起点晚于胜者起点，关闭时刻不能早于它自己的起点。
+            # 胜者若原本是 CONFLICTED，它的 valid_from 可能与败者相同，
+            # 这时不能用它作为关闭时刻（会产生零长度区间）。
             close_at = loser.valid_to or max(winner.valid_from, loser.valid_from)
             if close_at <= loser.valid_from:
                 close_at = loser.valid_from + _MIN_DURATION
             self._close(conn, loser, close_at, Status.SUPERSEDED, winner.id)
+
+            # 胜者若是 CONFLICTED，其起点可能与败者相同；把它推进到败者关闭之后，
+            # 避免与仍在历史里的旧区间重叠。
+            winner_valid_from = max(winner.valid_from, close_at)
             conn.execute(
-                "UPDATE items SET status = 'ACTIVE', superseded_by = NULL WHERE id = ?",
-                (winner_id,),
+                "UPDATE items SET status = 'ACTIVE', superseded_by = NULL,"
+                " valid_from = ?, valid_to = NULL WHERE id = ?",
+                (to_utc_text(winner_valid_from), winner_id),
             )
             self._audit(conn, winner_id, loser_id, "RESOLVE", reason, actor)
             return self.get(winner_id), self.get(loser_id)

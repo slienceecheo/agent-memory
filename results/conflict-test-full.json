@@ -1,0 +1,241 @@
+{
+  "split": "test",
+  "n": 20,
+  "accuracy": 1.0,
+  "macro_f1": 1.0,
+  "classes_evaluated": 6,
+  "support": {
+    "NOOP": 3,
+    "ADD": 3,
+    "MERGE": 3,
+    "SUPERSEDE": 4,
+    "CONFLICT": 3,
+    "BRANCH": 4
+  },
+  "absent_classes": [],
+  "low_support_classes": [],
+  "confusion_matrix": {
+    "NOOP": {
+      "NOOP": 3,
+      "ADD": 0,
+      "MERGE": 0,
+      "SUPERSEDE": 0,
+      "CONFLICT": 0,
+      "BRANCH": 0
+    },
+    "ADD": {
+      "NOOP": 0,
+      "ADD": 3,
+      "MERGE": 0,
+      "SUPERSEDE": 0,
+      "CONFLICT": 0,
+      "BRANCH": 0
+    },
+    "MERGE": {
+      "NOOP": 0,
+      "ADD": 0,
+      "MERGE": 3,
+      "SUPERSEDE": 0,
+      "CONFLICT": 0,
+      "BRANCH": 0
+    },
+    "SUPERSEDE": {
+      "NOOP": 0,
+      "ADD": 0,
+      "MERGE": 0,
+      "SUPERSEDE": 4,
+      "CONFLICT": 0,
+      "BRANCH": 0
+    },
+    "CONFLICT": {
+      "NOOP": 0,
+      "ADD": 0,
+      "MERGE": 0,
+      "SUPERSEDE": 0,
+      "CONFLICT": 3,
+      "BRANCH": 0
+    },
+    "BRANCH": {
+      "NOOP": 0,
+      "ADD": 0,
+      "MERGE": 0,
+      "SUPERSEDE": 0,
+      "CONFLICT": 0,
+      "BRANCH": 4
+    }
+  },
+  "per_case": [
+    {
+      "id": "test-noop-01",
+      "expected": "NOOP",
+      "predicted": "NOOP",
+      "correct": true,
+      "label_status": "proposed",
+      "normalized": true
+    },
+    {
+      "id": "test-noop-02",
+      "expected": "NOOP",
+      "predicted": "NOOP",
+      "correct": true,
+      "label_status": "proposed",
+      "normalized": true
+    },
+    {
+      "id": "test-noop-03",
+      "expected": "NOOP",
+      "predicted": "NOOP",
+      "correct": true,
+      "label_status": "proposed",
+      "normalized": true
+    },
+    {
+      "id": "test-add-01",
+      "expected": "ADD",
+      "predicted": "ADD",
+      "correct": true,
+      "label_status": "proposed",
+      "normalized": true
+    },
+    {
+      "id": "test-add-02",
+      "expected": "ADD",
+      "predicted": "ADD",
+      "correct": true,
+      "label_status": "proposed",
+      "normalized": true
+    },
+    {
+      "id": "test-add-03",
+      "expected": "ADD",
+      "predicted": "ADD",
+      "correct": true,
+      "label_status": "proposed",
+      "normalized": true
+    },
+    {
+      "id": "test-merge-01",
+      "expected": "MERGE",
+      "predicted": "MERGE",
+      "correct": true,
+      "label_status": "proposed",
+      "normalized": true
+    },
+    {
+      "id": "test-merge-02",
+      "expected": "MERGE",
+      "predicted": "MERGE",
+      "correct": true,
+      "label_status": "proposed",
+      "normalized": true
+    },
+    {
+      "id": "test-merge-03",
+      "expected": "MERGE",
+      "predicted": "MERGE",
+      "correct": true,
+      "label_status": "proposed",
+      "normalized": true
+    },
+    {
+      "id": "test-sup-01",
+      "expected": "SUPERSEDE",
+      "predicted": "SUPERSEDE",
+      "correct": true,
+      "label_status": "proposed",
+      "normalized": true
+    },
+    {
+      "id": "test-sup-02",
+      "expected": "SUPERSEDE",
+      "predicted": "SUPERSEDE",
+      "correct": true,
+      "label_status": "proposed",
+      "normalized": true
+    },
+    {
+      "id": "test-sup-03",
+      "expected": "SUPERSEDE",
+      "predicted": "SUPERSEDE",
+      "correct": true,
+      "label_status": "proposed",
+      "normalized": true
+    },
+    {
+      "id": "test-sup-04",
+      "expected": "SUPERSEDE",
+      "predicted": "SUPERSEDE",
+      "correct": true,
+      "label_status": "proposed",
+      "normalized": true
+    },
+    {
+      "id": "test-branch-01",
+      "expected": "BRANCH",
+      "predicted": "BRANCH",
+      "correct": true,
+      "label_status": "proposed",
+      "normalized": true
+    },
+    {
+      "id": "test-branch-02",
+      "expected": "BRANCH",
+      "predicted": "BRANCH",
+      "correct": true,
+      "label_status": "proposed",
+      "normalized": true
+    },
+    {
+      "id": "test-branch-03",
+      "expected": "BRANCH",
+      "predicted": "BRANCH",
+      "correct": true,
+      "label_status": "proposed",
+      "normalized": true
+    },
+    {
+      "id": "test-branch-04",
+      "expected": "BRANCH",
+      "predicted": "BRANCH",
+      "correct": true,
+      "label_status": "proposed",
+      "normalized": true
+    },
+    {
+      "id": "test-conf-01",
+      "expected": "CONFLICT",
+      "predicted": "CONFLICT",
+      "correct": true,
+      "label_status": "proposed",
+      "normalized": true
+    },
+    {
+      "id": "test-conf-02",
+      "expected": "CONFLICT",
+      "predicted": "CONFLICT",
+      "correct": true,
+      "label_status": "proposed",
+      "normalized": true
+    },
+    {
+      "id": "test-conf-03",
+      "expected": "CONFLICT",
+      "predicted": "CONFLICT",
+      "correct": true,
+      "label_status": "proposed",
+      "normalized": true
+    }
+  ],
+  "predicted_distribution": {
+    "NOOP": 3,
+    "ADD": 3,
+    "MERGE": 3,
+    "SUPERSEDE": 4,
+    "BRANCH": 4,
+    "CONFLICT": 3
+  },
+  "normalized_false": 0,
+  "label_status": "proposed",
+  "llm_enabled": true,
+  "dataset": "test.jsonl"
+}
