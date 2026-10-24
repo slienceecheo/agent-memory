@@ -88,20 +88,86 @@
 
 ## 场景集与标注
 
+### 交互式标注（推荐）
+
 ```bash
-# 查看待确认条目
+# 默认盲标：不显示提案标签，避免被带偏
+uv run python -m evals.tools.label --split test review --labeler 你的名字
+```
+
+逐条显示：
+
+```
+[test-sup-01]
+  新陈述：现在改用 yarn 了
+  候选值：yarn
+  既有值：pnpm
+  权威：user_direct
+  1=NOOP 2=ADD 3=MERGE 4=SUPERSEDE 5=CONFLICT 6=BRANCH  s=跳过 b=回退 q=退出
+```
+
+输入 `1`–`6` 或类别名即可，回车确认。`s` 跳过、`b` 回退上一条、`q` 退出。
+
+三条设计要点：
+
+- **默认盲标**：不显示 `expected`。一旦显示，标注者会跟着提案走，
+  标签失去独立性，κ 与 macro-F1 都变成自证。想看提案加 `--show-expected`。
+- **即时落盘**：标完一条立刻写文件，中途退出不丢进度。
+- **回退即撤销**：按 `b` 会把上一条改回 `proposed`，而不是留着一个错标签。
+
+### 其他命令
+
+```bash
+# 查看待确认条目（会显示提案标签，正式标注时不要用）
 uv run python -m evals.tools.label --split test list --status proposed
 
-# 确认一条
+# 单条确认
 uv run python -m evals.tools.label --split test confirm \
     --id test-sup-01 --label SUPERSEDE --labeler alice
 
 # 分布与进度
 uv run python -m evals.tools.label --split test summary
-
-# 双人一致性
-uv run python -m evals.tools.label --split test kappa --a alice --b bob
 ```
+
+### 双人标注与 κ
+
+一条场景只有一个 `labeler` 字段，两人标同一份文件会互相覆盖。
+真双人标注必须用**两份副本**：
+
+```bash
+Copy-Item "data\conflict-set\test.jsonl" "data\conflict-set\test.alice.jsonl"
+Copy-Item "data\conflict-set\test.jsonl" "data\conflict-set\test.bob.jsonl"
+
+# 两人各自盲标，互不看对方
+uv run python -m evals.tools.label --file data\conflict-set\test.alice.jsonl review --labeler alice
+uv run python -m evals.tools.label --file data\conflict-set\test.bob.jsonl review --labeler bob
+
+# 算 κ 并列出不一致条目
+uv run python -m evals.tools.label kappa `
+    --a-file data\conflict-set\test.alice.jsonl `
+    --b-file data\conflict-set\test.bob.jsonl
+```
+
+输出：
+
+```
+共同条目 20 条，Cohen's κ = 0.940
+判定：高度一致，可直接采用
+不一致条目：
+  test-conf-03: SUPERSEDE vs MERGE
+```
+
+κ 的判定阈值：
+
+| κ | 判定 | 该怎么办 |
+|---|---|---|
+| ≥ 0.8 | 高度一致 | 直接采用 |
+| 0.7–0.8 | 可接受 | 报告里说明 |
+| 0.6–0.7 | 偏弱 | 逐条讨论不一致项后重标 |
+| < 0.6 | 一致性不足 | 停下，先对齐六类定义 |
+
+**κ 必须是多类别口径**（6×6 列联表），不能折成"是否一致"二分类：
+二分类会丢掉"错成了哪一类"的信息，并把多数类的一致率算得过高。
 
 `proposed` 的标签不能作为验收依据：`run_conflict` 会拒绝运行（退出码 2），
 除非显式加 `--allow-proposed`，此时结果会标注"仅供参考"。

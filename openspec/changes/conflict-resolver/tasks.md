@@ -139,6 +139,42 @@
       并给出待确认条目数量与确认命令，
       验证：报告首段包含该声明
 
+## 9. 标注工具补强（C3 收尾，标签确认的前置条件）
+
+> 起因：交付标注教程时发现两个缺陷——60 条手敲 `confirm` 命令不现实；
+> 且 `kappa` 无法支持真正的双人标注（一条场景只有一个 `labeler` 字段，
+> 两人标同一份文件会互相覆盖）。
+
+- [x] 9.1 先写测试：交互式标注默认**不显示提案标签**（盲标），
+      显示提案会让标注者跟着走，标签失去独立性；
+      另有一条对照组断言 `--show-expected` 时确实显示，
+      验证：`uv run pytest tests/resolver/test_label_review.py -q` 全绿
+- [x] 9.2 实现 `ReviewSession` 与 `review()`：输入/输出通过参数注入，
+      使整个流程可在测试中驱动而无需真实 stdin
+      （`inputs` / `output` 两个参数），
+      验证：`uv run pytest tests/resolver/test_label_review.py -q` 全绿
+- [x] 9.3 先写测试：标完一条立即落盘（中途退出不丢进度）、
+      `s` 跳过、`b` 回退到 `proposed`、`q` 退出并汇总、
+      非法输入重新提问而不是退出、已确认条目自动跳过，
+      验证：`uv run pytest tests/resolver/test_label_review.py -q` 全绿
+- [x] 9.4 先写测试：κ 必须是**多类别**口径；
+      从两份文件读取时用 `expected` 而不是 `labeler`
+      （后者在同义反复），并列出不一致条目与漏标条目，
+      验证：`uv run pytest tests/resolver/test_kappa_files.py -q` 全绿
+- [x] 9.5 实现 `kappa_from_files`（返回 κ、共同条目数、不一致列表、
+      仅单侧标注列表、判定文本），
+      验证：`uv run pytest tests/resolver/test_kappa_files.py -q` 全绿
+- [x] 9.6 给命令行加 `--file`（用于双人副本）与 `review` 子命令、
+      `kappa --a-file/--b-file`，
+      验证：`uv run python -m evals.tools.label --help` 与
+      `... review --help` 均正常输出四类命令
+- [x] 9.7 端到端冒烟：在临时副本上跑完 20 条交互标注，
+      再造一份有一处差异的副本算 κ，
+      验证：κ 输出且精确定位到那一条不一致；清理临时文件后真实数据仍为 0 条确认
+- [x] 9.8 更新 `docs/resolver.md` 的标注章节（交互式用法、盲标理由、
+      回退语义、双人副本流程、κ 阈值表），
+      验证：文档中的命令按原样可执行
+
 ## Workflow follow-up
 
 - 标签人工确认后重跑并更新报告，再归档该变更。
