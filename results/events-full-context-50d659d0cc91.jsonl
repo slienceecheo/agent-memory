@@ -1,3 +1,0 @@
-{"run_id": "50d659d0cc91", "sample_id": "factconsolidation_sh_6k_no0", "stage": "generate", "duration_ms": 1578.907, "network_calls": 1, "prompt_tokens": 5360, "completion_tokens": 121, "reasoning_tokens": 118, "error": null}
-{"run_id": "50d659d0cc91", "sample_id": "factconsolidation_sh_6k_no1", "stage": "generate", "duration_ms": 1726.006, "network_calls": 1, "prompt_tokens": 5362, "completion_tokens": 86, "reasoning_tokens": 79, "error": null}
-{"run_id": "50d659d0cc91", "sample_id": "factconsolidation_sh_6k_no2", "stage": "generate", "duration_ms": 1576.709, "network_calls": 1, "prompt_tokens": 5359, "completion_tokens": 121, "reasoning_tokens": 119, "error": null}

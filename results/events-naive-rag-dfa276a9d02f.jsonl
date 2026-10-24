@@ -1,3 +1,0 @@
-{"run_id": "dfa276a9d02f", "sample_id": "factconsolidation_sh_6k_no0", "stage": "generate", "duration_ms": 1575.363, "network_calls": 1, "prompt_tokens": 144, "completion_tokens": 112, "reasoning_tokens": 103, "error": null}
-{"run_id": "dfa276a9d02f", "sample_id": "factconsolidation_sh_6k_no1", "stage": "generate", "duration_ms": 2313.558, "network_calls": 1, "prompt_tokens": 150, "completion_tokens": 241, "reasoning_tokens": 233, "error": null}
-{"run_id": "dfa276a9d02f", "sample_id": "factconsolidation_sh_6k_no2", "stage": "generate", "duration_ms": 2348.006, "network_calls": 1, "prompt_tokens": 133, "completion_tokens": 187, "reasoning_tokens": 185, "error": null}

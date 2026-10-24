@@ -18,11 +18,19 @@ build/
 .env.local
 
 # ---------- 数据与产物 ----------
-# embedding 缓存与数据集缓存不入库（可重建），但目录要留着
+# embedding 缓存**提交进仓库**：上游对同一文本不保证逐位一致，
+# 缓存是可复现性的前提（见 docs/embedding.md）。体积很小（< 5MB）。
+# 原始数据集与中间产物不入库：可重新下载，且体积大。
 .cache/
 data/raw/
 data/processed/
 runs/
+# 评测结果
+# 结果 JSON 提交入库：体积小，且是 docs/reports/ 里每个数字的可核对来源
+# （tests/test_report_consistency.py 会交叉校验两者）
+# 逐样本追踪 JSONL 不入库：体积大，且只用于调试
+results/*.jsonl
+!results/README.md
 
 # ---------- 编辑器 / 系统 ----------
 .vscode/
