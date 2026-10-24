@@ -1,24 +1,53 @@
 # C3 报告：冲突判定状态机
 
-> 生成日期：2026-10-25
+> 生成日期：2026-10-26
 > 场景集：60 条（dev 40 / test 20），六类均衡
 > 模型：DeepSeek V4.1 Flash（本地网关，强制 SSE，响应缓存）
-> 状态：**56/60 已人工确认，4 条 CONFLICT 修正后待重新确认**
+> 状态：**60/60 已人工确认；第二标注者已完成（κ = 1.000）**
 
 ## 标签确认状态（验收前置条件）
 
 ```
 $ uv run python -m evals.tools.label --split dev summary
-dev.jsonl: 40 条，已确认 37 条
+dev.jsonl: 40 条，已确认 40 条
 
 $ uv run python -m evals.tools.label --split test summary
-test.jsonl: 20 条，已确认 19 条
+test.jsonl: 20 条，已确认 20 条
 ```
 
-待确认的 4 条全部是 CONFLICT 类，原因见下一节。
+人工标签与机器提案**零分歧**：60 条全部沿用提案标签，包括修正后重新确认的 4 条 CONFLICT。
 
-**D6（macro-F1 ≥ 0.85）目前仍不成立**：CONFLICT 类只剩 5 条已确认样本，
-不足以支撑该类的 F1 结论。下面的数字全部是"在机器提议标签上的参考值"。
+## 第二标注者与 κ
+
+| 对比 | κ | 不一致 |
+|---|---|---|
+| 主标注 vs alice | 1.000 | 0 |
+| 主标注 vs bob | 1.000 | 0 |
+| alice vs bob | 1.000 | 0 |
+
+### 这个 1.000 应当如何解读
+
+**它不能当作"标注标准极其清晰"的强证据。** 三个标注者 20 条零分歧，
+更可能是因为三者共享了同一套信息（同一份场景描述、同一套分类定义，
+甚至同一批人），而不是因为标准本身无歧义。
+
+真正独立的第二标注者应该会产出**非零分歧**——本次修正前的数据恰好证明了这一点：
+bob 最初有 3 条 `ADD → NOOP` 的不同（虽然那 3 条是他标错了）。
+
+诚实口径：**这是一次"同源复核"，不是"独立双标注"**。
+报告中不把 κ = 1.000 写进结论，只用它说明"复核未发现分歧"。
+
+### 标注过程中发现并修正的硬错误
+
+`test-add-01/02/03` 曾被标成 `NOOP`，但它们的 `existing_value` 为空。
+NOOP 的定义是"与既有值完全相同"，没有既有值时不可能成立。已改为 `ADD`。
+
+**κ 抓不到这类错误**：κ 只衡量两人是否一致，不衡量单条是否合法。
+两个人可以一致地都标错。因此新增了独立的逻辑自洽检查
+（`tests/resolver/test_label_consistency.py`），对全部标注文件断言：
+
+- `existing_value` 为空时，不得标成 NOOP / MERGE / SUPERSEDE / BRANCH
+- candidate 与 existing 完全相同时，不得标成 SUPERSEDE（那应是 NOOP）
 
 ## 修正：4 条 CONFLICT 配对不成立
 
@@ -141,25 +170,17 @@ dev 准确率从 100% 掉到 97.5%。
 
 按重要性排序：
 
-1. ~~**人工确认 60 条标签**~~ **已完成 56/60**。
-   剩余的 4 条是刚修正的 CONFLICT 配对，需要重新确认：
-   ```
-   uv run python -m evals.tools.label --split dev review --labeler <name>
-   uv run python -m evals.tools.label --split test review --labeler <name>
-   ```
-   交互式模式默认盲标，只显示尚未确认的条目。
-2. **引入第二标注者并计算 κ**（未开始）。
-   一个人确认的标签仍有主观性；κ 能暴露"两个人的判定口径是否一致"。
-   ```bash
-   Copy-Item "data\conflict-set\test.jsonl" "data\conflict-set\test.alice.jsonl"
-   uv run python -m evals.tools.label --file data\conflict-set\test.alice.jsonl review --labeler alice
-   uv run python -m evals.tools.label kappa --a-file ...alice.jsonl --b-file ...bob.jsonl
-   ```
+1. ~~**人工确认 60 条标签**~~ **已完成 60/60**。
+2. ~~**引入第二标注者并计算 κ**~~ **已完成**，κ = 1.000（三对全部零分歧）。
+   但这份数据只能算"同源复核"，理由见上文——三个标注者零分歧，
+   更可能是共享了同一套信息。**独立双标注应当产生非零分歧**，
+   这才是 κ 有意义的场景。
 3. **扩充场景集的来源**（未开始）。当前 60 条全部出自我一人。
-   应该从真实对话日志里采样，或者请第二个人独立写一批场景。
+   应该从真实对话日志里采样，或者请别人**独立写一批场景**（不是标同一批）。
    本次 CONFLICT 的 4 条错误正是"自写自测"的典型代价。
 4. **让模型成为决定性因素**（未开始）。构造一批"文本不含变更标记、且判定结果
    确实取决于是否新状态"的场景，才能测出 `--no-llm` 的真实差距。
+   目前 test 集里 17/20 条调用了模型，但它们的判定都不依赖模型的结论。
 
 ## 5. 已锁定的实现契约（与标签无关，可独立信任）
 

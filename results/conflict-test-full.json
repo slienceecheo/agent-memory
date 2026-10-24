@@ -126,7 +126,7 @@
       "expected": "CONFLICT",
       "predicted": "CONFLICT",
       "correct": true,
-      "label_status": "proposed",
+      "label_status": "confirmed",
       "normalized": true
     },
     {

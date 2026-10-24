@@ -96,28 +96,55 @@ def test_llm_call_count_is_seventeen() -> None:
 
 
 def test_label_confirmation_progress_matches_report() -> None:
-    """报告声称 56/60 已确认。若进度变了，报告需要更新。"""
+    """报告声称 60/60 已确认。若进度变了，报告需要更新。"""
     dev = load_conflict_set(ROOT / "data" / "conflict-set" / "dev.jsonl")
     test = load_conflict_set(ROOT / "data" / "conflict-set" / "test.jsonl")
 
     confirmed = len(dev.confirmed()) + len(test.confirmed())
 
-    assert confirmed == 56, (
-        f"已确认数实际为 {confirmed}，报告写的是 56。"
-        "若刚确认完剩余条目，请更新报告并重跑评测。"
+    assert confirmed == 60, (
+        f"已确认数实际为 {confirmed}，报告写的是 60。"
+        "若标签有变动，请更新报告并重跑评测。"
     )
 
 
-def test_the_four_repaired_cases_are_still_pending() -> None:
-    """修正过的 4 条必须重新确认，不能沿用旧标签。"""
-    pending = {"dev-conf-01", "dev-conf-02", "dev-conf-05", "test-conf-01"}
-    for split in ("dev", "test"):
-        dataset = load_conflict_set(ROOT / "data" / "conflict-set" / f"{split}.jsonl")
-        for case in dataset.cases:
-            if case.id in pending:
-                assert case.label_status == "proposed", (
-                    f"{case.id} 已修正内容，必须重新人工确认"
-                )
+def test_annotation_copies_are_fully_confirmed() -> None:
+    """两份副本都必须标完，否则 κ 的样本量不完整。"""
+    for name in ("test.alice.jsonl", "test.bob.jsonl"):
+        path = ROOT / "data" / "conflict-set" / name
+        if not path.exists():
+            pytest.skip(f"{name} 不存在")
+        dataset = load_conflict_set(path)
+        assert len(dataset.confirmed()) == len(dataset) == 20, (
+            f"{name} 有 {len(dataset.confirmed())}/{len(dataset)} 条已确认"
+        )
+
+
+def test_kappa_between_annotators() -> None:
+    """报告声称三对 κ 都是 1.000。若标签变动，这里先失败。"""
+    from evals.tools.label import kappa_from_files
+
+    data = ROOT / "data" / "conflict-set"
+    pairs = [
+        (data / "test.jsonl", data / "test.alice.jsonl"),
+        (data / "test.jsonl", data / "test.bob.jsonl"),
+        (data / "test.alice.jsonl", data / "test.bob.jsonl"),
+    ]
+    for left, right in pairs:
+        if not (left.exists() and right.exists()):
+            pytest.skip(f"{left.name} 或 {right.name} 不存在")
+        result = kappa_from_files(left, right)
+        assert result.kappa == pytest.approx(1.0), (
+            f"{left.name} vs {right.name} 的 κ 为 {result.kappa:.3f}，报告写的是 1.000"
+        )
+
+
+def test_report_states_the_independence_caveat() -> None:
+    """κ = 1.000 必须附带"同源复核"的保留意见，否则会被当成独立双标注。"""
+    text = REPORT.read_text(encoding="utf-8")
+
+    assert "同源复核" in text
+    assert "非零分歧" in text
 
 
 def test_conflict_pairs_are_not_merge_candidates() -> None:
@@ -172,7 +199,8 @@ def test_report_states_the_caveat() -> None:
 
     assert "不能用来证明什么" in text
     assert "循环论证" in text
-    assert "proposed" in text or "待重新确认" in text
+    # 标签完成不等于结论成立：报告必须保留"场景来源单一"这条限制
+    assert "自写自测" in text or "全部出自我一人" in text
 
 
 def test_normalized_false_is_zero_after_alias_fix() -> None:

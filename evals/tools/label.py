@@ -19,6 +19,8 @@ from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
 
+from pydantic import BaseModel
+
 from evals.datasets.conflict_set import (
     ConflictCase,
     ConflictSet,
@@ -147,12 +149,77 @@ def parse_input(raw: str) -> DecisionKind | None:
         return None
 
 
-def _looks_like_copy(path: Path) -> bool:
-    """判断文件名是否像"标注者副本"（如 `test.bob.jsonl`）。
+class LabelProblem(BaseModel):
+    """一条标注的逻辑问题。
 
-    主文件是 `test.jsonl` / `dev.jsonl`；副本在中间多一段标注者名字。
-    这个判断刻意保守：宁可要求加 `--force`，也不能因为误判冲掉主标注。
+    `kind` 是问题类型（如 `MISSING_EXISTING`），不是判定类别。
     """
+
+    case_id: str
+    kind: str
+    detail: str
+
+    @property
+    def message(self) -> str:
+        return self.detail
+
+
+# 这四个类都以"存在既有值"为前提
+_NEEDS_EXISTING: dict[str, str] = {
+    "NOOP": "NOOP 表示与既有值完全相同，没有既有值时不可能成立",
+    "MERGE": "MERGE 表示既有值仍成立、新值更完整，没有既有值时不成立",
+    "SUPERSEDE": "SUPERSEDE 表示既有值失效，没有既有值时不成立",
+    "BRANCH": "BRANCH 表示与既有值条件不同而并存，没有既有值时不成立",
+}
+
+
+def check_logical_consistency(dataset: ConflictSet) -> list[LabelProblem]:
+    """检查标注是否违反定义（不是"两人是否一致"，是"单条是否合法"）。
+
+    覆盖两类硬错误：
+
+    1. `existing_value` 为空却标成 NOOP / MERGE / SUPERSEDE / BRANCH
+       —— 这四个类都以"存在既有值"为前提。
+    2. 值与既有值完全相同却标成 SUPERSEDE
+       —— 那应当是 NOOP。
+
+    κ 抓不到这些：κ 只衡量两个人是否一致，不衡量单条是否合法。
+    两个人可以一致地都标错。
+    """
+    problems: list[LabelProblem] = []
+    for case in dataset.cases:
+        existing = (case.existing_value or "").strip()
+        kind = case.expected.value
+
+        if not existing and kind in _NEEDS_EXISTING:
+            problems.append(
+                LabelProblem(
+                    case_id=case.id,
+                    kind="MISSING_EXISTING",
+                    detail=(
+                        f"标成 {kind}，但 existing_value 为空。"
+                        f"{_NEEDS_EXISTING[kind]}；应按无既有值处理（ADD）。"
+                    ),
+                )
+            )
+            continue
+
+        if existing and kind == "SUPERSEDE" and case.candidate_value.strip() == existing:
+            problems.append(
+                LabelProblem(
+                    case_id=case.id,
+                    kind="SUPERSEDE_WITH_SAME_VALUE",
+                    detail=(
+                        f"标成 SUPERSEDE，但 candidate 与 existing 完全相同（{existing!r}）。"
+                        "完全相同应判 NOOP。"
+                    ),
+                )
+            )
+
+    return problems
+
+
+def _looks_like_copy(path: Path) -> bool:
     return path.stem.count(".") >= 1
 
 

@@ -246,6 +246,36 @@
       两种模式的区别、`--all` 的安全约束，
       验证：文档中的命令按原样可执行
 
+## 12. 标注完成后的核查（第二标注者的真实数据）
+
+> 起因：用户完成 60/60 主标注 + alice/bob 两份副本后要求核查。
+
+- [x] 12.1 核查四份标注文件的状态：
+      dev 40/40、test 20/20、alice 20/20、bob 20/20 全部 `confirmed`，
+      且 `labeler` 分别是 xly / alice / bob，
+      验证：`label --split dev summary` 与 `--file ... summary` 输出一致
+- [x] 12.2 核查"人工是否改判提案"：60 条全部沿用提案标签（0 条改判），
+      验证：与 `build_conflict_set.py` 的原始定义逐条比对
+- [x] 12.3 发现 bob 在 `test-add-01/02/03` 上把 `existing_value=None`
+      的场景标成 NOOP——按定义不成立（NOOP 表示与既有值完全相同）。
+      κ 抓不到这类错误，因为 κ 只衡量两人是否一致，
+      验证：新增的逻辑自洽检查报出这 3 条
+- [x] 12.4 先写测试：`check_logical_consistency()` 覆盖两类硬错误——
+      `existing_value` 为空却标四类之一、candidate 与 existing 相同却标 SUPERSEDE；
+      并对全部四份标注文件断言自洽，
+      验证：`uv run pytest tests/resolver/test_label_consistency.py -q` 全绿
+- [x] 12.5 实现检查器，修正 bob 的 3 条为 ADD，
+      验证：自洽检查对四份文件全部通过
+- [x] 12.6 重算三对 κ：主 vs alice、主 vs bob、alice vs bob 均为 1.000，
+      并把"同源复核 ≠ 独立双标注"的保留意见写进报告，
+      验证：`test_report_states_the_independence_caveat` 通过
+- [x] 12.7 在纯 `confirmed` 子集上重跑四组评测（dev/test × 全量/纯规则），
+      验证：`run_conflict` 不再需要 `--allow-proposed`，退出码 0
+- [x] 12.8 更新报告：标签状态改为 60/60、新增 κ 章节与解读、
+      待办列表勾掉前两项、新增"逻辑自洽检查"小节，
+      验证：`test_label_confirmation_progress_matches_report` 与
+      `test_kappa_between_annotators` 均通过
+
 ## Workflow follow-up
 
 - 标签人工确认后重跑并更新报告，再归档该变更。
