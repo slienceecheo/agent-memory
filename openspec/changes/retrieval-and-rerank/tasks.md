@@ -46,66 +46,66 @@
 
 ## 4. 查询解析与条件槽位
 
-- [ ] 4.1 先写测试：条件槽位**中英双向**归一——
+- [x] 4.1 先写测试：条件槽位**中英双向**归一——
       `coding` 与 `写代码` 归一到同一键；`prod` 与 `生产` 同理；
       覆盖时间/场景/环境三类，每类至少两正一反，
       验证：`uv run pytest tests/retrieval/test_condition.py -q` 全绿
-- [ ] 4.2 实现 `parse_condition()` 返回 `{slot: value}` 与 `structured` 标记，
+- [x] 4.2 实现 `parse_condition()` 返回 `{slot: value}` 与 `structured` 标记，
       验证：`uv run pytest tests/retrieval/test_condition.py -q` 全绿
-- [ ] 4.3 先写测试：`condition_match` 在同槽位、不同、一方为空三种情形下
+- [x] 4.3 先写测试：`condition_match` 在同槽位、不同、一方为空三种情形下
       返回 1.0 / 0.0 / 0.5；Jaccard 语义正确，
       验证：`uv run pytest tests/retrieval/test_condition.py -q` 全绿
-- [ ] 4.4 实现 `condition_match()`，
+- [x] 4.4 实现 `condition_match()`，
       验证：`uv run pytest tests/retrieval/test_condition.py -q` 全绿
-- [ ] 4.5 用真实数据统计：三份场景文件的条件字符串里，
+- [x] 4.5 用真实数据统计：三份场景文件的条件字符串里，
       `structured=True` 的比例是多少，并把数字记进报告，
       验证：`uv run python -m evals.tools.report_condition_coverage` 输出比例
 
 ## 5. 三路召回
 
-- [ ] 5.1 先写测试：词面召回按 BM25 降序、只返回 ACTIVE、
+- [x] 5.1 先写测试：词面召回按 BM25 降序、只返回 ACTIVE、
       能用原文命中的词召回，
       验证：`uv run pytest tests/retrieval/test_lexical.py -q` 全绿
-- [ ] 5.2 实现 `lexical.py`，
+- [x] 5.2 实现 `lexical.py`，
       验证：`uv run pytest tests/retrieval/test_lexical.py -q` 全绿
-- [ ] 5.3 先写测试：向量召回按余弦降序、跳过无向量条目、
+- [x] 5.3 先写测试：向量召回按余弦降序、跳过无向量条目、
       维度从 `meta` 读取并与候选校验（不符则报错而非静默跳过），
       验证：`uv run pytest tests/retrieval/test_vector.py -q` 全绿
-- [ ] 5.4 实现 `vector.py`（numpy 暴力余弦），
+- [x] 5.4 实现 `vector.py`（numpy 暴力余弦），
       验证：`uv run pytest tests/retrieval/test_vector.py -q` 全绿
-- [ ] 5.5 先写测试：条件兄弟邻接返回同键**不同 condition** 的条目、
+- [x] 5.5 先写测试：条件兄弟邻接返回同键**不同 condition** 的条目、
       不含查询自身命中那条、跨主体不串味，
       验证：`uv run pytest tests/retrieval/test_adjacency.py -q` 全绿
-- [ ] 5.6 实现 `adjacency.py`（只做条件兄弟，不做跨关系），
+- [x] 5.6 实现 `adjacency.py`（只做条件兄弟，不做跨关系），
       验证：`uv run pytest tests/retrieval/test_adjacency.py -q` 全绿
 - [ ] 5.7 先写测试：单路可关、全关返回空、各路长度截断到同一上限，
       验证：`uv run pytest tests/retrieval/test_pipeline.py -q` 全绿
 
 ## 6. RRF 融合
 
-- [ ] 6.1 先写测试：多路前列优于单路前列（列表长度 < k+2 时）、
+- [x] 6.1 先写测试：多路前列优于单路前列（列表长度 < k+2 时）、
       单路退化为该路排名、k 修改导致顺序变化（用两列表 fixture）、
       量纲无关（BM25 大分数 + 余弦小分数不改变结果），
       验证：`uv run pytest tests/retrieval/test_fusion.py -q` 全绿
-- [ ] 6.2 实现 `fusion.py`，
+- [x] 6.2 实现 `fusion.py`，
       验证：`uv run pytest tests/retrieval/test_fusion.py -q` 全绿
 
 ## 7. 四特征重排
 
-- [ ] 7.1 先写测试：四个特征各自计算且**取值落在 [0,1]**（越界报错）、
+- [x] 7.1 先写测试：四个特征各自计算且**取值落在 [0,1]**（越界报错）、
       `rrf_norm` 归一化到最大值 1.0、
       条件缺失时返回 0.5、
       状态惩罚对 ACTIVE / SUPERSEDED / CONFLICTED 递减，
       验证：`uv run pytest tests/retrieval/test_rerank.py -q` 全绿
-- [ ] 7.2 实现四个特征函数，
+- [x] 7.2 实现四个特征函数，
       验证：`uv run pytest tests/retrieval/test_rerank.py -q` 全绿
-- [ ] 7.3 先写测试：权重和必须为 1（否则拒绝）；
+- [x] 7.3 先写测试：权重和必须为 1（否则拒绝）；
       全关时退化为 `rrf_norm` 排序**且不触发权重校验**；
       单特征主导时排序符合该特征，
       验证：`uv run pytest tests/retrieval/test_rerank.py -q` 全绿
-- [ ] 7.4 实现加权求和与权重校验（全关走独立分支），
+- [x] 7.4 实现加权求和与权重校验（全关走独立分支），
       验证：`uv run pytest tests/retrieval/test_rerank.py -q` 全绿
-- [ ] 7.5 先写测试：**每个特征在真实候选池上必须有权重外方差**——
+- [x] 7.5 先写测试：**每个特征在真实候选池上必须有权重外方差**——
       若某特征对所有候选返回同一值，测试失败并指出该特征退化，
       验证：`uv run pytest tests/retrieval/test_rerank_variance.py -q` 全绿
 
@@ -130,17 +130,17 @@
 
 ## 9. 指标与归因
 
-- [ ] 9.1 先写测试：SEH@K、SRS = 1/rank（rank 1/2/5 → 1.0/0.5/0.2）、
+- [x] 9.1 先写测试：SEH@K、SRS = 1/rank（rank 1/2/5 → 1.0/0.5/0.2）、
       未召回 SRS = 0、K ≥ 池大小时抛错、
       连续值 SRS 的配对 bootstrap 可用，
       验证：`uv run pytest tests/retrieval/test_metrics.py -q` 全绿
-- [ ] 9.2 实现 `evals/metrics/retrieval.py`（含连续值配对区间），
+- [x] 9.2 实现 `evals/metrics/retrieval.py`（含连续值配对区间），
       验证：`uv run pytest tests/retrieval/test_metrics.py -q` 全绿
-- [ ] 9.3 先写测试：三类归因互斥且完备（池外 / 排序过低 / 重排丢弃）；
+- [x] 9.3 先写测试：三类归因互斥且完备（池外 / 排序过低 / 重排丢弃）；
       用假 LLM 断言归因**零模型调用**；
       保留未截断融合列表使"排序过低"可观测，
       验证：`uv run pytest tests/retrieval/test_attribution.py -q` 全绿
-- [ ] 9.4 实现 `attribution.py`，
+- [x] 9.4 实现 `attribution.py`，
       验证：`uv run pytest tests/retrieval/test_attribution.py -q` 全绿
 
 ## 10. 评测与消融

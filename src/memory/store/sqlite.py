@@ -285,6 +285,16 @@ class SqliteStore:
     def recursive_triggers_enabled(self) -> bool:
         return bool(self._conn.execute("PRAGMA recursive_triggers").fetchone()[0])
 
+    @property
+    def conn(self) -> sqlite3.Connection:
+        """只读用途的连接访问器。
+
+        检索层需要执行自己的 SQL（余弦扫描、条件兄弟查找），
+        把这些查询塞进 `SqliteStore` 会让存储层承担检索职责。
+        但写入仍必须走 `SqliteStore` 的方法——它们维护不变量与审计。
+        """
+        return self._conn
+
     def event_count(self) -> int:
         return int(self._conn.execute("SELECT COUNT(*) FROM events").fetchone()[0])
 
