@@ -135,6 +135,7 @@ class MemoryItem:
     recorded_at: datetime
     authority: Authority
     source: Source
+    text: str | None = field(default=None)
     id: str = field(default="")
     version: int = field(default=0)
     ordinal: int = field(default=0)
@@ -148,6 +149,7 @@ class MemoryItem:
         object.__setattr__(self, "relation", _require_text("relation", self.relation))
         object.__setattr__(self, "value", _require_text("value", self.value))
         object.__setattr__(self, "condition", normalize_condition(self.condition))
+        object.__setattr__(self, "text", normalize_condition(self.text))
 
         # StrEnum 继承自 str，所以 "galaxy" 能通过类型检查但语义非法。
         # 必须显式转换，否则非法 scope/status/authority 会静默进入数据库。

@@ -5,42 +5,42 @@
 
 ## 1. 让存储支持原文检索
 
-- [ ] 1.1 先写测试：`MemoryItem` 接受 `text` 字段、为空时兼容、
+- [x] 1.1 先写测试：`MemoryItem` 接受 `text` 字段、为空时兼容、
       在 `supersede` 时不被自动清空，
       验证：`uv run pytest tests/store/test_text_field.py -q` 全绿
-- [ ] 1.2 实现 `MemoryItem.text`（可空）与 DDL 列，
+- [x] 1.2 实现 `MemoryItem.text`（可空）与 DDL 列，
       验证：`uv run pytest tests/store/test_text_field.py -q` 全绿
-- [ ] 1.3 先写测试：`items_fts` 索引包含原文——
+- [x] 1.3 先写测试：`items_fts` 索引包含原文——
       用只在原文里出现的词能命中该条；
       且用 `bm25()` 排序（构造两条，相关性高者排前，与 version 顺序相反），
       验证：`uv run pytest tests/store/test_fts_bm25.py -q` 全绿
-- [ ] 1.4 实现索引内容变更与 `ORDER BY bm25(items_fts)`，
+- [x] 1.4 实现索引内容变更与 `ORDER BY bm25(items_fts)`，
       验证：`uv run pytest tests/store/test_fts_bm25.py -q` 全绿
-- [ ] 1.5 实现 `evals/tools/rebuild_fts.py`（DROP + 重建 + 灌入，含条目数校验），
+- [x] 1.5 实现 `evals/tools/rebuild_fts.py`（DROP + 重建 + 灌入，含条目数校验），
       验证：重建前后条目数一致，且原文可检索
 
 ## 2. 补评测因变量
 
-- [ ] 2.1 先写测试：`annotate_retrieval` 为每条场景补 `query` 与 `gold_item_id`；
+- [x] 2.1 先写测试：`annotate_retrieval` 为每条场景补 `query` 与 `gold_item_id`；
       ADD 类（`existing_value is None`）的 gold 为 `null`；
       query 取原文而非拼接查找键，
       验证：`uv run pytest tests/retrieval/test_annotate.py -q` 全绿
-- [ ] 2.2 实现 `evals/tools/annotate_retrieval.py`，对 dev/test/independent 三份文件运行，
+- [x] 2.2 实现 `evals/tools/annotate_retrieval.py`，对 dev/test/independent 三份文件运行，
       验证：三份文件 100% 有 `query`，gold 覆盖率为 `非 ADD 条数 / 总数`
-- [ ] 2.3 先写测试：ADD 类不计入召回指标但被单独计数；
+- [x] 2.3 先写测试：ADD 类不计入召回指标但被单独计数；
       gold 不在池中时报"池构建失败"而非静默跳过，
       验证：`uv run pytest tests/retrieval/test_annotate.py -q` 全绿
 
 ## 3. 候选池
 
-- [ ] 3.1 先写测试：池大小 = 1 + N（默认 21）；
+- [x] 3.1 先写测试：池大小 = 1 + N（默认 21）；
       干扰项逻辑键互不相同；
       gold 必在池中且位置随场景变化；
       池大小 ≤ K 时抛错，
       验证：`uv run pytest tests/retrieval/test_pool.py -q` 全绿
-- [ ] 3.2 实现 `src/memory/retrieval/pool.py`（干扰项排除与 gold 同 subject 的条目），
+- [x] 3.2 实现 `src/memory/retrieval/pool.py`（干扰项排除与 gold 同 subject 的条目），
       验证：`uv run pytest tests/retrieval/test_pool.py -q` 全绿
-- [ ] 3.3 先写测试：池能真实装进 `SqliteStore` 而**不触发 `ActiveExists`**
+- [x] 3.3 先写测试：池能真实装进 `SqliteStore` 而**不触发 `ActiveExists`**
       （审查实测跨文件合并会撞 17 个重复键），
       验证：`uv run pytest tests/retrieval/test_pool_store.py -q` 全绿
 

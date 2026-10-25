@@ -79,6 +79,7 @@ CREATE TABLE IF NOT EXISTS items (
     superseded_by TEXT,
     linked_ids    TEXT NOT NULL DEFAULT '[]',
     confidence    REAL NOT NULL DEFAULT 1.0,
+    source_text   TEXT,
     CHECK (valid_to IS NULL OR valid_to > valid_from),
     CHECK (confidence >= 0.0 AND confidence <= 1.0)
 );
@@ -315,6 +316,9 @@ class SqliteStore:
 
         中文按 bigram；单字不是 bigram，降级为 LIKE 前缀匹配
         （FTS5 的 unicode61 把整段中文当一个 token，实测单字查不到）。
+
+        **按 BM25 排序**，而不是按 version：version 是键内序号，跨键无序，
+        用它排序会让 RRF 拿到一个假排名。
         """
         tokens = tokenize(query).split()
         multi_char = [token for token in tokens if len(token) > 1]
@@ -324,7 +328,7 @@ class SqliteStore:
             rows = self._conn.execute(
                 "SELECT i.* FROM items_fts f JOIN items i ON i.id = f.item_id"
                 " WHERE items_fts MATCH ? AND i.status = 'ACTIVE'"
-                " ORDER BY i.version DESC LIMIT ?",
+                " ORDER BY bm25(items_fts) ASC, i.ordinal DESC LIMIT ?",
                 (expression, limit),
             ).fetchall()
             if rows:
@@ -334,9 +338,9 @@ class SqliteStore:
         like = f"%{query}%"
         rows = self._conn.execute(
             "SELECT * FROM items WHERE status = 'ACTIVE'"
-            " AND (value LIKE ? OR subject LIKE ? OR relation LIKE ?)"
-            " ORDER BY version DESC LIMIT ?",
-            (like, like, like, limit),
+            " AND (value LIKE ? OR subject LIKE ? OR relation LIKE ? OR source_text LIKE ?)"
+            " ORDER BY ordinal DESC LIMIT ?",
+            (like, like, like, like, limit),
         ).fetchall()
         return [_row_to_item(row) for row in rows]
 
@@ -663,8 +667,8 @@ class SqliteStore:
                 "INSERT INTO items (id, owner, scope, subject, relation, condition, value,"
                 " status, valid_from, valid_to, recorded_at, authority, session_id,"
                 " turn_id, speaker, fingerprint, fingerprint_key, ordinal, version,"
-                " superseded_by, linked_ids, confidence)"
-                " VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+                " superseded_by, linked_ids, confidence, source_text)"
+                " VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
                 (
                     item.id,
                     item.owner,
@@ -688,6 +692,7 @@ class SqliteStore:
                     item.superseded_by,
                     "[]",
                     item.confidence,
+                    item.text,
                 ),
             )
         except sqlite3.IntegrityError as exc:
@@ -710,9 +715,14 @@ class SqliteStore:
             )
 
     def _write_fts(self, conn: sqlite3.Connection, item: MemoryItem) -> None:
+        # 原文必须进索引：C3 的 9 条语义错误正是"原文与存储值零重叠"，
+        # 不索引原文的话，词面路径对这个差距结构性失明。
+        content = f"{item.subject} {item.relation} {item.value}"
+        if item.text:
+            content = f"{content} {item.text}"
         conn.execute(
             "INSERT INTO items_fts (item_id, tokens) VALUES (?,?)",
-            (item.id, tokenize(f"{item.subject} {item.relation} {item.value}")),
+            (item.id, tokenize(content)),
         )
 
     def _close(
@@ -817,4 +827,5 @@ def _row_to_item(row: sqlite3.Row) -> MemoryItem:
         ordinal=row["ordinal"],
         superseded_by=row["superseded_by"],
         confidence=row["confidence"],
+        text=row["source_text"],
     )
