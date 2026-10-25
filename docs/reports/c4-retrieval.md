@@ -131,13 +131,51 @@ independent 最低，所以不是泄露。
 3. **等义判断需要更多样本**才能判断 50% 是否稳定；
    当前只有 4 条，任何调整都可能是噪声
 
-## 8. 原始结果
+## 8. 实验纪律：一次需要如实记录的偏差
+
+设计里写的是"权重在 dev 上搜，test 上只跑一次"。实际运行次数（`results/retrieval-run-count.json`）：
+
+| 配置 | 运行次数 | 说明 |
+|---|---|---|
+| `test` + uniform | **1** | 纪律守住 |
+| `dev` + uniform | 1 | |
+| `independent` + uniform（低难度池） | **5** | **偏差所在** |
+| `independent` + same_relation | 4 | 诊断用 |
+| `independent` + adversarial | 4 | 诊断用 |
+| `independent` + 其余四组权重 | 各 1 | |
+
+### 偏差的性质
+
+`test` 只跑一次，这一条守住了。**但 `independent` 跑了 5 次，并且我基于它的诊断结论
+新增了 `pool_modes`（三种池难度）。**
+
+严格说这是一次**方法泄露**：`independent` 原本是 held-out，我却在它上面发现了
+"任务太简单"这个问题，然后据此改了代码。虽然改的是**评测框架**而不是检索算法，
+且没有根据它的分数调整任何参数，但边界确实模糊了。
+
+### 影响评估
+
+- **对检索分数无影响**：三种池模式的代码是新增的，`unrelated` 模式的分数
+  在加它之前和之后完全相同（都是 1.000）
+- **对结论有影响**：我在它上面确认了"同主题干扰池造不出来"，
+  这个结论现在写进了报告。若严格按 held-out 纪律，这个发现应该在 test 上做，
+  或另找第四个数据集
+- **缓解**：`pool_modes` 的引入记录在 `docs/reports/c4-pool-limitation.md` 里，
+  时间顺序可追溯，不是事后美化
+
+### 结论
+
+这条偏差不改变任何数字，但它提醒：**`test` 与 `independent` 的角色需要事先分清楚**。
+本变更里 `test` 是报告集、`independent` 是诊断集——
+如果一开始就这么声明，5 次运行是合规的。问题在于我事后才明确这个分工。
+
+## 9. 原始结果
 
 - `results/retrieval-{split}-{weights}{-nodedup}-pool{mode}.json`
 - `results/retrieval-run-count.json`（记录每个配置跑了几次）
 - `results/equivalence-classification.json`
 
-## 9. 一句话总结
+## 10. 一句话总结
 
 **读路径建成了，指标可测了，但测出来的东西还不能支持"检索能力强"这个结论。**
 

@@ -102,3 +102,35 @@ def test_run_count_is_recorded() -> None:
     counts = json.loads(path.read_text(encoding="utf-8"))
     assert counts
     assert all(isinstance(value, int) and value > 0 for value in counts.values())
+
+
+def test_test_split_was_run_only_once() -> None:
+    """`test` 是报告集，只应跑一次。
+
+    实际守住了这一条。若有人为了看效果反复跑 test，这里会失败——
+    那意味着报告里的数字可以被反复挑选，失去预注册的意义。
+    """
+    path = RESULTS / "retrieval-run-count.json"
+    if not path.exists():
+        pytest.skip("运行计数文件不存在")
+
+    counts = json.loads(path.read_text(encoding="utf-8"))
+    test_runs = {k: v for k, v in counts.items() if k.startswith("retrieval-test-")}
+
+    assert test_runs
+    assert all(value == 1 for value in test_runs.values()), (
+        f"test 集被运行了多次：{test_runs}"
+    )
+
+
+def test_report_discloses_the_independent_split_deviation() -> None:
+    """`independent` 被跑了多次并据此改了评测框架，这条必须留在报告里。
+
+    这不是可以省略的细节：它是一次真实的方法泄露，
+    即使对分数没有影响，也必须可追溯。
+    """
+    text = REPORT.read_text(encoding="utf-8")
+
+    assert "实验纪律" in text
+    assert "偏差" in text
+    assert "independent" in text

@@ -54,3 +54,9 @@ uv run pytest
 
 - 需求：`docs/requirements/agent-memory.md`
 - 工作流约定：`AGENTS.md`
+- **交接说明（新会话必读）**：`docs/HANDOFF.md`
+- 实验报告：
+  - `docs/reports/c1-baselines.md`
+  - `docs/reports/c3-resolver.md`（自写 100% vs 独立 50%）
+  - `docs/reports/c4-retrieval.md`（为什么满分不能证明能力）
+  - `docs/reports/c4-pool-limitation.md`
