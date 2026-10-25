@@ -194,13 +194,13 @@ def test_report_documents_the_conflict_repair() -> None:
 
 
 def test_report_states_the_caveat() -> None:
-    """报告必须明确写出"100% 不可信"，否则读者会被数字误导。"""
+    """报告必须同时写出"自写集 100% 不可信"与"独立集才是真实位置"。"""
     text = REPORT.read_text(encoding="utf-8")
 
-    assert "不能用来证明什么" in text
     assert "循环论证" in text
-    # 标签完成不等于结论成立：报告必须保留"场景来源单一"这条限制
-    assert "自写自测" in text or "全部出自我一人" in text
+    assert "50.0%" in text, "报告必须给出独立集的实际分数"
+    assert "held-out" in text
+    assert "自写" in text
 
 
 def test_normalized_false_is_zero_after_alias_fix() -> None:

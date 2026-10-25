@@ -276,6 +276,46 @@
       验证：`test_label_confirmation_progress_matches_report` 与
       `test_kappa_between_annotators` 均通过
 
+## 13. 独立来源场景集（held-out，本次最重要的测量）
+
+> 起因：用户提供了第三方朋友独立编写的 30 条场景与判断。
+> 这是本项目第一个不由作者编写的数据，用来测量真实泛化能力。
+
+- [x] 13.1 逐条核对 30 条场景，把原作者的原文、判断、理由、把握程度
+      完整保留；只补三处结构化字段（subject/relation、existing_authority、condition），
+      并在脚本注释与报告中声明各自的局限，
+      验证：`data/conflict-set/independent.jsonl` 30 条可加载
+- [x] 13.2 先写测试：schema 校验（缺字段、非法 expected/authority/confidence）、
+      六类齐全、理由不得为空、`existing_authority` 不得全是 user_direct，
+      验证：`uv run pytest tests/resolver/test_independent_set.py -q` 全绿
+- [x] 13.3 实现 `evals/datasets/independent_set.py` 与
+      `evals/tools/build_independent_set.py`，
+      验证：`uv run python -m evals.tools.build_independent_set` 输出 30 条
+- [x] 13.4 实现独立评测入口 `evals/run_independent.py`（与 `run_conflict` 分开，
+      让 held-out 在代码层面也清晰可见），
+      验证：`uv run python -m evals.run_independent --no-llm` 输出分数与错例
+- [x] 13.5 **首次测量：43.3%**（17 条错）。归因发现 7 条被判成
+      `lower_authority`，但根因是我的数据构建把所有 `existing_authority`
+      写成了 `user_direct`——正是我在设计文档里批评过的错误，
+      验证：`test_authority_is_not_all_user_direct` 失败
+- [x] 13.6 修正 7 条 `existing_authority`（按原作者"谁说的"忠实映射），
+      重测得到 **50.0%**（15 条错），
+      验证：重跑 `run_independent` 并更新报告
+- [x] 13.7 按根因重新归因 15 条错误：MERGE 语义判断 6 条、
+      猜测语气 4 条、NOOP 语义等价 3 条、低权威 2 条；
+      并算出按原作者把握程度分层的错误率（确定 40%、不太确定 100%），
+      验证：报告第 0 节列出这两个表
+- [x] 13.8 实现对照实验 `evals/ablate_independent.py`，
+      量化三个候选改动。结论：`drop_lower_authority` 只 +3.3pp 且丢失安全性，
+      另两个为 0。**均不采用**，
+      验证：`results/independent-variants.json` 记录四个变体
+- [x] 13.9 用测试锁定 held-out 纪律：基线 50.0% 与判错条目集合，
+      任何人改规则让它们变化都必须显式更新断言，
+      验证：`test_baseline_accuracy_is_locked` 与 `test_wrong_case_set_is_stable` 通过
+- [x] 13.10 更新报告与 `docs/resolver.md`：新增独立集章节、根因分布、
+      把握程度分层、对照实验结论、held-out 纪律，
+      验证：报告第 0 节与第 8 节数字一致
+
 ## Workflow follow-up
 
 - 标签人工确认后重跑并更新报告，再归档该变更。

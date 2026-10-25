@@ -1,0 +1,93 @@
+[
+  {
+    "variant": "baseline",
+    "description": "当前规则（七条，含 lower_authority 一律 CONFLICT）",
+    "n": 30,
+    "accuracy": 0.5,
+    "wrong_ids": [
+      "ind-01",
+      "ind-02",
+      "ind-03",
+      "ind-05",
+      "ind-07",
+      "ind-09",
+      "ind-11",
+      "ind-12",
+      "ind-13",
+      "ind-17",
+      "ind-18",
+      "ind-22",
+      "ind-25",
+      "ind-28",
+      "ind-30"
+    ]
+  },
+  {
+    "variant": "authority_updates",
+    "description": "权威更低但文本含明确变更标记时，判 SUPERSEDE 而非 CONFLICT",
+    "n": 30,
+    "accuracy": 0.5,
+    "wrong_ids": [
+      "ind-01",
+      "ind-02",
+      "ind-03",
+      "ind-05",
+      "ind-07",
+      "ind-09",
+      "ind-11",
+      "ind-12",
+      "ind-13",
+      "ind-17",
+      "ind-18",
+      "ind-22",
+      "ind-25",
+      "ind-28",
+      "ind-30"
+    ]
+  },
+  {
+    "variant": "drop_lower_authority",
+    "description": "完全去掉 lower_authority 规则（所有新状态都取代）",
+    "n": 30,
+    "accuracy": 0.5333333333333333,
+    "wrong_ids": [
+      "ind-02",
+      "ind-03",
+      "ind-05",
+      "ind-07",
+      "ind-09",
+      "ind-11",
+      "ind-12",
+      "ind-13",
+      "ind-17",
+      "ind-18",
+      "ind-19",
+      "ind-22",
+      "ind-28",
+      "ind-30"
+    ]
+  },
+  {
+    "variant": "semantic_merge",
+    "description": "用模型判断'旧值是否仍成立'来决定 MERGE（需要 LLM）",
+    "n": 30,
+    "accuracy": 0.5,
+    "wrong_ids": [
+      "ind-01",
+      "ind-02",
+      "ind-03",
+      "ind-05",
+      "ind-07",
+      "ind-09",
+      "ind-11",
+      "ind-12",
+      "ind-13",
+      "ind-17",
+      "ind-18",
+      "ind-22",
+      "ind-25",
+      "ind-28",
+      "ind-30"
+    ]
+  }
+]
