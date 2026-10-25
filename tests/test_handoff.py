@@ -79,7 +79,14 @@ def test_no_active_changes_after_archive() -> None:
 
 
 def test_handoff_mentions_recommended_option() -> None:
-    """推荐选项要明确，否则新会话无法判断优先级。"""
+    """下一步必须唯一且明确，否则新会话无法判断优先级。
+
+    原先这里断言的是"选项 B（推荐）"。C4 的读数被推翻后，选项 A 作废、
+    选项 B 并入 `retrieval-dataset-v2`——继续要求那个字面标签会暗示还存在二选一。
+    因此改为断言**更强**的性质：只有一个推荐步骤，且作废的那一个被写明。
+    """
     text = _text()
 
-    assert re.search(r"选项 B[（(]推荐", text), "交接文件未标注推荐选项"
+    assert re.search(r"当前步骤[（(]推荐[）)]|### 当前步骤", text), "交接文件未标注当前步骤"
+    assert "retrieval-dataset-v2" in text, "交接文件未指向 v2 协议"
+    assert "作废" in text, "作废的选项必须写明，否则新会话会重提它"

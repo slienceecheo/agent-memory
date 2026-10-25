@@ -1,0 +1,218 @@
+{
+  "generated": "2026-10-25",
+  "purpose": "定位 C4 的 SEH@5=1.000 由哪些构造缺陷造成",
+  "caveat": "V1/V3 抹掉 gold 原文后，gold 没有正确的原文可用——数据集从未记录『这条记忆由哪句话写入』。因此 V1/V3 只能作为下界，不是公平基线。",
+  "k": 5,
+  "variants": {
+    "dev": {
+      "V0": {
+        "description": "现状：gold 原文=query，干扰项无原文",
+        "n": 33,
+        "seh_at_k": 1.0,
+        "srs": 0.954545,
+        "recall_size_histogram": {
+          "1": 26,
+          "2": 6,
+          "3": 1
+        },
+        "single_candidate_cases": 26
+      },
+      "V1": {
+        "description": "抹掉 gold 原文，干扰项无原文",
+        "n": 33,
+        "seh_at_k": 0.606061,
+        "srs": 0.590909,
+        "recall_size_histogram": {
+          "0": 10,
+          "1": 18,
+          "2": 5
+        },
+        "single_candidate_cases": 18
+      },
+      "V2": {
+        "description": "gold 原文=query，干扰项带各自原文",
+        "n": 33,
+        "seh_at_k": 1.0,
+        "srs": 0.954545,
+        "recall_size_histogram": {
+          "1": 23,
+          "2": 3,
+          "3": 5,
+          "5": 2
+        },
+        "single_candidate_cases": 23
+      },
+      "V3": {
+        "description": "抹掉 gold 原文，干扰项带各自原文",
+        "n": 33,
+        "seh_at_k": 0.606061,
+        "srs": 0.575758,
+        "recall_size_histogram": {
+          "0": 9,
+          "1": 17,
+          "2": 1,
+          "3": 4,
+          "5": 2
+        },
+        "single_candidate_cases": 17
+      }
+    },
+    "test": {
+      "V0": {
+        "description": "现状：gold 原文=query，干扰项无原文",
+        "n": 17,
+        "seh_at_k": 1.0,
+        "srs": 0.970588,
+        "recall_size_histogram": {
+          "1": 15,
+          "2": 2
+        },
+        "single_candidate_cases": 15
+      },
+      "V1": {
+        "description": "抹掉 gold 原文，干扰项无原文",
+        "n": 17,
+        "seh_at_k": 0.411765,
+        "srs": 0.411765,
+        "recall_size_histogram": {
+          "0": 8,
+          "1": 9
+        },
+        "single_candidate_cases": 9
+      },
+      "V2": {
+        "description": "gold 原文=query，干扰项带各自原文",
+        "n": 17,
+        "seh_at_k": 1.0,
+        "srs": 0.911765,
+        "recall_size_histogram": {
+          "1": 6,
+          "2": 9,
+          "3": 1,
+          "4": 1
+        },
+        "single_candidate_cases": 6
+      },
+      "V3": {
+        "description": "抹掉 gold 原文，干扰项带各自原文",
+        "n": 17,
+        "seh_at_k": 0.411765,
+        "srs": 0.382353,
+        "recall_size_histogram": {
+          "0": 2,
+          "1": 10,
+          "2": 4,
+          "3": 1
+        },
+        "single_candidate_cases": 10
+      }
+    },
+    "independent": {
+      "V0": {
+        "description": "现状：gold 原文=query，干扰项无原文",
+        "n": 26,
+        "seh_at_k": 1.0,
+        "srs": 1.0,
+        "recall_size_histogram": {
+          "1": 26
+        },
+        "single_candidate_cases": 26
+      },
+      "V1": {
+        "description": "抹掉 gold 原文，干扰项无原文",
+        "n": 26,
+        "seh_at_k": 0.5,
+        "srs": 0.5,
+        "recall_size_histogram": {
+          "0": 13,
+          "1": 13
+        },
+        "single_candidate_cases": 13
+      },
+      "V2": {
+        "description": "gold 原文=query，干扰项带各自原文",
+        "n": 26,
+        "seh_at_k": 1.0,
+        "srs": 0.932692,
+        "recall_size_histogram": {
+          "1": 21,
+          "2": 3,
+          "4": 2
+        },
+        "single_candidate_cases": 21
+      },
+      "V3": {
+        "description": "抹掉 gold 原文，干扰项带各自原文",
+        "n": 26,
+        "seh_at_k": 0.5,
+        "srs": 0.451923,
+        "recall_size_histogram": {
+          "0": 11,
+          "1": 11,
+          "2": 2,
+          "3": 1,
+          "4": 1
+        },
+        "single_candidate_cases": 11
+      }
+    }
+  },
+  "feature_variance_v0": {
+    "dev": {
+      "cases": 33,
+      "with_variance": {
+        "base": 7,
+        "condition": 3,
+        "authority": 0,
+        "status": 0
+      },
+      "ratio": {
+        "base": 0.212121,
+        "condition": 0.090909,
+        "authority": 0.0,
+        "status": 0.0
+      }
+    },
+    "test": {
+      "cases": 17,
+      "with_variance": {
+        "base": 2,
+        "condition": 1,
+        "authority": 0,
+        "status": 0
+      },
+      "ratio": {
+        "base": 0.117647,
+        "condition": 0.058824,
+        "authority": 0.0,
+        "status": 0.0
+      }
+    },
+    "independent": {
+      "cases": 26,
+      "with_variance": {
+        "base": 0,
+        "condition": 0,
+        "authority": 0,
+        "status": 0
+      },
+      "ratio": {
+        "base": 0.0,
+        "condition": 0.0,
+        "authority": 0.0,
+        "status": 0.0
+      }
+    }
+  },
+  "distractor_sampling": {
+    "distinct_compositions": 15,
+    "most_reused_composition_count": 36,
+    "note": "select_pool_distractors 用 others[:limit] 取固定前缀，不是随机采样"
+  },
+  "condition_supplied_vs_extracted": {
+    "total_conditioned": 16,
+    "extractable_from_query": 15,
+    "only_in_annotation": 0,
+    "note": "condition_match 收到的是 annotation 的 condition 字段，不是从 query 抽的"
+  }
+}

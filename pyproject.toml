@@ -32,6 +32,7 @@ packages = ["src/memory"]
 testpaths = ["tests"]
 markers = [
     "network: hits a real external service; deselected by default",
+    "locked_defect: 锁定某个已知缺陷的现状。修复后此测试必须变红，并提示同步报告",
 ]
 addopts = "-m 'not network'"
 
