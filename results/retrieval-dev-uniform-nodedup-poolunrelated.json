@@ -1,0 +1,421 @@
+{
+  "weights": "uniform",
+  "pool_mode": "unrelated",
+  "dedup": false,
+  "k": 5,
+  "cases": 40,
+  "with_gold": 33,
+  "without_gold": 7,
+  "skipped_small_pool": 0,
+  "seh_at_k": 1.0,
+  "srs": 0.9545454545454546,
+  "attribution": {
+    "NOT_IN_POOL": 0,
+    "LOW_RANK": 0,
+    "RERANK_DROPPED": 0
+  },
+  "per_case": [
+    {
+      "case_id": "dev-add-01",
+      "has_gold": false,
+      "pool_size": 0,
+      "rank_after_fusion": null,
+      "rank_after_rerank": null,
+      "seh": null,
+      "srs": null,
+      "attribution": null
+    },
+    {
+      "case_id": "dev-add-02",
+      "has_gold": false,
+      "pool_size": 0,
+      "rank_after_fusion": null,
+      "rank_after_rerank": null,
+      "seh": null,
+      "srs": null,
+      "attribution": null
+    },
+    {
+      "case_id": "dev-add-03",
+      "has_gold": false,
+      "pool_size": 0,
+      "rank_after_fusion": null,
+      "rank_after_rerank": null,
+      "seh": null,
+      "srs": null,
+      "attribution": null
+    },
+    {
+      "case_id": "dev-add-04",
+      "has_gold": false,
+      "pool_size": 0,
+      "rank_after_fusion": null,
+      "rank_after_rerank": null,
+      "seh": null,
+      "srs": null,
+      "attribution": null
+    },
+    {
+      "case_id": "dev-add-05",
+      "has_gold": false,
+      "pool_size": 0,
+      "rank_after_fusion": null,
+      "rank_after_rerank": null,
+      "seh": null,
+      "srs": null,
+      "attribution": null
+    },
+    {
+      "case_id": "dev-add-06",
+      "has_gold": false,
+      "pool_size": 0,
+      "rank_after_fusion": null,
+      "rank_after_rerank": null,
+      "seh": null,
+      "srs": null,
+      "attribution": null
+    },
+    {
+      "case_id": "dev-add-07",
+      "has_gold": false,
+      "pool_size": 0,
+      "rank_after_fusion": null,
+      "rank_after_rerank": null,
+      "seh": null,
+      "srs": null,
+      "attribution": null
+    },
+    {
+      "case_id": "dev-branch-01",
+      "has_gold": true,
+      "pool_size": 14,
+      "rank_after_fusion": 1,
+      "rank_after_rerank": 2,
+      "seh": true,
+      "srs": 0.5,
+      "attribution": null
+    },
+    {
+      "case_id": "dev-branch-02",
+      "has_gold": true,
+      "pool_size": 14,
+      "rank_after_fusion": 1,
+      "rank_after_rerank": 2,
+      "seh": true,
+      "srs": 0.5,
+      "attribution": null
+    },
+    {
+      "case_id": "dev-branch-03",
+      "has_gold": true,
+      "pool_size": 14,
+      "rank_after_fusion": 1,
+      "rank_after_rerank": 1,
+      "seh": true,
+      "srs": 1.0,
+      "attribution": null
+    },
+    {
+      "case_id": "dev-branch-04",
+      "has_gold": true,
+      "pool_size": 14,
+      "rank_after_fusion": 1,
+      "rank_after_rerank": 1,
+      "seh": true,
+      "srs": 1.0,
+      "attribution": null
+    },
+    {
+      "case_id": "dev-branch-05",
+      "has_gold": true,
+      "pool_size": 14,
+      "rank_after_fusion": 1,
+      "rank_after_rerank": 2,
+      "seh": true,
+      "srs": 0.5,
+      "attribution": null
+    },
+    {
+      "case_id": "dev-branch-06",
+      "has_gold": true,
+      "pool_size": 14,
+      "rank_after_fusion": 1,
+      "rank_after_rerank": 1,
+      "seh": true,
+      "srs": 1.0,
+      "attribution": null
+    },
+    {
+      "case_id": "dev-conf-01",
+      "has_gold": true,
+      "pool_size": 14,
+      "rank_after_fusion": 1,
+      "rank_after_rerank": 1,
+      "seh": true,
+      "srs": 1.0,
+      "attribution": null
+    },
+    {
+      "case_id": "dev-conf-02",
+      "has_gold": true,
+      "pool_size": 14,
+      "rank_after_fusion": 1,
+      "rank_after_rerank": 1,
+      "seh": true,
+      "srs": 1.0,
+      "attribution": null
+    },
+    {
+      "case_id": "dev-conf-03",
+      "has_gold": true,
+      "pool_size": 14,
+      "rank_after_fusion": 1,
+      "rank_after_rerank": 1,
+      "seh": true,
+      "srs": 1.0,
+      "attribution": null
+    },
+    {
+      "case_id": "dev-conf-04",
+      "has_gold": true,
+      "pool_size": 14,
+      "rank_after_fusion": 1,
+      "rank_after_rerank": 1,
+      "seh": true,
+      "srs": 1.0,
+      "attribution": null
+    },
+    {
+      "case_id": "dev-conf-05",
+      "has_gold": true,
+      "pool_size": 14,
+      "rank_after_fusion": 1,
+      "rank_after_rerank": 1,
+      "seh": true,
+      "srs": 1.0,
+      "attribution": null
+    },
+    {
+      "case_id": "dev-conf-06",
+      "has_gold": true,
+      "pool_size": 14,
+      "rank_after_fusion": 1,
+      "rank_after_rerank": 1,
+      "seh": true,
+      "srs": 1.0,
+      "attribution": null
+    },
+    {
+      "case_id": "dev-merge-01",
+      "has_gold": true,
+      "pool_size": 14,
+      "rank_after_fusion": 1,
+      "rank_after_rerank": 1,
+      "seh": true,
+      "srs": 1.0,
+      "attribution": null
+    },
+    {
+      "case_id": "dev-merge-02",
+      "has_gold": true,
+      "pool_size": 14,
+      "rank_after_fusion": 1,
+      "rank_after_rerank": 1,
+      "seh": true,
+      "srs": 1.0,
+      "attribution": null
+    },
+    {
+      "case_id": "dev-merge-03",
+      "has_gold": true,
+      "pool_size": 14,
+      "rank_after_fusion": 1,
+      "rank_after_rerank": 1,
+      "seh": true,
+      "srs": 1.0,
+      "attribution": null
+    },
+    {
+      "case_id": "dev-merge-04",
+      "has_gold": true,
+      "pool_size": 14,
+      "rank_after_fusion": 1,
+      "rank_after_rerank": 1,
+      "seh": true,
+      "srs": 1.0,
+      "attribution": null
+    },
+    {
+      "case_id": "dev-merge-05",
+      "has_gold": true,
+      "pool_size": 14,
+      "rank_after_fusion": 1,
+      "rank_after_rerank": 1,
+      "seh": true,
+      "srs": 1.0,
+      "attribution": null
+    },
+    {
+      "case_id": "dev-merge-06",
+      "has_gold": true,
+      "pool_size": 14,
+      "rank_after_fusion": 1,
+      "rank_after_rerank": 1,
+      "seh": true,
+      "srs": 1.0,
+      "attribution": null
+    },
+    {
+      "case_id": "dev-merge-07",
+      "has_gold": true,
+      "pool_size": 14,
+      "rank_after_fusion": 1,
+      "rank_after_rerank": 1,
+      "seh": true,
+      "srs": 1.0,
+      "attribution": null
+    },
+    {
+      "case_id": "dev-noop-01",
+      "has_gold": true,
+      "pool_size": 14,
+      "rank_after_fusion": 1,
+      "rank_after_rerank": 1,
+      "seh": true,
+      "srs": 1.0,
+      "attribution": null
+    },
+    {
+      "case_id": "dev-noop-02",
+      "has_gold": true,
+      "pool_size": 14,
+      "rank_after_fusion": 1,
+      "rank_after_rerank": 1,
+      "seh": true,
+      "srs": 1.0,
+      "attribution": null
+    },
+    {
+      "case_id": "dev-noop-03",
+      "has_gold": true,
+      "pool_size": 14,
+      "rank_after_fusion": 1,
+      "rank_after_rerank": 1,
+      "seh": true,
+      "srs": 1.0,
+      "attribution": null
+    },
+    {
+      "case_id": "dev-noop-04",
+      "has_gold": true,
+      "pool_size": 14,
+      "rank_after_fusion": 1,
+      "rank_after_rerank": 1,
+      "seh": true,
+      "srs": 1.0,
+      "attribution": null
+    },
+    {
+      "case_id": "dev-noop-05",
+      "has_gold": true,
+      "pool_size": 14,
+      "rank_after_fusion": 1,
+      "rank_after_rerank": 1,
+      "seh": true,
+      "srs": 1.0,
+      "attribution": null
+    },
+    {
+      "case_id": "dev-noop-06",
+      "has_gold": true,
+      "pool_size": 14,
+      "rank_after_fusion": 1,
+      "rank_after_rerank": 1,
+      "seh": true,
+      "srs": 1.0,
+      "attribution": null
+    },
+    {
+      "case_id": "dev-noop-07",
+      "has_gold": true,
+      "pool_size": 14,
+      "rank_after_fusion": 1,
+      "rank_after_rerank": 1,
+      "seh": true,
+      "srs": 1.0,
+      "attribution": null
+    },
+    {
+      "case_id": "dev-sup-01",
+      "has_gold": true,
+      "pool_size": 14,
+      "rank_after_fusion": 1,
+      "rank_after_rerank": 1,
+      "seh": true,
+      "srs": 1.0,
+      "attribution": null
+    },
+    {
+      "case_id": "dev-sup-02",
+      "has_gold": true,
+      "pool_size": 14,
+      "rank_after_fusion": 1,
+      "rank_after_rerank": 1,
+      "seh": true,
+      "srs": 1.0,
+      "attribution": null
+    },
+    {
+      "case_id": "dev-sup-03",
+      "has_gold": true,
+      "pool_size": 14,
+      "rank_after_fusion": 1,
+      "rank_after_rerank": 1,
+      "seh": true,
+      "srs": 1.0,
+      "attribution": null
+    },
+    {
+      "case_id": "dev-sup-04",
+      "has_gold": true,
+      "pool_size": 14,
+      "rank_after_fusion": 1,
+      "rank_after_rerank": 1,
+      "seh": true,
+      "srs": 1.0,
+      "attribution": null
+    },
+    {
+      "case_id": "dev-sup-05",
+      "has_gold": true,
+      "pool_size": 14,
+      "rank_after_fusion": 1,
+      "rank_after_rerank": 1,
+      "seh": true,
+      "srs": 1.0,
+      "attribution": null
+    },
+    {
+      "case_id": "dev-sup-06",
+      "has_gold": true,
+      "pool_size": 14,
+      "rank_after_fusion": 1,
+      "rank_after_rerank": 1,
+      "seh": true,
+      "srs": 1.0,
+      "attribution": null
+    },
+    {
+      "case_id": "dev-sup-07",
+      "has_gold": true,
+      "pool_size": 14,
+      "rank_after_fusion": 1,
+      "rank_after_rerank": 1,
+      "seh": true,
+      "srs": 1.0,
+      "attribution": null
+    }
+  ],
+  "split": "dev",
+  "run_count": 1
+}

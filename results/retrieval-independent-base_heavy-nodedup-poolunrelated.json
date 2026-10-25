@@ -1,0 +1,321 @@
+{
+  "weights": "base_heavy",
+  "pool_mode": "unrelated",
+  "dedup": false,
+  "k": 5,
+  "cases": 30,
+  "with_gold": 26,
+  "without_gold": 4,
+  "skipped_small_pool": 0,
+  "seh_at_k": 1.0,
+  "srs": 1.0,
+  "attribution": {
+    "NOT_IN_POOL": 0,
+    "LOW_RANK": 0,
+    "RERANK_DROPPED": 0
+  },
+  "per_case": [
+    {
+      "case_id": "ind-01",
+      "has_gold": true,
+      "pool_size": 15,
+      "rank_after_fusion": 1,
+      "rank_after_rerank": 1,
+      "seh": true,
+      "srs": 1.0,
+      "attribution": null
+    },
+    {
+      "case_id": "ind-02",
+      "has_gold": true,
+      "pool_size": 15,
+      "rank_after_fusion": 1,
+      "rank_after_rerank": 1,
+      "seh": true,
+      "srs": 1.0,
+      "attribution": null
+    },
+    {
+      "case_id": "ind-03",
+      "has_gold": true,
+      "pool_size": 15,
+      "rank_after_fusion": 1,
+      "rank_after_rerank": 1,
+      "seh": true,
+      "srs": 1.0,
+      "attribution": null
+    },
+    {
+      "case_id": "ind-04",
+      "has_gold": false,
+      "pool_size": 0,
+      "rank_after_fusion": null,
+      "rank_after_rerank": null,
+      "seh": null,
+      "srs": null,
+      "attribution": null
+    },
+    {
+      "case_id": "ind-05",
+      "has_gold": true,
+      "pool_size": 15,
+      "rank_after_fusion": 1,
+      "rank_after_rerank": 1,
+      "seh": true,
+      "srs": 1.0,
+      "attribution": null
+    },
+    {
+      "case_id": "ind-06",
+      "has_gold": true,
+      "pool_size": 15,
+      "rank_after_fusion": 1,
+      "rank_after_rerank": 1,
+      "seh": true,
+      "srs": 1.0,
+      "attribution": null
+    },
+    {
+      "case_id": "ind-07",
+      "has_gold": true,
+      "pool_size": 15,
+      "rank_after_fusion": 1,
+      "rank_after_rerank": 1,
+      "seh": true,
+      "srs": 1.0,
+      "attribution": null
+    },
+    {
+      "case_id": "ind-08",
+      "has_gold": true,
+      "pool_size": 15,
+      "rank_after_fusion": 1,
+      "rank_after_rerank": 1,
+      "seh": true,
+      "srs": 1.0,
+      "attribution": null
+    },
+    {
+      "case_id": "ind-09",
+      "has_gold": true,
+      "pool_size": 15,
+      "rank_after_fusion": 1,
+      "rank_after_rerank": 1,
+      "seh": true,
+      "srs": 1.0,
+      "attribution": null
+    },
+    {
+      "case_id": "ind-10",
+      "has_gold": false,
+      "pool_size": 0,
+      "rank_after_fusion": null,
+      "rank_after_rerank": null,
+      "seh": null,
+      "srs": null,
+      "attribution": null
+    },
+    {
+      "case_id": "ind-11",
+      "has_gold": true,
+      "pool_size": 15,
+      "rank_after_fusion": 1,
+      "rank_after_rerank": 1,
+      "seh": true,
+      "srs": 1.0,
+      "attribution": null
+    },
+    {
+      "case_id": "ind-12",
+      "has_gold": true,
+      "pool_size": 15,
+      "rank_after_fusion": 1,
+      "rank_after_rerank": 1,
+      "seh": true,
+      "srs": 1.0,
+      "attribution": null
+    },
+    {
+      "case_id": "ind-13",
+      "has_gold": true,
+      "pool_size": 15,
+      "rank_after_fusion": 1,
+      "rank_after_rerank": 1,
+      "seh": true,
+      "srs": 1.0,
+      "attribution": null
+    },
+    {
+      "case_id": "ind-14",
+      "has_gold": true,
+      "pool_size": 15,
+      "rank_after_fusion": 1,
+      "rank_after_rerank": 1,
+      "seh": true,
+      "srs": 1.0,
+      "attribution": null
+    },
+    {
+      "case_id": "ind-15",
+      "has_gold": true,
+      "pool_size": 15,
+      "rank_after_fusion": 1,
+      "rank_after_rerank": 1,
+      "seh": true,
+      "srs": 1.0,
+      "attribution": null
+    },
+    {
+      "case_id": "ind-16",
+      "has_gold": false,
+      "pool_size": 0,
+      "rank_after_fusion": null,
+      "rank_after_rerank": null,
+      "seh": null,
+      "srs": null,
+      "attribution": null
+    },
+    {
+      "case_id": "ind-17",
+      "has_gold": true,
+      "pool_size": 15,
+      "rank_after_fusion": 1,
+      "rank_after_rerank": 1,
+      "seh": true,
+      "srs": 1.0,
+      "attribution": null
+    },
+    {
+      "case_id": "ind-18",
+      "has_gold": true,
+      "pool_size": 15,
+      "rank_after_fusion": 1,
+      "rank_after_rerank": 1,
+      "seh": true,
+      "srs": 1.0,
+      "attribution": null
+    },
+    {
+      "case_id": "ind-19",
+      "has_gold": true,
+      "pool_size": 15,
+      "rank_after_fusion": 1,
+      "rank_after_rerank": 1,
+      "seh": true,
+      "srs": 1.0,
+      "attribution": null
+    },
+    {
+      "case_id": "ind-20",
+      "has_gold": true,
+      "pool_size": 15,
+      "rank_after_fusion": 1,
+      "rank_after_rerank": 1,
+      "seh": true,
+      "srs": 1.0,
+      "attribution": null
+    },
+    {
+      "case_id": "ind-21",
+      "has_gold": true,
+      "pool_size": 15,
+      "rank_after_fusion": 1,
+      "rank_after_rerank": 1,
+      "seh": true,
+      "srs": 1.0,
+      "attribution": null
+    },
+    {
+      "case_id": "ind-22",
+      "has_gold": true,
+      "pool_size": 15,
+      "rank_after_fusion": 1,
+      "rank_after_rerank": 1,
+      "seh": true,
+      "srs": 1.0,
+      "attribution": null
+    },
+    {
+      "case_id": "ind-23",
+      "has_gold": true,
+      "pool_size": 15,
+      "rank_after_fusion": 1,
+      "rank_after_rerank": 1,
+      "seh": true,
+      "srs": 1.0,
+      "attribution": null
+    },
+    {
+      "case_id": "ind-24",
+      "has_gold": false,
+      "pool_size": 0,
+      "rank_after_fusion": null,
+      "rank_after_rerank": null,
+      "seh": null,
+      "srs": null,
+      "attribution": null
+    },
+    {
+      "case_id": "ind-25",
+      "has_gold": true,
+      "pool_size": 15,
+      "rank_after_fusion": 1,
+      "rank_after_rerank": 1,
+      "seh": true,
+      "srs": 1.0,
+      "attribution": null
+    },
+    {
+      "case_id": "ind-26",
+      "has_gold": true,
+      "pool_size": 15,
+      "rank_after_fusion": 1,
+      "rank_after_rerank": 1,
+      "seh": true,
+      "srs": 1.0,
+      "attribution": null
+    },
+    {
+      "case_id": "ind-27",
+      "has_gold": true,
+      "pool_size": 15,
+      "rank_after_fusion": 1,
+      "rank_after_rerank": 1,
+      "seh": true,
+      "srs": 1.0,
+      "attribution": null
+    },
+    {
+      "case_id": "ind-28",
+      "has_gold": true,
+      "pool_size": 15,
+      "rank_after_fusion": 1,
+      "rank_after_rerank": 1,
+      "seh": true,
+      "srs": 1.0,
+      "attribution": null
+    },
+    {
+      "case_id": "ind-29",
+      "has_gold": true,
+      "pool_size": 15,
+      "rank_after_fusion": 1,
+      "rank_after_rerank": 1,
+      "seh": true,
+      "srs": 1.0,
+      "attribution": null
+    },
+    {
+      "case_id": "ind-30",
+      "has_gold": true,
+      "pool_size": 15,
+      "rank_after_fusion": 1,
+      "rank_after_rerank": 1,
+      "seh": true,
+      "srs": 1.0,
+      "attribution": null
+    }
+  ],
+  "split": "independent",
+  "run_count": 1
+}

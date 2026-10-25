@@ -78,7 +78,7 @@
       验证：`uv run pytest tests/retrieval/test_adjacency.py -q` 全绿
 - [x] 5.6 实现 `adjacency.py`（只做条件兄弟，不做跨关系），
       验证：`uv run pytest tests/retrieval/test_adjacency.py -q` 全绿
-- [ ] 5.7 先写测试：单路可关、全关返回空、各路长度截断到同一上限，
+- [x] 5.7 先写测试：单路可关、全关返回空、各路长度截断到同一上限，
       验证：`uv run pytest tests/retrieval/test_pipeline.py -q` 全绿
 
 ## 6. RRF 融合
@@ -111,19 +111,19 @@
 
 ## 8. 语义等价与去重
 
-- [ ] 8.1 先写测试：三分类解析（等义/互补/无关）；
+- [x] 8.1 先写测试：三分类解析（等义/互补/无关）；
       乱码归为"无关"且失败计数递增；
       复用 C1 缓存后第二次零请求，
       验证：`uv run pytest tests/retrieval/test_equivalence.py -q` 全绿
-- [ ] 8.2 实现 `equivalence.py`，
+- [x] 8.2 实现 `equivalence.py`，
       验证：`uv run pytest tests/retrieval/test_equivalence.py -q` 全绿
-- [ ] 8.3 先写测试：去重阶段把 top-K 内判为"等义"的候选合并，
+- [x] 8.3 先写测试：去重阶段把 top-K 内判为"等义"的候选合并，
       保留融合分更高者；**去重前后候选数变化可观测**；
       关闭等义判断时去重不生效，
       验证：`uv run pytest tests/retrieval/test_dedup.py -q` 全绿
-- [ ] 8.4 实现去重阶段接入 pipeline，
+- [x] 8.4 实现去重阶段接入 pipeline，
       验证：`uv run pytest tests/retrieval/test_dedup.py -q` 全绿
-- [ ] 8.5 用 C3 独立集的 9 对真实样本做**分类别**评估：
+- [x] 8.5 用 C3 独立集的 9 对真实样本做**分类别**评估：
       MERGE 类 ≥5/6 **且** NOOP 类 ≥2/3，各自报告；
       该测试 MUST 使用缓存的 fixture、**不带 network 标记**（保证进默认门禁），
       验证：`uv run pytest tests/retrieval/test_equivalence_real.py -q` 通过
@@ -145,38 +145,38 @@
 
 ## 10. 评测与消融
 
-- [ ] 10.1 先写测试：入口支持 `--split`、`--disable-path`、
+- [x] 10.1 先写测试：入口支持 `--split`、`--disable-path`、
       `--disable-feature`、`--disable-dedup`、`--weights <name>`；
       预注册 5 组权重都能加载；非法权重和报错，
       验证：`uv run pytest tests/retrieval/test_run.py -q` 全绿
-- [ ] 10.2 实现 `evals/run_retrieval.py` 与预注册权重组，
+- [x] 10.2 实现 `evals/run_retrieval.py` 与预注册权重组，
       验证：`uv run pytest tests/retrieval/test_run.py -q` 全绿
-- [ ] 10.3 先写测试：结果 JSON 记录运行 id 与**运行次数**，
+- [x] 10.3 先写测试：结果 JSON 记录运行 id 与**运行次数**，
       重复运行同一配置会累加计数（使"test 只跑一次"可验证），
       验证：`uv run pytest tests/retrieval/test_run.py -q` 全绿
-- [ ] 10.4 跑路径消融（三路各关 + 全关）与特征消融（四特征各关 + 全关），
+- [x] 10.4 跑路径消融（三路各关 + 全关）与特征消融（四特征各关 + 全关），
       产出 `results/retrieval-ablation.json`，
       验证：每组配置的样本数与 gold 数一致
-- [ ] 10.5 跑预注册 5 组权重 × 三个集，产出 `results/retrieval-weights.json`，
+- [x] 10.5 跑预注册 5 组权重 × 三个集，产出 `results/retrieval-weights.json`，
       并计算最小可检测效应写进报告，
       验证：三集 × 5 组共 15 行，无缺失
-- [ ] 10.6 生成 `docs/reports/c4-retrieval.md`：主表（三集 × 5 组权重）、
+- [x] 10.6 生成 `docs/reports/c4-retrieval.md`：主表（三集 × 5 组权重）、
       路径消融、特征消融、条件覆盖率、等义调用次数与命中数、
       三类归因分布、最小可检测效应，
       验证：报告数字与 JSON 一致（加一致性测试）
 
 ## 11. 文档与门禁
 
-- [ ] 11.1 编写 `docs/retrieval.md`：三路召回定义、RRF 为何不用加权、
+- [x] 11.1 编写 `docs/retrieval.md`：三路召回定义、RRF 为何不用加权、
       四特征定义与值域约定、条件槽位的中英映射与覆盖率、
       等义判断的边界（**不改写路径**）、
       暴力余弦的规模上限（10^6 条时重构）、
       SRS 的唯一定义（1/rank），
       验证：文档中命令按原样可执行
-- [ ] 11.2 全量门禁：`uv run pytest -q`、`uv run ruff check`、`uv run mypy src`、
+- [x] 11.2 全量门禁：`uv run pytest -q`、`uv run ruff check`、`uv run mypy src`、
       `openspec validate retrieval-and-rerank --strict`，
       验证：四条命令均以 0 退出并贴出原始输出
-- [ ] 11.3 在报告顶部声明：**本变更不改写路径，C3 的 50.0% 不变**；
+- [x] 11.3 在报告顶部声明：**本变更不改写路径，C3 的 50.0% 不变**；
       检索改善不得被表述为判定能力提升，
       验证：报告首段包含该声明
 

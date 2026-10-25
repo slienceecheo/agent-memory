@@ -1,0 +1,129 @@
+{
+  "n": 10,
+  "accuracy": 0.8,
+  "by_label": {
+    "complementary": {
+      "total": 6,
+      "correct": 6
+    },
+    "equivalent": {
+      "total": 4,
+      "correct": 2
+    }
+  },
+  "llm_calls": 9,
+  "failures": 0,
+  "cache_size": 9,
+  "rows": [
+    {
+      "case_id": "ind-02",
+      "left": "朝阳大悦城附近",
+      "right": "朝阳区青年路23号院3号楼",
+      "label": "complementary",
+      "expected_decision": "MERGE",
+      "confidence": "确定",
+      "predicted": "complementary",
+      "correct": true,
+      "failed": false
+    },
+    {
+      "case_id": "ind-05",
+      "left": "明年换一辆新能源车",
+      "right": "明年换新能源车",
+      "label": "equivalent",
+      "expected_decision": "NOOP",
+      "confidence": "确定",
+      "predicted": "equivalent",
+      "correct": true,
+      "failed": false
+    },
+    {
+      "case_id": "ind-09",
+      "left": "已提交给财务",
+      "right": "报销单少附一张高铁票",
+      "label": "complementary",
+      "expected_decision": "MERGE",
+      "confidence": "不太确定",
+      "predicted": "complementary",
+      "correct": true,
+      "failed": false
+    },
+    {
+      "case_id": "ind-11",
+      "left": "每周日凌晨",
+      "right": "每周日零点",
+      "label": "equivalent",
+      "expected_decision": "NOOP",
+      "confidence": "不太确定",
+      "predicted": "complementary",
+      "correct": false,
+      "failed": false
+    },
+    {
+      "case_id": "ind-12",
+      "left": "养了一只猫",
+      "right": "猫叫橘子是公猫",
+      "label": "complementary",
+      "expected_decision": "MERGE",
+      "confidence": "确定",
+      "predicted": "complementary",
+      "correct": true,
+      "failed": false
+    },
+    {
+      "case_id": "ind-17",
+      "left": "靠窗那一排",
+      "right": "C区第三排左数第二个工位",
+      "label": "complementary",
+      "expected_decision": "MERGE",
+      "confidence": "确定",
+      "predicted": "complementary",
+      "correct": true,
+      "failed": false
+    },
+    {
+      "case_id": "ind-18",
+      "left": "下周六去怀柔团建",
+      "right": "下周六去怀柔",
+      "label": "equivalent",
+      "expected_decision": "NOOP",
+      "confidence": "确定",
+      "predicted": "complementary",
+      "correct": false,
+      "failed": false
+    },
+    {
+      "case_id": "ind-22",
+      "left": "配了台新MacBook",
+      "right": "16寸 M2 Max 1TB",
+      "label": "complementary",
+      "expected_decision": "MERGE",
+      "confidence": "确定",
+      "predicted": "complementary",
+      "correct": true,
+      "failed": false
+    },
+    {
+      "case_id": "ind-27",
+      "left": "腾讯会议",
+      "right": "腾讯会议",
+      "label": "equivalent",
+      "expected_decision": "NOOP",
+      "confidence": "确定",
+      "predicted": "equivalent",
+      "correct": true,
+      "failed": false
+    },
+    {
+      "case_id": "ind-30",
+      "left": "吃海鲜起疹子",
+      "right": "虾蟹不行鱼没事",
+      "label": "complementary",
+      "expected_decision": "MERGE",
+      "confidence": "确定",
+      "predicted": "complementary",
+      "correct": true,
+      "failed": false
+    }
+  ]
+}

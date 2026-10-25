@@ -1,0 +1,221 @@
+{
+  "weights": "uniform",
+  "pool_mode": "unrelated",
+  "dedup": false,
+  "k": 5,
+  "cases": 20,
+  "with_gold": 17,
+  "without_gold": 3,
+  "skipped_small_pool": 0,
+  "seh_at_k": 1.0,
+  "srs": 0.9705882352941176,
+  "attribution": {
+    "NOT_IN_POOL": 0,
+    "LOW_RANK": 0,
+    "RERANK_DROPPED": 0
+  },
+  "per_case": [
+    {
+      "case_id": "test-add-01",
+      "has_gold": false,
+      "pool_size": 0,
+      "rank_after_fusion": null,
+      "rank_after_rerank": null,
+      "seh": null,
+      "srs": null,
+      "attribution": null
+    },
+    {
+      "case_id": "test-add-02",
+      "has_gold": false,
+      "pool_size": 0,
+      "rank_after_fusion": null,
+      "rank_after_rerank": null,
+      "seh": null,
+      "srs": null,
+      "attribution": null
+    },
+    {
+      "case_id": "test-add-03",
+      "has_gold": false,
+      "pool_size": 0,
+      "rank_after_fusion": null,
+      "rank_after_rerank": null,
+      "seh": null,
+      "srs": null,
+      "attribution": null
+    },
+    {
+      "case_id": "test-branch-01",
+      "has_gold": true,
+      "pool_size": 15,
+      "rank_after_fusion": 1,
+      "rank_after_rerank": 1,
+      "seh": true,
+      "srs": 1.0,
+      "attribution": null
+    },
+    {
+      "case_id": "test-branch-02",
+      "has_gold": true,
+      "pool_size": 15,
+      "rank_after_fusion": 1,
+      "rank_after_rerank": 2,
+      "seh": true,
+      "srs": 0.5,
+      "attribution": null
+    },
+    {
+      "case_id": "test-branch-03",
+      "has_gold": true,
+      "pool_size": 15,
+      "rank_after_fusion": 1,
+      "rank_after_rerank": 1,
+      "seh": true,
+      "srs": 1.0,
+      "attribution": null
+    },
+    {
+      "case_id": "test-branch-04",
+      "has_gold": true,
+      "pool_size": 15,
+      "rank_after_fusion": 1,
+      "rank_after_rerank": 1,
+      "seh": true,
+      "srs": 1.0,
+      "attribution": null
+    },
+    {
+      "case_id": "test-conf-01",
+      "has_gold": true,
+      "pool_size": 15,
+      "rank_after_fusion": 1,
+      "rank_after_rerank": 1,
+      "seh": true,
+      "srs": 1.0,
+      "attribution": null
+    },
+    {
+      "case_id": "test-conf-02",
+      "has_gold": true,
+      "pool_size": 15,
+      "rank_after_fusion": 1,
+      "rank_after_rerank": 1,
+      "seh": true,
+      "srs": 1.0,
+      "attribution": null
+    },
+    {
+      "case_id": "test-conf-03",
+      "has_gold": true,
+      "pool_size": 15,
+      "rank_after_fusion": 1,
+      "rank_after_rerank": 1,
+      "seh": true,
+      "srs": 1.0,
+      "attribution": null
+    },
+    {
+      "case_id": "test-merge-01",
+      "has_gold": true,
+      "pool_size": 15,
+      "rank_after_fusion": 1,
+      "rank_after_rerank": 1,
+      "seh": true,
+      "srs": 1.0,
+      "attribution": null
+    },
+    {
+      "case_id": "test-merge-02",
+      "has_gold": true,
+      "pool_size": 15,
+      "rank_after_fusion": 1,
+      "rank_after_rerank": 1,
+      "seh": true,
+      "srs": 1.0,
+      "attribution": null
+    },
+    {
+      "case_id": "test-merge-03",
+      "has_gold": true,
+      "pool_size": 15,
+      "rank_after_fusion": 1,
+      "rank_after_rerank": 1,
+      "seh": true,
+      "srs": 1.0,
+      "attribution": null
+    },
+    {
+      "case_id": "test-noop-01",
+      "has_gold": true,
+      "pool_size": 14,
+      "rank_after_fusion": 1,
+      "rank_after_rerank": 1,
+      "seh": true,
+      "srs": 1.0,
+      "attribution": null
+    },
+    {
+      "case_id": "test-noop-02",
+      "has_gold": true,
+      "pool_size": 14,
+      "rank_after_fusion": 1,
+      "rank_after_rerank": 1,
+      "seh": true,
+      "srs": 1.0,
+      "attribution": null
+    },
+    {
+      "case_id": "test-noop-03",
+      "has_gold": true,
+      "pool_size": 14,
+      "rank_after_fusion": 1,
+      "rank_after_rerank": 1,
+      "seh": true,
+      "srs": 1.0,
+      "attribution": null
+    },
+    {
+      "case_id": "test-sup-01",
+      "has_gold": true,
+      "pool_size": 14,
+      "rank_after_fusion": 1,
+      "rank_after_rerank": 1,
+      "seh": true,
+      "srs": 1.0,
+      "attribution": null
+    },
+    {
+      "case_id": "test-sup-02",
+      "has_gold": true,
+      "pool_size": 14,
+      "rank_after_fusion": 1,
+      "rank_after_rerank": 1,
+      "seh": true,
+      "srs": 1.0,
+      "attribution": null
+    },
+    {
+      "case_id": "test-sup-03",
+      "has_gold": true,
+      "pool_size": 14,
+      "rank_after_fusion": 1,
+      "rank_after_rerank": 1,
+      "seh": true,
+      "srs": 1.0,
+      "attribution": null
+    },
+    {
+      "case_id": "test-sup-04",
+      "has_gold": true,
+      "pool_size": 14,
+      "rank_after_fusion": 1,
+      "rank_after_rerank": 1,
+      "seh": true,
+      "srs": 1.0,
+      "attribution": null
+    }
+  ],
+  "split": "test",
+  "run_count": 1
+}
