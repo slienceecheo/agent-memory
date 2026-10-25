@@ -53,9 +53,13 @@
   写到 `results/retrieval-a5-regression-*.json`（**不覆盖** `retrieval-test-*`）。
   验证：新文件里 `"purpose": "A5 regression..."`，且 `retrieval-run-count.json`
   里 `retrieval-test-*` 的计数仍为 1
-- [ ] 5.2 逐位对比归档结果的 `rank_after_fusion` 与 `rank_after_rerank`。
-  验证：新增测试读归档 JSON 与回归 JSON，断言 26/26 条 `rank_after_fusion` 完全相同；
+- [ ] 5.2 逐位对比归档结果的 `rank_after_fusion`、`rank_after_rerank`、`attribution`、
+  top-1 稳定 tag（A5-a）。**A5-b（完整融合序列）本项不覆盖：旧集不可执行，仅 v2 适用。**
+  验证：`uv run --no-sync pytest tests/retrieval/test_a5_regression.py -q` 全绿；
   若不同则列出差异 case，不静默通过
+- [ ] 5.3 锁住 A5-b 的可执行前提：融合序列必须用**稳定 tag** 而非 uuid4。
+  验证：`test_fusion_tags_are_stable_across_runs` 与
+  `test_fusion_tags_never_contain_uuid` 通过
 
 ## 6. 路径贡献对比（A3）
 

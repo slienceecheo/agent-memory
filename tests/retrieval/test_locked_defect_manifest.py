@@ -27,6 +27,9 @@ REPORT = ROOT / "docs" / "reports" / "c4-retrieval.md"
 TESTS = ROOT / "tests" / "retrieval"
 
 # 缺陷编号 -> 覆盖它的测试函数名
+#
+# **本表随修复推进而收缩。** 已修复并翻面为正向断言的缺陷，不再出现在这里，
+# 而是记在 `REPAIRED` 里——这样"修好了"与"忘了登记"能被区分开。
 DEFECT_TESTS: dict[int, tuple[str, ...]] = {
     1: ("test_query_is_verbatim_the_gold_document",),
     2: ("test_constant_scores_turn_dedup_into_a_lexical_sort",),
@@ -37,13 +40,20 @@ DEFECT_TESTS: dict[int, tuple[str, ...]] = {
         "test_unrelated_mode_is_a_file_order_prefix",
     ),
     6: ("test_same_relation_mixes_subjects",),
-    7: (
-        "test_retrieval_entry_never_ran_three_paths",
-        "test_no_embedding_is_written_into_the_pool",
-    ),
     8: (
         "test_dedup_receives_ids_not_text",
         "test_constant_scores_turn_dedup_into_a_lexical_sort",
+    ),
+}
+
+# 已修复的缺陷编号 -> 翻面后的正向断言。
+#
+# 缺陷 7（三路召回从未联合跑过）在第 2 组接上词面+向量后部分修复；
+# 邻接仍未接线，由 L6a/L6c 门禁覆盖，等第 3 组接上后整体翻面。
+REPAIRED: dict[int, tuple[str, ...]] = {
+    7: (
+        "test_retrieval_entry_now_runs_lexical_and_vector",
+        "test_embedding_is_written_into_the_pool",
     ),
 }
 
@@ -77,9 +87,9 @@ def test_report_lists_eight_defects() -> None:
 
 
 def test_every_defect_has_a_locked_test() -> None:
-    """每个缺陷至少有一条 locked_defect 测试指向它。"""
-    missing = set(_defect_numbers_in_report()) - set(DEFECT_TESTS)
-    assert not missing, f"缺陷 {sorted(missing)} 没有对应的锁定测试"
+    """每个缺陷要么有锁定测试，要么已登记为修复。"""
+    missing = set(_defect_numbers_in_report()) - set(DEFECT_TESTS) - set(REPAIRED)
+    assert not missing, f"缺陷 {sorted(missing)} 既没有锁定测试，也没登记为已修复"
 
 
 def test_no_orphan_locked_tests() -> None:
@@ -92,6 +102,21 @@ def test_no_orphan_locked_tests() -> None:
 
     assert not (marked - mapped), f"未登记的锁定测试：{sorted(marked - mapped)}"
     assert not (mapped - marked), f"映射里有不存在的测试：{sorted(mapped - marked)}"
+
+
+def test_repaired_tests_exist() -> None:
+    """`REPAIRED` 里登记的正向断言必须真实存在。"""
+    for names in REPAIRED.values():
+        for name in names:
+            assert f"def {name}(" in "".join(
+                path.read_text(encoding="utf-8")
+                for path in TESTS.glob("test_*.py")
+            ), f"REPAIRED 里登记了不存在的测试：{name}"
+
+
+def test_repaired_defects_are_not_also_locked() -> None:
+    """已修复的缺陷不得同时留在锁定表里——那说明翻面没做干净。"""
+    assert not (set(REPAIRED) & set(DEFECT_TESTS))
 
 
 def test_all_mapped_tests_exist_and_are_marked() -> None:

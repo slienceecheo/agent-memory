@@ -19,6 +19,9 @@ import sys
 import tempfile
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import Any, Protocol
+
+import numpy as np
 
 from evals.metrics.retrieval import (
     Attribution,
@@ -28,6 +31,8 @@ from evals.metrics.retrieval import (
     srs,
 )
 from memory.config import PROJECT_ROOT, Settings
+from memory.embedding.cache import EmbeddingCache
+from memory.embedding.dashscope import DashScopeEmbedder
 from memory.llm.cache import ResponseCache
 from memory.llm.client import LLMClient
 from memory.retrieval.condition import condition_match
@@ -46,6 +51,7 @@ from memory.retrieval.rerank import (
     rrf_norm,
     status_score,
 )
+from memory.retrieval.vector import recall_by_vector
 from memory.store.models import Authority, MemoryItem, Scope, Source, Status
 from memory.store.sqlite import SqliteStore
 
@@ -54,6 +60,69 @@ DATA = ROOT / "data" / "conflict-set"
 OUT_DIR = ROOT / "results"
 BASE_TIME = datetime(2026, 1, 1, tzinfo=UTC)
 DEFAULT_K = 5
+
+#: 三路召回的规范顺序。顺序固定，使 `paths_enabled` 可逐位比较。
+ALL_PATHS: tuple[str, ...] = ("lexical", "vector", "adjacency")
+
+#: 已实现但**尚未接进评测入口**的路径。
+#: 它们被启用时记为 `null` + 出现在 `paths_unwired`，而不是 `0`——
+#: `0` 的意思是"跑了但返回空"，与"没接上"是两件不同的事。
+#:
+#: vector 已在第 2 组接上，只剩 adjacency。
+_UNWIRED: frozenset[str] = frozenset({"adjacency"})
+
+
+#: 融合前每路截断到的条数。
+#:
+#: **为什么必须是常数，而不是 `k*4`**：`k` 有两个含义——RRF 的 `k=60`
+#: 与评估的 `K=5`。按前者取 240，远超 RRF 的前提边界 `k+2=62`，等于没截；
+#: 按后者取 20 才是本意。写成常数并解释，避免这个歧义。
+#:
+#: **为什么截**：实测 lexical 每 case 最多 3 条、vector 约 14 条，
+#: 而 RRF 是 `Σ 1/(k+rank)`——长列表靠"条数多"系统性占优，
+#: 不是靠"更相关"。向量第 14 名的单条得分已达词面第 1 名的 82%，
+#: 不截断的话 A3 会得出"三路更差"，而真实原因是列表长度失衡。
+FUSION_CAP = 20
+
+
+class EmbedderLike(Protocol):
+    """评测只需要 `embed` 与 `network_calls` 两个成员。"""
+
+    network_calls: int
+
+    def embed(self, text: str, *, text_type: str) -> Any: ...
+
+
+def parse_paths(raw: str | None) -> tuple[str, ...]:
+    """解析 `--paths`：**白名单**语义，逗号分隔。
+
+    为什么是白名单而不是减法（`all,-adjacency`）：
+    - 白名单可枚举，2^3=8 种全部合法，不存在自相矛盾的组合
+    - `""` 天然表示"全关"，直接对应规格的"全部关闭返回空"
+    - 减法需要解析负号，多一层出错空间
+
+    `None` 表示用默认值（全开）——新用户跑一遍应看到完整行为。
+    """
+    if raw is None:
+        return ALL_PATHS
+
+    if not raw.strip():
+        return ()
+
+    seen: list[str] = []
+    for token in raw.split(","):
+        name = token.strip().lower()
+        if not name:
+            continue
+        if name not in ALL_PATHS:
+            raise ValueError(
+                f"未知的召回路径 {name!r}；可用：{', '.join(ALL_PATHS)}"
+            )
+        if name not in seen:
+            seen.append(name)
+
+    # 按规范顺序输出，使 paths_enabled 与调用方传入顺序无关
+    return tuple(name for name in ALL_PATHS if name in seen)
 
 
 def _rows(path: Path) -> list[dict[str, object]]:
@@ -84,6 +153,21 @@ def _item(
         text=text,
         id=f"{tag}",
     )
+
+
+def _embedding_text(item: MemoryItem) -> str:
+    """池内条目送去向量化的文本。
+
+    与 `items_fts` 的索引内容保持一致（`subject + relation + value + 原文`）。
+    **只用 value 会让"深夜"这类短值与其他短值难以区分**——那正是
+    C4 里干扰项无法竞争的老问题换一个位置。
+
+    用 `document` 侧：与查询的 `query` 侧必须分开，实测同文本两侧余弦仅 0.842。
+    """
+    parts = [item.subject, item.relation, item.value]
+    if item.text:
+        parts.append(item.text)
+    return " ".join(parts)
 
 
 def select_pool_distractors(
@@ -124,13 +208,16 @@ def select_pool_distractors(
 
 
 def evaluate_case(
-    row: dict[str, object],    *,
+    row: dict[str, object],
+    *,
     all_specs: list[dict[str, object]],
     weights_name: str,
     enable_dedup: bool,
     judge: EquivalenceJudge | None,
     k: int,
     pool_mode: PoolMode = PoolMode.UNRELATED,
+    paths: tuple[str, ...] = ALL_PATHS,
+    embedder: EmbedderLike | None = None,
 ) -> dict[str, object]:
     """评估单条场景。返回该条的排名、指标与归因。"""
     gold_spec = row.get("gold")
@@ -180,18 +267,59 @@ def evaluate_case(
             pool = build_pool(gold, distractors, seed=0)
 
             id_map: dict[str, MemoryItem] = {}
+            tag_by_id: dict[str, str] = {}
+            vector_norms: list[float] = []
             for entry in pool.items:
                 import dataclasses
 
+                embedding = None
+                if "vector" in paths and embedder is not None:
+                    embedding = embedder.embed(_embedding_text(entry), text_type="document")
+                    vector_norms.append(float(np.linalg.norm(embedding)))
+
                 stored = store.insert(
-                    dataclasses.replace(entry, id=""), reason="pool", actor="harness"
+                    dataclasses.replace(entry, id=""),
+                    reason="pool",
+                    actor="harness",
+                    embedding=embedding,
                 )
                 id_map[entry.id] = stored
+                # entry.id 是构造时的稳定 tag（`gold-<case_id>` / `d-<case_id>-<i>`），
+                # stored.id 是 uuid4，跨运行不可比。A5 只能比 tag。
+                tag_by_id[stored.id] = entry.id
 
             gold_id = id_map[pool.gold_id].id
-            lexical = [i.id for i in recall_by_lexical(store, query, limit=len(pool.items))]
-            fused = rrf({"lexical": lexical}, k=60)
+
+            # 第 1 组：只加观测，不改召回逻辑。
+            # vector / adjacency 尚未接进本入口（见 _UNWIRED），因此它们的
+            # 返回值记为 None，而不是 0——"没接上"与"跑了但空"是两件事。
+            path_returns: dict[str, int | None] = {name: None for name in ALL_PATHS}
+            path_raw_lengths: dict[str, int | None] = {name: None for name in ALL_PATHS}
+            path_fused_lengths: dict[str, int | None] = {name: None for name in ALL_PATHS}
+            ranked_lists: dict[str, list[str]] = {}
+
+            def _record(name: str, ids: list[str]) -> None:
+                """记录原长与截断后长度，并把截断结果放进融合输入。"""
+                path_raw_lengths[name] = len(ids)
+                capped = ids[:FUSION_CAP]
+                path_fused_lengths[name] = len(capped)
+                path_returns[name] = len(ids)
+                ranked_lists[name] = capped
+
+            if "lexical" in paths:
+                lexical = [
+                    i.id for i in recall_by_lexical(store, query, limit=len(pool.items))
+                ]
+                _record("lexical", lexical)
+
+            if "vector" in paths and embedder is not None:
+                query_vector = embedder.embed(query, text_type="query")
+                hits = recall_by_vector(store, query_vector, limit=len(pool.items))
+                _record("vector", [i.id for i in hits])
+
+            fused = rrf(ranked_lists, k=60) if ranked_lists else []
             fused_order = [entry.item_id for entry in fused]
+            recalled_count = len(fused_order)
             rank_fusion = (
                 fused_order.index(gold_id) + 1 if gold_id in fused_order else None
             )
@@ -244,6 +372,20 @@ def evaluate_case(
         "pool_size": len(pool.items),
         "rank_after_fusion": rank_fusion,
         "rank_after_rerank": rank_rerank,
+        # 以下两项用**稳定 tag**，不是 uuid4：A5 要做跨运行逐位比较，
+        # 而 uuid 每次运行都不同（实测两次建库 id 完全不同）。
+        "fusion_tags": [tag_by_id.get(item_id, item_id) for item_id in fused_order],
+        "rerank_top1_tag": tag_by_id.get(order[0], order[0]) if order else None,
+        "path_returns": path_returns,
+        "path_raw_lengths": path_raw_lengths,
+        "path_fused_lengths": path_fused_lengths,
+        "fusion_cap": FUSION_CAP,
+        # A5 的效力取决于"排名有没有余地"：
+        # 池内只有 1 条候选时，所有排名指标在任何实现下都必然相同，
+        # 此时通过只能算烟雾测试。用一列把它显式化，不靠人记得看池大小。
+        "a5_strength": "strong" if recalled_count >= 2 else "weak",
+        "pool_vectors": len(vector_norms),
+        "pool_vector_norms": [round(norm, 4) for norm in vector_norms],
         "seh": seh_at_k(rank=rank_rerank, k=k),
         "srs": srs(rank=rank_rerank),
         "attribution": attribution.value if attribution else None,
@@ -265,7 +407,10 @@ def evaluate(
     judge: EquivalenceJudge | None,
     k: int = DEFAULT_K,
     pool_mode: PoolMode = PoolMode.UNRELATED,
+    paths: tuple[str, ...] = ALL_PATHS,
+    embedder: EmbedderLike | None = None,
 ) -> dict[str, object]:
+    calls_before = embedder.network_calls if embedder is not None else 0
     per_case = [
         evaluate_case(
             row,
@@ -275,6 +420,8 @@ def evaluate(
             judge=judge,
             k=k,
             pool_mode=pool_mode,
+            paths=paths,
+            embedder=embedder,
         )
         for row in rows
     ]
@@ -283,6 +430,20 @@ def evaluate(
     skipped = [item for item in per_case if item.get("skipped", False)]
     seh_values = [bool(item["seh"]) for item in scored]
     srs_values = [float(item["srs"]) for item in scored]
+
+    # 路径返回值按整批汇总：启用但没接上的记 None，跑了的记总条数。
+    path_totals: dict[str, int | None] = {}
+    for name in ALL_PATHS:
+        if name not in paths:
+            path_totals[name] = None
+            continue
+        observed = [
+            item["path_returns"][name]  # type: ignore[index]
+            for item in per_case
+            if isinstance(item.get("path_returns"), dict)
+            and item["path_returns"].get(name) is not None  # type: ignore[union-attr]
+        ]
+        path_totals[name] = sum(observed) if observed else None
 
     return {
         "weights": weights_name,
@@ -293,6 +454,14 @@ def evaluate(
         "with_gold": len(scored),
         "without_gold": len(per_case) - len([i for i in per_case if i["has_gold"]]),
         "skipped_small_pool": len(skipped),
+        "paths_enabled": list(paths),
+        # 只有"启用了但代码里还没有调用点"才算未接线。
+        # 未启用的路径是"没开"，不是"没接上"——两者诊断方向不同。
+        "paths_unwired": [name for name in paths if name in _UNWIRED],
+        "path_returns": path_totals,
+        "embedding_network_calls": (
+            embedder.network_calls - calls_before if embedder is not None else 0
+        ),
         "seh_at_k": sum(seh_values) / len(seh_values) if seh_values else 0.0,
         "srs": sum(srs_values) / len(srs_values) if srs_values else 0.0,
         "attribution": attribution_breakdown(
@@ -331,7 +500,22 @@ def main(argv: list[str] | None = None) -> int:
         help="候选池难度模式",
     )
     parser.add_argument("--dataset", type=Path, default=None)
+    parser.add_argument(
+        "--paths",
+        default=None,
+        metavar="LIST",
+        help=(
+            "启用的召回路径，逗号分隔的白名单（默认全开）。"
+            f"可选：{', '.join(ALL_PATHS)}；空串表示全关（零召回基线）"
+        ),
+    )
     args = parser.parse_args(argv)
+
+    try:
+        paths = parse_paths(args.paths)
+    except ValueError as exc:
+        print(f"{exc}", file=sys.stderr)
+        return 2
 
     path = args.dataset or (DATA / f"{args.split}.jsonl")
     if not path.exists():
@@ -348,15 +532,25 @@ def main(argv: list[str] | None = None) -> int:
             )
 
     judge: EquivalenceJudge | None = None
-    if not args.no_dedup:
+    settings: Settings | None = None
+    if not args.no_dedup or "vector" in paths:
         settings = Settings.load()
         settings.cache_dir.mkdir(parents=True, exist_ok=True)
+
+    if not args.no_dedup and settings is not None:
         llm = LLMClient(
             settings=settings,
             response_cache=ResponseCache(settings.cache_dir / "responses.db"),
             max_retries=0,
         )
         judge = EquivalenceJudge(llm=llm)
+
+    embedder: DashScopeEmbedder | None = None
+    if "vector" in paths and settings is not None:
+        embedder = DashScopeEmbedder(
+            settings=settings,
+            cache=EmbeddingCache(settings.cache_dir / "cache.db"),
+        )
 
     result = evaluate(
         rows,
@@ -366,22 +560,49 @@ def main(argv: list[str] | None = None) -> int:
         judge=judge,
         k=args.k,
         pool_mode=PoolMode(args.pool),
+        paths=paths,
+        embedder=embedder,
     )
     result["split"] = args.split
 
     OUT_DIR.mkdir(parents=True, exist_ok=True)
     suffix = ("-nodedup" if args.no_dedup else "") + f"-pool{args.pool}"
-    out = OUT_DIR / f"retrieval-{args.split}-{args.weights}{suffix}.json"
+    paths_tag = "" if paths == ALL_PATHS else "-paths" + "-".join(paths or ("none",))
+    out = OUT_DIR / f"retrieval-{args.split}-{args.weights}{suffix}{paths_tag}.json"
     run_count = _bump_run_count(out)
     result["run_count"] = run_count
     out.write_text(json.dumps(result, ensure_ascii=False, indent=2), encoding="utf-8")
 
+    returns = " ".join(
+        f"{name}={'-' if value is None else value}"
+        for name, value in result["path_returns"].items()
+    )
     print(
         f"split={args.split} weights={args.weights} pool={args.pool} dedup={not args.no_dedup} "
-        f"n={result['with_gold']}/{result['cases']} skipped={result['skipped_small_pool']} "
+        f"paths={','.join(paths) or '(none)'}"
+    )
+    # 总数单独看有歧义：41 可能是"33 条各返回 1.2 条"，也可能是"1 条返回 41 条"。
+    # 后一种说明某个 case 的池异常大，是数据缺陷。均值能立刻区分。
+    def _fmt(name: str, value: int | None) -> str:
+        if value is None:
+            return f"{name}=-"
+        if value == 0:
+            return f"{name}=0"
+        mean = value / result["with_gold"] if result["with_gold"] else 0.0
+        return f"{name}={value} ({result['with_gold']} cases, mean {mean:.2f})"
+
+    per_path = " ".join(
+        _fmt(name, value) for name, value in result["path_returns"].items()
+    )
+    print(f"  path_returns: {per_path}")
+    if result["paths_unwired"]:
+        print(f"  未接线的路径（记 null 而非 0）：{', '.join(result['paths_unwired'])}")
+    print(
+        f"  n={result['with_gold']}/{result['cases']} skipped={result['skipped_small_pool']} "
         f"SEH@{args.k}={result['seh_at_k']:.3f} SRS={result['srs']:.3f} "
         f"run#{run_count}"
     )
+    print(f"  {returns}")
     return 0
 
 

@@ -187,16 +187,17 @@ def test_handoff_carries_the_warning() -> None:
     assert "c4-query-leak-ablation.json" in text
 
 
-@pytest.mark.locked_defect
-def test_retrieval_entry_never_ran_three_paths() -> None:
-    """缺陷 7：评测入口只 import 了词面召回。
+def test_retrieval_entry_now_runs_lexical_and_vector() -> None:
+    """缺陷 7 的一半已修复：评测入口接上了词面与向量两路。
 
-    这条断言的是**缺陷存在**，不是期望行为。它是"报告第 5 节原表不成立"的
-    机器可读证据。等 v2 的评测入口真跑三路之后，这个测试应当被替换成
-    "三路都在"的反向断言。
+    **原先这条是 `locked_defect`，断言"只调用 lexical"。**
+    现在改成正向断言：修复提交就是它该翻面的时机。
+
+    仍未接的是 adjacency（第 3 组），所以这里只断言两路——
+    等邻接接上后，本断言应扩展为三路，并在那时更新 C4 报告。
 
     **判定必须看调用位置，不能 `grep -c "recall_by_"`**：
-    第 37 行的 import 语句里就含 `recall_by_lexical`，按字符串计数会误报。
+    import 行里就含这些名字，按字符串计数会误报。
     """
     source = (ROOT / "evals" / "run_retrieval.py").read_text(encoding="utf-8")
 
@@ -206,24 +207,22 @@ def test_retrieval_entry_never_ran_three_paths() -> None:
         if f"recall_by_{name}(" in source
     }
 
-    assert called == {"lexical"}, (
-        f"实际被调用的召回路径是 {sorted(called)}；"
-        "若已接入三路，请同步更新报告第 0.1 节缺陷 7 与第 5 节能力表"
-    )
+    assert {"lexical", "vector"} <= called, f"应至少调用词面与向量，实际 {sorted(called)}"
 
 
-@pytest.mark.locked_defect
-def test_no_embedding_is_written_into_the_pool() -> None:
-    """L6b：即使接上 vector 一路，池里没有向量也只会返回空列表。
+def test_embedding_is_written_into_the_pool() -> None:
+    """L6b 已修复：建池时确实写入向量。
 
-    当前 `run_retrieval.py` 里 `embedding=` 一次都没出现。
-    "调用了"与"有东西可召回"是两件事。
+    **原先这条是 `locked_defect`，断言 `embedding=` 一次都不出现。**
+    现在改成正向断言。"调用了"与"有东西可召回"是两件事，
+    所以必须检查写入动作本身，而不只是 import。
     """
     source = (ROOT / "evals" / "run_retrieval.py").read_text(encoding="utf-8")
 
-    assert "embedding=" not in source, (
-        "评测入口开始写向量了；请把 L6b 改成正向断言，并更新缺陷 7"
+    assert "embedding=embedding" in source, (
+        "建池时应把生成的向量传给 store.insert；若改法变了，请更新这条断言"
     )
+    assert 'text_type="document"' in source, "池内条目必须用 document 侧向量"
 
 
 @pytest.mark.locked_defect
