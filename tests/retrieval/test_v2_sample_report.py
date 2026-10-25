@@ -47,8 +47,8 @@ def test_gates_result_exists_and_matches_report() -> None:
     )
 
 
-def test_four_gates_fail_and_are_named() -> None:
-    """L6a/L6b/L7-L8/F6 必须在报告里被明确标为未通过。
+def test_five_gates_fail_and_are_named() -> None:
+    """L6a/L6b/L6c/L7-L8/F6/F13 必须在报告里被明确标为未通过。
 
     若有人偷偷把它们改成 ✅ 而不修代码，这里会失败。
     """
@@ -59,8 +59,10 @@ def test_four_gates_fail_and_are_named() -> None:
 
     assert results["L6a"] is False, "三路召回现在都调用了？请更新报告与协议"
     assert results["L6b"] is False, "池构造开始写向量了？请更新报告与协议"
+    assert results["L6c"] is False, "三路都返回非空了？请更新报告与协议"
     assert results["L7/L8"] is False, "dedup 入参修好了？请更新报告与协议"
     assert results["F6"] is False
+    assert results["F13"] is False, "样例只有 40%，逐 subject 需 50%"
 
 
 def test_report_marks_l6b_as_not_done() -> None:
@@ -119,10 +121,12 @@ def test_report_states_axis_a_saturation_is_geometric(dataset) -> None:
 
 
 def test_implicit_ratio_uses_axis_a_denominator(dataset) -> None:
-    """F13 的分母是 A 轴查询，不是全部查询。
+    """F13 的分母是 A 轴查询，不是全部查询，且逐 subject 门槛更严。
 
-    样例在 A 轴分母下是 40.0%（达标），在全部查询分母下是 33.3%（不达标）。
+    样例在 A 轴分母下是 40.0%，在全部查询分母下是 33.3%。
     口径必须在冻结前钉死，否则事后可以挑好看的那个。
+
+    **逐 subject 门槛是 50%，样例 40% 因此不达标——这个红是正确的。**
     """
     a_queries = [q for q in dataset.queries if q.axis is Axis.A]
     a_implicit = sum(1 for q in a_queries if q.cue_type.value == "implicit")
@@ -133,6 +137,19 @@ def test_implicit_ratio_uses_axis_a_denominator(dataset) -> None:
 
     text = REPORT.read_text(encoding="utf-8")
     assert "A 轴查询" in text and "分母" in text
+
+
+def test_report_does_not_fake_f13_pass() -> None:
+    """报告不得把 F13 写成通过，也不得为达标去改样例数据。
+
+    逐 subject ≥50% 是新门槛，样例 40% 必然不过。把样例改到 50%
+    等于"看着门禁调数据"，正是协议禁止的做法。
+    """
+    text = REPORT.read_text(encoding="utf-8")
+
+    assert "F13" in text
+    assert "40.0%" in text
+    assert "50%" in text
 
 
 def test_competing_set_sizes_match_report(dataset) -> None:

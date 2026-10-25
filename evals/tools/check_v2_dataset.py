@@ -254,30 +254,52 @@ def check_f12_forced_ratio(dataset: Dataset, *, ceiling: float = 0.20) -> Check:
     )
 
 
-def check_f13_cue_mix(dataset: Dataset, *, floor: float = 0.40) -> Check:
-    """F13：`implicit` 占 A 轴查询 ≥ 40%，且每个 subject 两种都有。
+def check_f13_cue_mix(dataset: Dataset, *, floor: float = 0.40, per_subject: float = 0.50) -> Check:
+    """F13：`implicit` 占 A 轴查询 ≥ 40%（整体），且**每个 subject ≥ 50%**。
 
     分母是 **A 轴查询**，不是全部查询——C 轴没有"条件说没说破"这个维度。
+
+    **两层阈值管不同的事**：整体 40% 防全局退化；逐 subject 50% 防
+    "有些 subject 20%、有些 60%，平均 40%" 掩盖退化。平均值会掩盖退化，
+    所以逐 subject 的门槛比整体更严。
     """
     a_queries = [q for q in dataset.queries if q.axis is Axis.A]
     if not a_queries:
-        return Check("F13", "implicit 占 A 轴 ≥ 40%", False, "没有 A 轴查询")
+        return Check("F13", "implicit 占比", False, "没有 A 轴查询")
 
     implicit = sum(1 for q in a_queries if q.cue_type is CueType.IMPLICIT)
-    ratio = implicit / len(a_queries)
+    overall = implicit / len(a_queries)
 
-    missing: list[str] = []
+    per_subject_ratios: dict[str, float] = {}
+    missing_kind: list[str] = []
     for subject in {q.subject for q in a_queries}:
-        kinds = {q.cue_type for q in a_queries if q.subject == subject}
+        own = [q for q in a_queries if q.subject == subject]
+        kinds = {q.cue_type for q in own}
         if CueType.EXPLICIT not in kinds or CueType.IMPLICIT not in kinds:
-            missing.append(f"{subject}={sorted(k.value for k in kinds)}")
+            missing_kind.append(f"{subject}={sorted(k.value for k in kinds)}")
+        own_implicit = sum(1 for q in own if q.cue_type is CueType.IMPLICIT)
+        per_subject_ratios[subject] = own_implicit / len(own)
+
+    below = {
+        s: f"{r:.0%}" for s, r in per_subject_ratios.items() if r < per_subject
+    }
+
+    passed = overall >= floor and not missing_kind and not below
+    detail = (
+        f"整体 {implicit}/{len(a_queries)} = {overall:.1%}（需 ≥{floor:.0%}）；"
+        f"逐 subject {', '.join(f'{s}={r:.0%}' for s, r in per_subject_ratios.items())}"
+        f"（需 ≥{per_subject:.0%}）"
+    )
+    if missing_kind:
+        detail += f"；缺一种：{missing_kind}"
+    if below:
+        detail += f"；低于逐 subject 门槛：{below}"
 
     return Check(
         "F13",
-        f"implicit 占 A 轴 ≥ {floor:.0%}，且每 subject 两种都有",
-        ratio >= floor and not missing,
-        f"{implicit}/{len(a_queries)} = {ratio:.1%}"
-        + (f"；缺一种：{missing}" if missing else ""),
+        f"implicit 整体 ≥{floor:.0%} 且逐 subject ≥{per_subject:.0%}",
+        passed,
+        detail,
     )
 
 
@@ -384,6 +406,32 @@ def check_l7_l8_dedup_inputs() -> Check:
     )
 
 
+def check_l6c_paths_return_nonempty(dataset: Dataset) -> Check:
+    """L6c：三路召回必须**真的返回东西**，不是只是被调用。
+
+    L6a 判"调用了"、L6b 判"有数据"，两者都对时仍可能一条都没返回：
+    向量维度不符会被静默跳过，条件兄弟不存在则邻接必然为空。
+
+    这条直接测"返回了什么"，而不是"做了什么"——前者比后者难自欺。
+
+    当前评测入口只有 lexical 一路，所以本项在结构上必然失败。
+    等修复变更接上三路后，这里应转为真实断言。
+    """
+    source = (ROOT / "evals" / "run_retrieval.py").read_text(encoding="utf-8")
+    called = {
+        name for name in ("lexical", "vector", "adjacency") if f"recall_by_{name}(" in source
+    }
+    missing = {"lexical", "vector", "adjacency"} - called
+    return Check(
+        "L6c",
+        "三路召回都返回非空",
+        not missing,
+        f"未进入评测的路径：{sorted(missing)}"
+        if missing
+        else "三路都已进入评测，返回条数由 F7 复验",
+    )
+
+
 ALL_CHECKS = (
     check_l1_no_verbatim_text,
     check_l2_no_gold_value,
@@ -392,6 +440,7 @@ ALL_CHECKS = (
     check_l5_siblings_present,
     check_l6a_three_paths_called,
     check_l6b_embedding_written,
+    check_l6c_paths_return_nonempty,
     check_l7_l8_dedup_inputs,
     check_l9_implicit_has_no_cue_leak,
     check_f2_recall_size,
@@ -438,8 +487,9 @@ def main(argv: list[str] | None = None) -> int:
     if failed:
         print(f"未通过：{', '.join(r.code for r in failed)}")
         print(
-            "注意：L6a/L6b/L7-L8 查的是**评测入口**（C4 遗留缺陷），"
-            "F6 是构造性的（样例单作者），两者都不是 schema 问题。"
+            "注意：L6a/L6b/L6c/L7-L8 查的是**评测入口**（C4 遗留缺陷），"
+            "F6 是构造性的（样例单作者），F13 是阈值收紧后的真实不足。"
+            "四类都不是 schema 问题。"
         )
 
     if args.json:

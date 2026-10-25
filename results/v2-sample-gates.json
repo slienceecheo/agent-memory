@@ -42,6 +42,12 @@
     "detail": "评测入口里 `embedding=` 出现 0 次（向量一路空转）"
   },
   {
+    "code": "L6c",
+    "title": "三路召回都返回非空",
+    "passed": false,
+    "detail": "未进入评测的路径：['adjacency', 'vector']"
+  },
+  {
     "code": "L7/L8",
     "title": "dedup 收到文本与真实分数",
     "passed": false,
@@ -79,9 +85,9 @@
   },
   {
     "code": "F13",
-    "title": "implicit 占 A 轴 ≥ 40%，且每 subject 两种都有",
-    "passed": true,
-    "detail": "4/10 = 40.0%"
+    "title": "implicit 整体 ≥40% 且逐 subject ≥50%",
+    "passed": false,
+    "detail": "整体 4/10 = 40.0%（需 ≥40%）；逐 subject project:ledger=40%（需 ≥50%）；低于逐 subject 门槛：{'project:ledger': '40%'}"
   },
   {
     "code": "F15",
