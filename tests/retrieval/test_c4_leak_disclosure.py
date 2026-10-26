@@ -234,10 +234,18 @@ def test_dedup_receives_text_and_real_scores() -> None:
     **原先这条是 `locked_defect`，断言"仍是 `(item_id, item_id, 1.0)`"。**
     现在改成正向断言。
 
-    注意它只查源码形态。真正的行为验证在
-    `tests/retrieval/test_adjacency_and_dedup.py` 的
-    `test_dedup_receives_real_text` / `test_dedup_receives_varying_scores`，
-    那里用记录型 judge 检查实际入参。
+    **为什么不从结果文件判 L7**：`a3-with-dedup.json` 里的
+    `dedup_input_tags` 记的是"哪几条进了 dedup"（稳定 tag），
+    不是"传了什么文本"。用它判 L7 会判错对象——
+    这正是 L7 此前"通过但没测到"的根源（tag 不是 uuid，断言就过了）。
+
+    所以 L7 只能从两处验：
+    1. 本测试：源码形态（`_dedup_text(` 被调用、不再是 `(id, id, 1.0)`）
+    2. `tests/retrieval/test_dedup_text.py`：`_dedup_text` 的构造规则
+
+    L8（分数有方差）则**可以**从结果文件判，见
+    `evals/tools/check_v2_dataset.py::check_l8_dedup_scores_have_variance`。
+    两条证据源不同，不能合并成一个门禁。
     """
     text = (ROOT / "evals" / "run_retrieval.py").read_text(encoding="utf-8")
 

@@ -354,55 +354,142 @@ def check_f15_axis_a_needs_seh1(dataset: Dataset) -> Check:
     return Check("F15", "A 轴饱和时必须报 SEH@1", True, detail + " → 未饱和，两个指标都可用")
 
 
-def check_l6a_three_paths_called() -> Check:
-    """L6a：评测入口必须真的调用三路召回。
+def _load_run(name: str) -> dict[str, object] | None:
+    """读一份真实运行结果；缺失时返回 None（由调用方报失败）。"""
+    path = ROOT / "results" / name
+    if not path.exists():
+        return None
+    return json.loads(path.read_text(encoding="utf-8"))
 
-    **不能 `grep -c "recall_by_"`**：import 行里就含这个名字，会被误算。
-    判定必须看调用位置（`recall_by_{name}(`）。
+
+THREE_PATH_RUN = "a3-lexical-vector-adjacency.json"
+DEDUP_RUN = "a3-with-dedup.json"
+
+
+def check_l6a_three_paths_called() -> Check:
+    """L6a：三路召回都被真实调用。
+
+    判据来自运行结果：`paths_enabled` 含三路、`paths_unwired` 为空、
+    `path_returns` 三路都非 null。**不读源码**——把调用注释掉，
+    源码里的函数名仍在，字符串匹配抓不到。
     """
-    source = (ROOT / "evals" / "run_retrieval.py").read_text(encoding="utf-8")
-    called = {
-        name for name in ("lexical", "vector", "adjacency") if f"recall_by_{name}(" in source
-    }
-    expected = {"lexical", "vector", "adjacency"}
+    payload = _load_run(THREE_PATH_RUN)
+    if payload is None:
+        return Check("L6a", "三路召回都被调用", False, f"缺少 {THREE_PATH_RUN}")
+
+    enabled = set(payload.get("paths_enabled") or [])
+    unwired = payload.get("paths_unwired") or []
+    returns = payload.get("path_returns") or {}
+
+    problems: list[str] = []
+    for path_name in ("lexical", "vector", "adjacency"):
+        if path_name not in enabled:
+            problems.append(f"{path_name} 未启用")
+        elif path_name in unwired:
+            problems.append(f"{path_name} 未接线")
+        elif returns.get(path_name) is None:
+            problems.append(f"{path_name} 返回值为 null")
+
     return Check(
         "L6a",
         "三路召回都被调用",
-        called == expected,
-        f"当前调用 {sorted(called)}；缺 {sorted(expected - called)}",
+        not problems,
+        f"来自 {THREE_PATH_RUN}：enabled={sorted(enabled)}, unwired={unwired}"
+        if not problems
+        else "；".join(problems),
     )
 
 
 def check_l6b_embedding_written() -> Check:
-    """L6b：池构造时必须真的写入向量。
+    """L6b：池构造时真的写入了向量，且不是零向量。
 
-    "调用了 vector" 与 "有东西可召回" 是两件事：池里没有向量时，
-    向量一路只会返回空列表，仍然是空转（C4 缺陷 7 的同类）。
+    判据来自运行结果，两条：
+
+    1. 每条 case 的 `pool_vectors == pool_size`（都写了）
+    2. `min(pool_vector_norms) > 0.5`（不是零向量）
+
+    第 2 条防的是"写了但全是零"——那时余弦全相等、排序任意，
+    只判"有没有写"抓不到。
+
+    **诚实说明：本条在当前数据上恒真。**
+    实测 462 条向量的范数落在 [0.9996, 1.0004]（8 个不同值），
+    这是归一化后的浮点误差。所以 `min > 0.5` 现在必然成立——
+    它是**防止将来写坏**的门禁，不是"证明现在写对了"。
+    与 `SEH@5 = 1.000` 同理：一个恒真的检查看起来最像通过。
     """
-    source = (ROOT / "evals" / "run_retrieval.py").read_text(encoding="utf-8")
-    writes = source.count("embedding=")
+    payload = _load_run(THREE_PATH_RUN)
+    if payload is None:
+        return Check("L6b", "池构造写入向量", False, f"缺少 {THREE_PATH_RUN}")
+
+    cases = [
+        c
+        for c in payload["per_case"]  # type: ignore[index]
+        if c.get("has_gold") and not c.get("skipped")  # type: ignore[union-attr]
+    ]
+    if not cases:
+        return Check("L6b", "池构造写入向量", False, "没有可评估的 case")
+
+    missing = [
+        c["case_id"]  # type: ignore[index]
+        for c in cases
+        if c.get("pool_vectors") != c.get("pool_size")  # type: ignore[union-attr]
+    ]
+    all_norms = [
+        n for c in cases for n in (c.get("pool_vector_norms") or [])  # type: ignore[union-attr]
+    ]
+    min_norm = min(all_norms) if all_norms else 0.0
+
+    problems: list[str] = []
+    if missing:
+        problems.append(f"{len(missing)} 条 case 的 pool_vectors != pool_size：{missing[:3]}")
+    if min_norm <= 0.5:
+        problems.append(f"最小范数 {min_norm:.4f} <= 0.5，存在零向量或近零向量")
+
     return Check(
         "L6b",
         "池构造写入向量",
-        writes > 0,
-        f"评测入口里 `embedding=` 出现 {writes} 次" + ("" if writes else "（向量一路空转）"),
+        not problems,
+        (
+            f"{len(cases)} 条 case 全部写入；范数 {min_norm:.4f}–{max(all_norms):.4f}"
+            f"（{len(set(all_norms))} 个不同值）"
+        )
+        if not problems
+        else "；".join(problems),
     )
 
 
-def check_l7_l8_dedup_inputs() -> Check:
-    """L7/L8：`dedup` 必须收到文本与真实分数，不能是 id + 常数。
+def check_l8_dedup_scores_have_variance() -> Check:
+    """L8：`dedup` 收到的分数必须有方差，不能是常数。
 
-    C4 的调用是 `[(item_id, item_id, 1.0) ...]`：
-    text 字段拿到 UUID、score 全等 → 内部 `(-score, id)` 排序退化为字典序，
-    把重排结果整块替换。
+    判据来自 `results/a3-with-dedup.json` 的 `dedup_input_scores`。
+    常数分会让 `dedup` 内部的 `(-score, id)` 排序退化为字典序
+    （C4 缺陷 8）。
+
+    **为什么不用三路文件**：那份 `dedup=false`，`dedup_input_scores` 全为空。
+    这是"三路"与"去重"两个实验，不能用同一个文件判。
     """
-    source = (ROOT / "evals" / "run_retrieval.py").read_text(encoding="utf-8")
-    bad = "texts = [(item_id, item_id, 1.0) for item_id in order]" in source
+    payload = _load_run(DEDUP_RUN)
+    if payload is None:
+        return Check("L8", "dedup 分数有方差", False, f"缺少 {DEDUP_RUN}")
+
+    cases = [
+        c
+        for c in payload["per_case"]  # type: ignore[index]
+        if c.get("has_gold") and not c.get("skipped")  # type: ignore[union-attr]
+    ]
+    flat = [
+        c["case_id"]  # type: ignore[index]
+        for c in cases
+        if len(set(c.get("dedup_input_scores") or [])) <= 1  # type: ignore[union-attr]
+    ]
+
     return Check(
-        "L7/L8",
-        "dedup 收到文本与真实分数",
-        not bad,
-        "仍是 (item_id, item_id, 1.0)" if bad else "已改为传文本与真实分数",
+        "L8",
+        "dedup 分数有方差",
+        not flat,
+        f"{len(cases)} 条 case 的分数都有方差"
+        if not flat
+        else f"{len(flat)} 条 case 分数恒定：{flat[:3]}",
     )
 
 
@@ -414,21 +501,38 @@ def check_l6c_paths_return_nonempty(dataset: Dataset) -> Check:
 
     这条直接测"返回了什么"，而不是"做了什么"——前者比后者难自欺。
 
-    当前评测入口只有 lexical 一路，所以本项在结构上必然失败。
-    等修复变更接上三路后，这里应转为真实断言。
+    **判据用真实运行结果，不用源码匹配。** 源码里 `recall_by_adjacency(`
+    出现多少次与它是否被调用无关：把调用注释掉，字符串仍在。
+    这里读 `a3-lexical-vector-adjacency.json` 的 `path_returns`，
+    断言三路都已被启用且返回条数 > 0。
     """
-    source = (ROOT / "evals" / "run_retrieval.py").read_text(encoding="utf-8")
-    called = {
-        name for name in ("lexical", "vector", "adjacency") if f"recall_by_{name}(" in source
-    }
-    missing = {"lexical", "vector", "adjacency"} - called
+    run_file = ROOT / "results" / "a3-lexical-vector-adjacency.json"
+    if not run_file.exists():
+        return Check(
+            "L6c",
+            "三路召回都返回非空",
+            False,
+            f"缺少真实运行结果 {run_file.name}；请先跑一次三路评测",
+        )
+
+    payload = json.loads(run_file.read_text(encoding="utf-8"))
+    returns = payload.get("path_returns") or {}
+    enabled = set(payload.get("paths_enabled") or [])
+
+    problems: list[str] = []
+    for name in ("lexical", "vector", "adjacency"):
+        if name not in enabled:
+            problems.append(f"{name} 未启用")
+        elif returns.get(name) is None:
+            problems.append(f"{name} 未接线（记 null）")
+        elif returns.get(name) == 0:
+            problems.append(f"{name} 返回 0 条")
+
     return Check(
         "L6c",
         "三路召回都返回非空",
-        not missing,
-        f"未进入评测的路径：{sorted(missing)}"
-        if missing
-        else "三路都已进入评测，返回条数由 F7 复验",
+        not problems,
+        f"来自 {run_file.name}：{returns}" if not problems else "；".join(problems),
     )
 
 
@@ -441,7 +545,7 @@ ALL_CHECKS = (
     check_l6a_three_paths_called,
     check_l6b_embedding_written,
     check_l6c_paths_return_nonempty,
-    check_l7_l8_dedup_inputs,
+    check_l8_dedup_scores_have_variance,
     check_l9_implicit_has_no_cue_leak,
     check_f2_recall_size,
     check_f5_branch_counts,
@@ -487,9 +591,8 @@ def main(argv: list[str] | None = None) -> int:
     if failed:
         print(f"未通过：{', '.join(r.code for r in failed)}")
         print(
-            "注意：L6a/L6b/L6c/L7-L8 查的是**评测入口**（C4 遗留缺陷），"
-            "F6 是构造性的（样例单作者），F13 是阈值收紧后的真实不足。"
-            "四类都不是 schema 问题。"
+            "注意：F6 是构造性的（样例单作者），F13 是阈值收紧后的真实不足。"
+            "两者都不是 schema 问题。"
         )
 
     if args.json:
