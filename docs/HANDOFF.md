@@ -1,7 +1,8 @@
 # 交接说明
 
-> 更新日期：2026-10-26
-> 当前进度：C1–C4 已归档；**C4 读数被推翻**，下一步是冻结 v2 协议再重造数据
+> 更新日期：2026-10-27
+> 当前进度：C1–C4 已归档；C4 读数被推翻；**三路召回已接线并归档**；
+> 下一步是铺 v2 数据集
 
 ## 项目是什么
 
@@ -22,7 +23,21 @@
 
 **不要把这个 1.000 当作优点介绍。**
 
-## 已完成（四个变更，全部归档）
+### 三路召回的数字同样不可用于能力结论
+
+三路召回已接线且通过评测入口验证（`evaluation-harness` 门禁 L6a/L6b/L6c），
+但 dev 上的数字不可用于能力结论：
+
+- **邻接无合法目标**：6/6 条 BRANCH 的真兄弟不在池中（缺陷 16）
+- **`dedup` 无合法目标**：`build_pool` 已按 key 去重，池内同 key 对 = 0（缺陷 15）
+- **向量无阈值**：全池返回（14/14 = 池大小），"有贡献"与"把池塞进融合"无法区分
+
+实测 `SEH@1` 从 0.9091（只开词面）降到 0.6667（三路全开），
+但两条下降路径的输入都有缺陷。**详见 `docs/reports/three-way-recall.md` §0。**
+
+> 一句话：C4 防的是"1.000 被当成能力"，这里防的是"0.667 被当成能力差"。
+
+## 已完成（五个变更，全部归档）
 
 | 变更 | 交付 | 关键结论 |
 |---|---|---|
@@ -30,14 +45,18 @@
 | **C2** 双时态存储 | 唯一不变量 + 区间不重叠 + 审计只追加 | 四个 SQLite 坑（NULL 绕过索引、`t < NULL`、`REPLACE` 绕过触发器、FTS 无中文分词）全部实测验证 |
 | **C3** 六类判定 | 规则状态机 + 60 条场景 + 标注工具 | **自写场景 100% / 独立场景 50.0%**，9/15 错误是字符串方法的天花板 |
 | **C4** 检索层 | 三路召回 + RRF + 四特征重排 | **指标满分但不证明能力**；事后查明 1.000 是测量缺陷（见第 0.1 节） |
+| **三路召回接线** | 三条路径真进评测入口 + 三份文本规则分离 + 代码指纹 | **接线完成，但数字仍不可用于能力结论**；C4 缺陷从 8 条查到 16 条 |
 
 ## 当前状态
 
 ```
 openspec list          -> 无活动变更
-openspec list --specs  -> 5 个能力，44 条要求
-pytest                 -> 811 passed, 1 skipped
+openspec list --specs  -> 5 个能力，46 条要求
+pytest                 -> 1001 passed, 2 skipped
 ruff / mypy            -> clean
+locked_defect          -> 18 条（锁住 16 条缺陷的现状）
+evidence_lock          -> 6 条（读 git 归档，只有历史被改写才红）
+integrity_check        -> 1 条（工作区归档被覆盖时红，动作是还原）
 ```
 
 ### 五个能力
@@ -45,9 +64,9 @@ ruff / mypy            -> clean
 | 能力 | 要求数 |
 |---|---|
 | `conflict-resolution` | 7 |
-| `evaluation-harness` | 8 |
+| `evaluation-harness` | 9 |
 | `llm-and-embedding-io` | 7 |
-| `memory-retrieval` | 10 |
+| `memory-retrieval` | 11 |
 | `memory-store` | 12 |
 
 ## 下一步：先修尺子，再造数据
@@ -232,20 +251,52 @@ if result["seh_at_k"] >= 1.0:
 **C4 里"这些不是实现缺陷，是数据表达能力的上限"这句话错了一半**——
 前两条限制是数据问题，1.000 本身是实现缺陷。
 
-## 12 条 `locked_defect` 测试不许删
+## 18 条 `locked_defect` 测试不许删
 
-C4 的八条缺陷现在由 12 条标了 `@pytest.mark.locked_defect` 的测试锁着：
+C4 的十六条缺陷现在由 18 条标了 `@pytest.mark.locked_defect` 的测试锁着：
 
 ```bash
-uv run --no-sync pytest -m locked_defect -q                        # 12 passed
+uv run --no-sync pytest -m locked_defect -q                        # 18 passed
 uv run --no-sync pytest -m locked_defect --collect-only -q         # 看清单
+uv run --no-sync pytest -m evidence_lock -q                        # 6 条，读 git 归档
+uv run --no-sync pytest -m integrity_check -q                      # 1 条，检测归档被覆盖
 ```
 
 **它们锁定的是"现状是坏的"，不是期望行为。** 造完 v2、跑出真实分数之后，
-这 12 条**不应该被删**——它们记录的是一次真实的测量失败，
+这 18 条**不应该被删**——它们记录的是一次真实的测量失败，
 比任何"我们做得很好"的叙述都有价值。
 
 - 改成正向断言的时机是**修复提交**，不是新数据上线时
 - 冻结 tag 只冻结数据与协议，**不冻结代码状态**：缺陷还在，测试就该红
-- 覆盖关系由 `tests/retrieval/test_locked_defect_manifest.py` 校验：
-  每个缺陷至少一条锁定测试，且没有孤儿测试。它当场就抓到过一次漏登
+
+### 三个 marker 的语义各不相同
+
+| marker | 锁什么 | 变红时该做什么 |
+|---|---|---|
+| `locked_defect` | 当前代码里的缺陷 | 翻面成正向断言 + 更新 C4 报告 |
+| `evidence_lock` | git 归档里的历史数字 | **只有 git 历史被改写时才红**，核对 commit，不要改测试 |
+| `integrity_check` | 工作区文件是否被覆盖 | `git show <rev>:<path>` 还原 + 修回 run_count |
+
+混淆这三种会浪费大量时间。本项目踩过一次：把 integrity 类的断言
+标成 `evidence_lock`，结果它变成了"禁止跑实验"。
+
+## 已知未完成（归档时明确记录，不是疏忽）
+
+### 1. `evaluation-harness` 的「路径贡献的可测性」缺 MUST
+
+该 requirement 用了 `SHALL`，但三条 scenario 内没有 `MUST`。
+**没有 MUST 的 scenario 只是说明文**，下次改动时不会被视为约束。
+补 MUST 属于新变更（spec 已归档）。
+
+### 2. F6 / F13 未达标（v2 的工作）
+
+| 项 | 现状 | 解决时机 |
+|---|---|---|
+| F6 第三方 subject ≥ 5 | 0 个（单作者样例） | 铺开 15 个 subject 时由第二人补 |
+| F13 implicit 逐 subject ≥ 50% | 样例 40% | 同上 |
+
+### 3. 一条历史教训：门禁最初都在裸读源码
+
+L6a / L6b / L6c 最初都是 `if "recall_by_X(" in source` 形式，
+**把调用注释掉仍会 PASS**。现在三项都改读真实运行结果了，
+但记住这个形态：门禁断言的对象必须能与意图一起被违反。
