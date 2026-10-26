@@ -1,0 +1,2242 @@
+{
+  "weights": "uniform",
+  "pool_mode": "unrelated",
+  "dedup": false,
+  "k": 5,
+  "cases": 40,
+  "with_gold": 33,
+  "without_gold": 7,
+  "skipped_small_pool": 0,
+  "paths_enabled": [
+    "lexical",
+    "vector",
+    "adjacency"
+  ],
+  "paths_unwired": [],
+  "path_returns": {
+    "lexical": 41,
+    "vector": 462,
+    "adjacency": 13
+  },
+  "embedding_network_calls": 0,
+  "seh_at_k": 1.0,
+  "srs": 0.8434343434343434,
+  "attribution": {
+    "NOT_IN_POOL": 0,
+    "LOW_RANK": 0,
+    "RERANK_DROPPED": 0
+  },
+  "per_case": [
+    {
+      "case_id": "dev-add-01",
+      "has_gold": false,
+      "pool_size": 0,
+      "rank_after_fusion": null,
+      "rank_after_rerank": null,
+      "seh": null,
+      "srs": null,
+      "attribution": null
+    },
+    {
+      "case_id": "dev-add-02",
+      "has_gold": false,
+      "pool_size": 0,
+      "rank_after_fusion": null,
+      "rank_after_rerank": null,
+      "seh": null,
+      "srs": null,
+      "attribution": null
+    },
+    {
+      "case_id": "dev-add-03",
+      "has_gold": false,
+      "pool_size": 0,
+      "rank_after_fusion": null,
+      "rank_after_rerank": null,
+      "seh": null,
+      "srs": null,
+      "attribution": null
+    },
+    {
+      "case_id": "dev-add-04",
+      "has_gold": false,
+      "pool_size": 0,
+      "rank_after_fusion": null,
+      "rank_after_rerank": null,
+      "seh": null,
+      "srs": null,
+      "attribution": null
+    },
+    {
+      "case_id": "dev-add-05",
+      "has_gold": false,
+      "pool_size": 0,
+      "rank_after_fusion": null,
+      "rank_after_rerank": null,
+      "seh": null,
+      "srs": null,
+      "attribution": null
+    },
+    {
+      "case_id": "dev-add-06",
+      "has_gold": false,
+      "pool_size": 0,
+      "rank_after_fusion": null,
+      "rank_after_rerank": null,
+      "seh": null,
+      "srs": null,
+      "attribution": null
+    },
+    {
+      "case_id": "dev-add-07",
+      "has_gold": false,
+      "pool_size": 0,
+      "rank_after_fusion": null,
+      "rank_after_rerank": null,
+      "seh": null,
+      "srs": null,
+      "attribution": null
+    },
+    {
+      "case_id": "dev-branch-01",
+      "has_gold": true,
+      "pool_size": 14,
+      "rank_after_fusion": 1,
+      "rank_after_rerank": 2,
+      "fusion_tags": [
+        "gold-dev-branch-01",
+        "d-dev-branch-01-0",
+        "d-dev-branch-01-3",
+        "d-dev-branch-01-15",
+        "d-dev-branch-01-4",
+        "d-dev-branch-01-1",
+        "d-dev-branch-01-16",
+        "d-dev-branch-01-17",
+        "d-dev-branch-01-5",
+        "d-dev-branch-01-10",
+        "d-dev-branch-01-7",
+        "d-dev-branch-01-2",
+        "d-dev-branch-01-8",
+        "d-dev-branch-01-9"
+      ],
+      "adjacency_tags": [],
+      "dedup_input_tags": [],
+      "dedup_input_scores": [],
+      "rerank_top1_tag": "d-dev-branch-01-0",
+      "path_returns": {
+        "lexical": 2,
+        "vector": 14,
+        "adjacency": 0
+      },
+      "path_raw_lengths": {
+        "lexical": 2,
+        "vector": 14,
+        "adjacency": 0
+      },
+      "path_fused_lengths": {
+        "lexical": 2,
+        "vector": 14,
+        "adjacency": 0
+      },
+      "fusion_cap": 20,
+      "a5_strength": "strong",
+      "pool_vectors": 14,
+      "pool_vector_norms": [
+        1.0,
+        0.9999,
+        0.9999,
+        0.9996,
+        0.9999,
+        0.9997,
+        0.9997,
+        0.9997,
+        1.0003,
+        1.0002,
+        0.9998,
+        0.9998,
+        1.0002,
+        1.0
+      ],
+      "seh": true,
+      "srs": 0.5,
+      "attribution": null
+    },
+    {
+      "case_id": "dev-branch-02",
+      "has_gold": true,
+      "pool_size": 14,
+      "rank_after_fusion": 1,
+      "rank_after_rerank": 2,
+      "fusion_tags": [
+        "gold-dev-branch-02",
+        "d-dev-branch-02-0",
+        "d-dev-branch-02-5",
+        "d-dev-branch-02-16",
+        "d-dev-branch-02-3",
+        "d-dev-branch-02-1",
+        "d-dev-branch-02-17",
+        "d-dev-branch-02-15",
+        "d-dev-branch-02-4",
+        "d-dev-branch-02-10",
+        "d-dev-branch-02-2",
+        "d-dev-branch-02-8",
+        "d-dev-branch-02-9",
+        "d-dev-branch-02-7"
+      ],
+      "adjacency_tags": [],
+      "dedup_input_tags": [],
+      "dedup_input_scores": [],
+      "rerank_top1_tag": "d-dev-branch-02-0",
+      "path_returns": {
+        "lexical": 2,
+        "vector": 14,
+        "adjacency": 0
+      },
+      "path_raw_lengths": {
+        "lexical": 2,
+        "vector": 14,
+        "adjacency": 0
+      },
+      "path_fused_lengths": {
+        "lexical": 2,
+        "vector": 14,
+        "adjacency": 0
+      },
+      "fusion_cap": 20,
+      "a5_strength": "strong",
+      "pool_vectors": 14,
+      "pool_vector_norms": [
+        1.0003,
+        0.9997,
+        1.0,
+        0.9997,
+        1.0,
+        1.0002,
+        0.9998,
+        0.9997,
+        0.9997,
+        0.9996,
+        0.9999,
+        0.9999,
+        1.0002,
+        0.9996
+      ],
+      "seh": true,
+      "srs": 0.5,
+      "attribution": null
+    },
+    {
+      "case_id": "dev-branch-03",
+      "has_gold": true,
+      "pool_size": 14,
+      "rank_after_fusion": 1,
+      "rank_after_rerank": 3,
+      "fusion_tags": [
+        "gold-dev-branch-03",
+        "d-dev-branch-03-9",
+        "d-dev-branch-03-0",
+        "d-dev-branch-03-3",
+        "d-dev-branch-03-10",
+        "d-dev-branch-03-16",
+        "d-dev-branch-03-5",
+        "d-dev-branch-03-17",
+        "d-dev-branch-03-1",
+        "d-dev-branch-03-4",
+        "d-dev-branch-03-15",
+        "d-dev-branch-03-2",
+        "d-dev-branch-03-7",
+        "d-dev-branch-03-8"
+      ],
+      "adjacency_tags": [
+        "d-dev-branch-03-9"
+      ],
+      "dedup_input_tags": [],
+      "dedup_input_scores": [],
+      "rerank_top1_tag": "d-dev-branch-03-9",
+      "path_returns": {
+        "lexical": 1,
+        "vector": 14,
+        "adjacency": 1
+      },
+      "path_raw_lengths": {
+        "lexical": 1,
+        "vector": 14,
+        "adjacency": 1
+      },
+      "path_fused_lengths": {
+        "lexical": 1,
+        "vector": 14,
+        "adjacency": 1
+      },
+      "fusion_cap": 20,
+      "a5_strength": "strong",
+      "pool_vectors": 14,
+      "pool_vector_norms": [
+        0.9997,
+        0.9999,
+        1.0,
+        0.9997,
+        0.9997,
+        0.9999,
+        1.0001,
+        0.9996,
+        0.9999,
+        1.0,
+        0.9996,
+        1.0003,
+        0.9998,
+        1.0002
+      ],
+      "seh": true,
+      "srs": 0.3333333333333333,
+      "attribution": null
+    },
+    {
+      "case_id": "dev-branch-04",
+      "has_gold": true,
+      "pool_size": 14,
+      "rank_after_fusion": 1,
+      "rank_after_rerank": 2,
+      "fusion_tags": [
+        "gold-dev-branch-04",
+        "d-dev-branch-04-8",
+        "d-dev-branch-04-16",
+        "d-dev-branch-04-17",
+        "d-dev-branch-04-2",
+        "d-dev-branch-04-1",
+        "d-dev-branch-04-5",
+        "d-dev-branch-04-0",
+        "d-dev-branch-04-15",
+        "d-dev-branch-04-4",
+        "d-dev-branch-04-10",
+        "d-dev-branch-04-7",
+        "d-dev-branch-04-9",
+        "d-dev-branch-04-3"
+      ],
+      "adjacency_tags": [
+        "d-dev-branch-04-8"
+      ],
+      "dedup_input_tags": [],
+      "dedup_input_scores": [],
+      "rerank_top1_tag": "d-dev-branch-04-8",
+      "path_returns": {
+        "lexical": 1,
+        "vector": 14,
+        "adjacency": 1
+      },
+      "path_raw_lengths": {
+        "lexical": 1,
+        "vector": 14,
+        "adjacency": 1
+      },
+      "path_fused_lengths": {
+        "lexical": 1,
+        "vector": 14,
+        "adjacency": 1
+      },
+      "fusion_cap": 20,
+      "a5_strength": "strong",
+      "pool_vectors": 14,
+      "pool_vector_norms": [
+        0.9999,
+        1.0002,
+        1.0003,
+        0.9997,
+        0.9999,
+        0.9997,
+        1.0,
+        1.0,
+        0.9997,
+        0.9996,
+        0.9999,
+        1.0002,
+        1.0,
+        0.9998
+      ],
+      "seh": true,
+      "srs": 0.5,
+      "attribution": null
+    },
+    {
+      "case_id": "dev-branch-05",
+      "has_gold": true,
+      "pool_size": 14,
+      "rank_after_fusion": 1,
+      "rank_after_rerank": 2,
+      "fusion_tags": [
+        "gold-dev-branch-05",
+        "d-dev-branch-05-4",
+        "d-dev-branch-05-15",
+        "d-dev-branch-05-2",
+        "d-dev-branch-05-17",
+        "d-dev-branch-05-1",
+        "d-dev-branch-05-0",
+        "d-dev-branch-05-8",
+        "d-dev-branch-05-5",
+        "d-dev-branch-05-3",
+        "d-dev-branch-05-10",
+        "d-dev-branch-05-16",
+        "d-dev-branch-05-7",
+        "d-dev-branch-05-9"
+      ],
+      "adjacency_tags": [],
+      "dedup_input_tags": [],
+      "dedup_input_scores": [],
+      "rerank_top1_tag": "d-dev-branch-05-15",
+      "path_returns": {
+        "lexical": 3,
+        "vector": 14,
+        "adjacency": 0
+      },
+      "path_raw_lengths": {
+        "lexical": 3,
+        "vector": 14,
+        "adjacency": 0
+      },
+      "path_fused_lengths": {
+        "lexical": 3,
+        "vector": 14,
+        "adjacency": 0
+      },
+      "fusion_cap": 20,
+      "a5_strength": "strong",
+      "pool_vectors": 14,
+      "pool_vector_norms": [
+        0.9999,
+        1.0002,
+        0.9996,
+        0.9998,
+        1.0,
+        1.0,
+        0.9997,
+        0.9996,
+        0.9999,
+        1.0002,
+        1.0002,
+        0.9999,
+        0.9997,
+        1.0003
+      ],
+      "seh": true,
+      "srs": 0.5,
+      "attribution": null
+    },
+    {
+      "case_id": "dev-branch-06",
+      "has_gold": true,
+      "pool_size": 14,
+      "rank_after_fusion": 1,
+      "rank_after_rerank": 2,
+      "fusion_tags": [
+        "gold-dev-branch-06",
+        "d-dev-branch-06-15",
+        "d-dev-branch-06-4",
+        "d-dev-branch-06-2",
+        "d-dev-branch-06-5",
+        "d-dev-branch-06-7",
+        "d-dev-branch-06-0",
+        "d-dev-branch-06-10",
+        "d-dev-branch-06-17",
+        "d-dev-branch-06-1",
+        "d-dev-branch-06-8",
+        "d-dev-branch-06-3",
+        "d-dev-branch-06-16",
+        "d-dev-branch-06-9"
+      ],
+      "adjacency_tags": [
+        "d-dev-branch-06-15"
+      ],
+      "dedup_input_tags": [],
+      "dedup_input_scores": [],
+      "rerank_top1_tag": "d-dev-branch-06-15",
+      "path_returns": {
+        "lexical": 1,
+        "vector": 14,
+        "adjacency": 1
+      },
+      "path_raw_lengths": {
+        "lexical": 1,
+        "vector": 14,
+        "adjacency": 1
+      },
+      "path_fused_lengths": {
+        "lexical": 1,
+        "vector": 14,
+        "adjacency": 1
+      },
+      "fusion_cap": 20,
+      "a5_strength": "strong",
+      "pool_vectors": 14,
+      "pool_vector_norms": [
+        0.9997,
+        1.0003,
+        0.9999,
+        0.9999,
+        0.9996,
+        0.9997,
+        0.9999,
+        1.0002,
+        1.0002,
+        0.9998,
+        0.9998,
+        1.0,
+        1.0,
+        0.9996
+      ],
+      "seh": true,
+      "srs": 0.5,
+      "attribution": null
+    },
+    {
+      "case_id": "dev-conf-01",
+      "has_gold": true,
+      "pool_size": 14,
+      "rank_after_fusion": 1,
+      "rank_after_rerank": 1,
+      "fusion_tags": [
+        "gold-dev-conf-01",
+        "d-dev-conf-01-15",
+        "d-dev-conf-01-16",
+        "d-dev-conf-01-0",
+        "d-dev-conf-01-1",
+        "d-dev-conf-01-4",
+        "d-dev-conf-01-2",
+        "d-dev-conf-01-7",
+        "d-dev-conf-01-14",
+        "d-dev-conf-01-5",
+        "d-dev-conf-01-6",
+        "d-dev-conf-01-3",
+        "d-dev-conf-01-8",
+        "d-dev-conf-01-9"
+      ],
+      "adjacency_tags": [],
+      "dedup_input_tags": [],
+      "dedup_input_scores": [],
+      "rerank_top1_tag": "gold-dev-conf-01",
+      "path_returns": {
+        "lexical": 1,
+        "vector": 14,
+        "adjacency": 0
+      },
+      "path_raw_lengths": {
+        "lexical": 1,
+        "vector": 14,
+        "adjacency": 0
+      },
+      "path_fused_lengths": {
+        "lexical": 1,
+        "vector": 14,
+        "adjacency": 0
+      },
+      "fusion_cap": 20,
+      "a5_strength": "strong",
+      "pool_vectors": 14,
+      "pool_vector_norms": [
+        0.9996,
+        0.9999,
+        0.9997,
+        1.0,
+        1.0002,
+        0.9997,
+        0.9999,
+        1.0003,
+        0.9998,
+        0.9996,
+        1.0,
+        0.9999,
+        0.9996,
+        0.9997
+      ],
+      "seh": true,
+      "srs": 1.0,
+      "attribution": null
+    },
+    {
+      "case_id": "dev-conf-02",
+      "has_gold": true,
+      "pool_size": 14,
+      "rank_after_fusion": 1,
+      "rank_after_rerank": 1,
+      "fusion_tags": [
+        "gold-dev-conf-02",
+        "d-dev-conf-02-15",
+        "d-dev-conf-02-16",
+        "d-dev-conf-02-1",
+        "d-dev-conf-02-0",
+        "d-dev-conf-02-3",
+        "d-dev-conf-02-4",
+        "d-dev-conf-02-2",
+        "d-dev-conf-02-7",
+        "d-dev-conf-02-5",
+        "d-dev-conf-02-14",
+        "d-dev-conf-02-9",
+        "d-dev-conf-02-6",
+        "d-dev-conf-02-8"
+      ],
+      "adjacency_tags": [],
+      "dedup_input_tags": [],
+      "dedup_input_scores": [],
+      "rerank_top1_tag": "gold-dev-conf-02",
+      "path_returns": {
+        "lexical": 1,
+        "vector": 14,
+        "adjacency": 0
+      },
+      "path_raw_lengths": {
+        "lexical": 1,
+        "vector": 14,
+        "adjacency": 0
+      },
+      "path_fused_lengths": {
+        "lexical": 1,
+        "vector": 14,
+        "adjacency": 0
+      },
+      "fusion_cap": 20,
+      "a5_strength": "strong",
+      "pool_vectors": 14,
+      "pool_vector_norms": [
+        0.9999,
+        0.9998,
+        0.9997,
+        0.9996,
+        1.0,
+        0.9997,
+        1.0003,
+        1.0002,
+        0.9999,
+        0.9996,
+        1.0003,
+        0.9997,
+        0.9999,
+        1.0
+      ],
+      "seh": true,
+      "srs": 1.0,
+      "attribution": null
+    },
+    {
+      "case_id": "dev-conf-03",
+      "has_gold": true,
+      "pool_size": 14,
+      "rank_after_fusion": 1,
+      "rank_after_rerank": 1,
+      "fusion_tags": [
+        "gold-dev-conf-03",
+        "d-dev-conf-03-4",
+        "d-dev-conf-03-6",
+        "d-dev-conf-03-2",
+        "d-dev-conf-03-1",
+        "d-dev-conf-03-8",
+        "d-dev-conf-03-15",
+        "d-dev-conf-03-16",
+        "d-dev-conf-03-0",
+        "d-dev-conf-03-14",
+        "d-dev-conf-03-5",
+        "d-dev-conf-03-3",
+        "d-dev-conf-03-10",
+        "d-dev-conf-03-9"
+      ],
+      "adjacency_tags": [],
+      "dedup_input_tags": [],
+      "dedup_input_scores": [],
+      "rerank_top1_tag": "gold-dev-conf-03",
+      "path_returns": {
+        "lexical": 1,
+        "vector": 14,
+        "adjacency": 0
+      },
+      "path_raw_lengths": {
+        "lexical": 1,
+        "vector": 14,
+        "adjacency": 0
+      },
+      "path_fused_lengths": {
+        "lexical": 1,
+        "vector": 14,
+        "adjacency": 0
+      },
+      "fusion_cap": 20,
+      "a5_strength": "strong",
+      "pool_vectors": 14,
+      "pool_vector_norms": [
+        1.0003,
+        0.9999,
+        0.9997,
+        1.0,
+        1.0002,
+        0.9997,
+        0.9996,
+        0.9996,
+        0.9999,
+        0.9997,
+        0.9999,
+        1.0002,
+        0.9998,
+        1.0004
+      ],
+      "seh": true,
+      "srs": 1.0,
+      "attribution": null
+    },
+    {
+      "case_id": "dev-conf-04",
+      "has_gold": true,
+      "pool_size": 14,
+      "rank_after_fusion": 1,
+      "rank_after_rerank": 1,
+      "fusion_tags": [
+        "gold-dev-conf-04",
+        "d-dev-conf-04-3",
+        "d-dev-conf-04-16",
+        "d-dev-conf-04-15",
+        "d-dev-conf-04-2",
+        "d-dev-conf-04-0",
+        "d-dev-conf-04-1",
+        "d-dev-conf-04-8",
+        "d-dev-conf-04-10",
+        "d-dev-conf-04-6",
+        "d-dev-conf-04-5",
+        "d-dev-conf-04-14",
+        "d-dev-conf-04-4",
+        "d-dev-conf-04-9"
+      ],
+      "adjacency_tags": [
+        "d-dev-conf-04-3"
+      ],
+      "dedup_input_tags": [],
+      "dedup_input_scores": [],
+      "rerank_top1_tag": "gold-dev-conf-04",
+      "path_returns": {
+        "lexical": 1,
+        "vector": 14,
+        "adjacency": 1
+      },
+      "path_raw_lengths": {
+        "lexical": 1,
+        "vector": 14,
+        "adjacency": 1
+      },
+      "path_fused_lengths": {
+        "lexical": 1,
+        "vector": 14,
+        "adjacency": 1
+      },
+      "fusion_cap": 20,
+      "a5_strength": "strong",
+      "pool_vectors": 14,
+      "pool_vector_norms": [
+        0.9999,
+        0.9996,
+        1.0002,
+        0.9996,
+        1.0003,
+        0.9997,
+        1.0,
+        1.0,
+        0.9999,
+        0.9999,
+        0.9996,
+        1.0002,
+        0.9997,
+        0.9997
+      ],
+      "seh": true,
+      "srs": 1.0,
+      "attribution": null
+    },
+    {
+      "case_id": "dev-conf-05",
+      "has_gold": true,
+      "pool_size": 14,
+      "rank_after_fusion": 1,
+      "rank_after_rerank": 1,
+      "fusion_tags": [
+        "gold-dev-conf-05",
+        "d-dev-conf-05-2",
+        "d-dev-conf-05-6",
+        "d-dev-conf-05-15",
+        "d-dev-conf-05-16",
+        "d-dev-conf-05-0",
+        "d-dev-conf-05-1",
+        "d-dev-conf-05-8",
+        "d-dev-conf-05-4",
+        "d-dev-conf-05-10",
+        "d-dev-conf-05-3",
+        "d-dev-conf-05-5",
+        "d-dev-conf-05-14",
+        "d-dev-conf-05-9"
+      ],
+      "adjacency_tags": [
+        "d-dev-conf-05-2"
+      ],
+      "dedup_input_tags": [],
+      "dedup_input_scores": [],
+      "rerank_top1_tag": "gold-dev-conf-05",
+      "path_returns": {
+        "lexical": 1,
+        "vector": 14,
+        "adjacency": 1
+      },
+      "path_raw_lengths": {
+        "lexical": 1,
+        "vector": 14,
+        "adjacency": 1
+      },
+      "path_fused_lengths": {
+        "lexical": 1,
+        "vector": 14,
+        "adjacency": 1
+      },
+      "fusion_cap": 20,
+      "a5_strength": "strong",
+      "pool_vectors": 14,
+      "pool_vector_norms": [
+        0.9997,
+        1.0,
+        1.0002,
+        0.9999,
+        0.9996,
+        0.9999,
+        0.9997,
+        0.9998,
+        0.9997,
+        1.0003,
+        1.0002,
+        0.9996,
+        1.0,
+        1.0003
+      ],
+      "seh": true,
+      "srs": 1.0,
+      "attribution": null
+    },
+    {
+      "case_id": "dev-conf-06",
+      "has_gold": true,
+      "pool_size": 14,
+      "rank_after_fusion": 1,
+      "rank_after_rerank": 1,
+      "fusion_tags": [
+        "gold-dev-conf-06",
+        "d-dev-conf-06-2",
+        "d-dev-conf-06-16",
+        "d-dev-conf-06-4",
+        "d-dev-conf-06-6",
+        "d-dev-conf-06-15",
+        "d-dev-conf-06-1",
+        "d-dev-conf-06-0",
+        "d-dev-conf-06-14",
+        "d-dev-conf-06-5",
+        "d-dev-conf-06-10",
+        "d-dev-conf-06-3",
+        "d-dev-conf-06-9",
+        "d-dev-conf-06-8"
+      ],
+      "adjacency_tags": [],
+      "dedup_input_tags": [],
+      "dedup_input_scores": [],
+      "rerank_top1_tag": "gold-dev-conf-06",
+      "path_returns": {
+        "lexical": 1,
+        "vector": 14,
+        "adjacency": 0
+      },
+      "path_raw_lengths": {
+        "lexical": 1,
+        "vector": 14,
+        "adjacency": 0
+      },
+      "path_fused_lengths": {
+        "lexical": 1,
+        "vector": 14,
+        "adjacency": 0
+      },
+      "fusion_cap": 20,
+      "a5_strength": "strong",
+      "pool_vectors": 14,
+      "pool_vector_norms": [
+        1.0003,
+        1.0,
+        0.9999,
+        0.9997,
+        1.0002,
+        1.0002,
+        0.9996,
+        0.9999,
+        0.9996,
+        0.9997,
+        0.9998,
+        1.0003,
+        0.9999,
+        0.9997
+      ],
+      "seh": true,
+      "srs": 1.0,
+      "attribution": null
+    },
+    {
+      "case_id": "dev-merge-01",
+      "has_gold": true,
+      "pool_size": 14,
+      "rank_after_fusion": 1,
+      "rank_after_rerank": 1,
+      "fusion_tags": [
+        "gold-dev-merge-01",
+        "d-dev-merge-01-15",
+        "d-dev-merge-01-6",
+        "d-dev-merge-01-0",
+        "d-dev-merge-01-3",
+        "d-dev-merge-01-1",
+        "d-dev-merge-01-8",
+        "d-dev-merge-01-2",
+        "d-dev-merge-01-10",
+        "d-dev-merge-01-16",
+        "d-dev-merge-01-4",
+        "d-dev-merge-01-14",
+        "d-dev-merge-01-5",
+        "d-dev-merge-01-9"
+      ],
+      "adjacency_tags": [],
+      "dedup_input_tags": [],
+      "dedup_input_scores": [],
+      "rerank_top1_tag": "gold-dev-merge-01",
+      "path_returns": {
+        "lexical": 1,
+        "vector": 14,
+        "adjacency": 0
+      },
+      "path_raw_lengths": {
+        "lexical": 1,
+        "vector": 14,
+        "adjacency": 0
+      },
+      "path_fused_lengths": {
+        "lexical": 1,
+        "vector": 14,
+        "adjacency": 0
+      },
+      "fusion_cap": 20,
+      "a5_strength": "strong",
+      "pool_vectors": 14,
+      "pool_vector_norms": [
+        0.9997,
+        0.9997,
+        1.0001,
+        1.0003,
+        0.9999,
+        1.0002,
+        0.9997,
+        0.9996,
+        0.9998,
+        1.0,
+        1.0002,
+        0.9999,
+        0.9999,
+        0.9996
+      ],
+      "seh": true,
+      "srs": 1.0,
+      "attribution": null
+    },
+    {
+      "case_id": "dev-merge-02",
+      "has_gold": true,
+      "pool_size": 14,
+      "rank_after_fusion": 1,
+      "rank_after_rerank": 1,
+      "fusion_tags": [
+        "gold-dev-merge-02",
+        "d-dev-merge-02-3",
+        "d-dev-merge-02-4",
+        "d-dev-merge-02-2",
+        "d-dev-merge-02-16",
+        "d-dev-merge-02-5",
+        "d-dev-merge-02-14",
+        "d-dev-merge-02-6",
+        "d-dev-merge-02-0",
+        "d-dev-merge-02-1",
+        "d-dev-merge-02-10",
+        "d-dev-merge-02-15",
+        "d-dev-merge-02-9",
+        "d-dev-merge-02-8"
+      ],
+      "adjacency_tags": [
+        "d-dev-merge-02-3"
+      ],
+      "dedup_input_tags": [],
+      "dedup_input_scores": [],
+      "rerank_top1_tag": "gold-dev-merge-02",
+      "path_returns": {
+        "lexical": 1,
+        "vector": 14,
+        "adjacency": 1
+      },
+      "path_raw_lengths": {
+        "lexical": 1,
+        "vector": 14,
+        "adjacency": 1
+      },
+      "path_fused_lengths": {
+        "lexical": 1,
+        "vector": 14,
+        "adjacency": 1
+      },
+      "fusion_cap": 20,
+      "a5_strength": "strong",
+      "pool_vectors": 14,
+      "pool_vector_norms": [
+        1.0001,
+        0.9999,
+        0.9996,
+        0.9999,
+        1.0,
+        1.0002,
+        0.9997,
+        0.9996,
+        0.9999,
+        0.9997,
+        1.0003,
+        0.9997,
+        1.0,
+        1.0002
+      ],
+      "seh": true,
+      "srs": 1.0,
+      "attribution": null
+    },
+    {
+      "case_id": "dev-merge-03",
+      "has_gold": true,
+      "pool_size": 14,
+      "rank_after_fusion": 1,
+      "rank_after_rerank": 1,
+      "fusion_tags": [
+        "gold-dev-merge-03",
+        "d-dev-merge-03-2",
+        "d-dev-merge-03-6",
+        "d-dev-merge-03-8",
+        "d-dev-merge-03-15",
+        "d-dev-merge-03-10",
+        "d-dev-merge-03-0",
+        "d-dev-merge-03-16",
+        "d-dev-merge-03-3",
+        "d-dev-merge-03-1",
+        "d-dev-merge-03-4",
+        "d-dev-merge-03-9",
+        "d-dev-merge-03-14",
+        "d-dev-merge-03-5"
+      ],
+      "adjacency_tags": [
+        "d-dev-merge-03-2"
+      ],
+      "dedup_input_tags": [],
+      "dedup_input_scores": [],
+      "rerank_top1_tag": "gold-dev-merge-03",
+      "path_returns": {
+        "lexical": 1,
+        "vector": 14,
+        "adjacency": 1
+      },
+      "path_raw_lengths": {
+        "lexical": 1,
+        "vector": 14,
+        "adjacency": 1
+      },
+      "path_fused_lengths": {
+        "lexical": 1,
+        "vector": 14,
+        "adjacency": 1
+      },
+      "fusion_cap": 20,
+      "a5_strength": "strong",
+      "pool_vectors": 14,
+      "pool_vector_norms": [
+        1.0002,
+        0.9997,
+        0.9997,
+        1.0,
+        0.9999,
+        1.0,
+        0.9998,
+        0.9999,
+        1.0003,
+        0.9997,
+        1.0002,
+        0.9996,
+        0.9996,
+        0.9997
+      ],
+      "seh": true,
+      "srs": 1.0,
+      "attribution": null
+    },
+    {
+      "case_id": "dev-merge-04",
+      "has_gold": true,
+      "pool_size": 14,
+      "rank_after_fusion": 1,
+      "rank_after_rerank": 1,
+      "fusion_tags": [
+        "gold-dev-merge-04",
+        "d-dev-merge-04-0",
+        "d-dev-merge-04-15",
+        "d-dev-merge-04-2",
+        "d-dev-merge-04-16",
+        "d-dev-merge-04-4",
+        "d-dev-merge-04-1",
+        "d-dev-merge-04-6",
+        "d-dev-merge-04-14",
+        "d-dev-merge-04-5",
+        "d-dev-merge-04-3",
+        "d-dev-merge-04-10",
+        "d-dev-merge-04-8",
+        "d-dev-merge-04-9"
+      ],
+      "adjacency_tags": [],
+      "dedup_input_tags": [],
+      "dedup_input_scores": [],
+      "rerank_top1_tag": "gold-dev-merge-04",
+      "path_returns": {
+        "lexical": 1,
+        "vector": 14,
+        "adjacency": 0
+      },
+      "path_raw_lengths": {
+        "lexical": 1,
+        "vector": 14,
+        "adjacency": 0
+      },
+      "path_fused_lengths": {
+        "lexical": 1,
+        "vector": 14,
+        "adjacency": 0
+      },
+      "fusion_cap": 20,
+      "a5_strength": "strong",
+      "pool_vectors": 14,
+      "pool_vector_norms": [
+        1.0,
+        1.0002,
+        0.9999,
+        0.9997,
+        0.9997,
+        1.0,
+        0.9996,
+        1.0003,
+        1.0002,
+        0.9999,
+        0.9997,
+        0.9998,
+        0.9996,
+        0.9999
+      ],
+      "seh": true,
+      "srs": 1.0,
+      "attribution": null
+    },
+    {
+      "case_id": "dev-merge-05",
+      "has_gold": true,
+      "pool_size": 14,
+      "rank_after_fusion": 2,
+      "rank_after_rerank": 2,
+      "fusion_tags": [
+        "d-dev-merge-05-5",
+        "gold-dev-merge-05",
+        "d-dev-merge-05-4",
+        "d-dev-merge-05-9",
+        "d-dev-merge-05-2",
+        "d-dev-merge-05-17",
+        "d-dev-merge-05-0",
+        "d-dev-merge-05-1",
+        "d-dev-merge-05-16",
+        "d-dev-merge-05-6",
+        "d-dev-merge-05-11",
+        "d-dev-merge-05-3",
+        "d-dev-merge-05-8",
+        "d-dev-merge-05-10"
+      ],
+      "adjacency_tags": [
+        "d-dev-merge-05-5"
+      ],
+      "dedup_input_tags": [],
+      "dedup_input_scores": [],
+      "rerank_top1_tag": "d-dev-merge-05-5",
+      "path_returns": {
+        "lexical": 2,
+        "vector": 14,
+        "adjacency": 1
+      },
+      "path_raw_lengths": {
+        "lexical": 2,
+        "vector": 14,
+        "adjacency": 1
+      },
+      "path_fused_lengths": {
+        "lexical": 2,
+        "vector": 14,
+        "adjacency": 1
+      },
+      "fusion_cap": 20,
+      "a5_strength": "strong",
+      "pool_vectors": 14,
+      "pool_vector_norms": [
+        0.9999,
+        1.0,
+        1.0002,
+        1.0001,
+        1.0002,
+        1.0,
+        0.9997,
+        0.9996,
+        0.9996,
+        0.9999,
+        1.0003,
+        0.9997,
+        0.9999,
+        0.9998
+      ],
+      "seh": true,
+      "srs": 0.5,
+      "attribution": null
+    },
+    {
+      "case_id": "dev-merge-06",
+      "has_gold": true,
+      "pool_size": 14,
+      "rank_after_fusion": 1,
+      "rank_after_rerank": 1,
+      "fusion_tags": [
+        "gold-dev-merge-06",
+        "d-dev-merge-06-0",
+        "d-dev-merge-06-17",
+        "d-dev-merge-06-1",
+        "d-dev-merge-06-6",
+        "d-dev-merge-06-11",
+        "d-dev-merge-06-3",
+        "d-dev-merge-06-2",
+        "d-dev-merge-06-8",
+        "d-dev-merge-06-10",
+        "d-dev-merge-06-9",
+        "d-dev-merge-06-16",
+        "d-dev-merge-06-5",
+        "d-dev-merge-06-4"
+      ],
+      "adjacency_tags": [],
+      "dedup_input_tags": [],
+      "dedup_input_scores": [],
+      "rerank_top1_tag": "gold-dev-merge-06",
+      "path_returns": {
+        "lexical": 1,
+        "vector": 14,
+        "adjacency": 0
+      },
+      "path_raw_lengths": {
+        "lexical": 1,
+        "vector": 14,
+        "adjacency": 0
+      },
+      "path_fused_lengths": {
+        "lexical": 1,
+        "vector": 14,
+        "adjacency": 0
+      },
+      "fusion_cap": 20,
+      "a5_strength": "strong",
+      "pool_vectors": 14,
+      "pool_vector_norms": [
+        0.9996,
+        0.9996,
+        0.9999,
+        0.9999,
+        0.9997,
+        1.0002,
+        1.0,
+        0.9997,
+        0.9998,
+        0.9997,
+        1.0002,
+        1.0,
+        1.0003,
+        1.0003
+      ],
+      "seh": true,
+      "srs": 1.0,
+      "attribution": null
+    },
+    {
+      "case_id": "dev-merge-07",
+      "has_gold": true,
+      "pool_size": 14,
+      "rank_after_fusion": 1,
+      "rank_after_rerank": 1,
+      "fusion_tags": [
+        "gold-dev-merge-07",
+        "d-dev-merge-07-17",
+        "d-dev-merge-07-6",
+        "d-dev-merge-07-0",
+        "d-dev-merge-07-2",
+        "d-dev-merge-07-1",
+        "d-dev-merge-07-5",
+        "d-dev-merge-07-16",
+        "d-dev-merge-07-4",
+        "d-dev-merge-07-9",
+        "d-dev-merge-07-3",
+        "d-dev-merge-07-11",
+        "d-dev-merge-07-10",
+        "d-dev-merge-07-8"
+      ],
+      "adjacency_tags": [],
+      "dedup_input_tags": [],
+      "dedup_input_scores": [],
+      "rerank_top1_tag": "gold-dev-merge-07",
+      "path_returns": {
+        "lexical": 1,
+        "vector": 14,
+        "adjacency": 0
+      },
+      "path_raw_lengths": {
+        "lexical": 1,
+        "vector": 14,
+        "adjacency": 0
+      },
+      "path_fused_lengths": {
+        "lexical": 1,
+        "vector": 14,
+        "adjacency": 0
+      },
+      "fusion_cap": 20,
+      "a5_strength": "strong",
+      "pool_vectors": 14,
+      "pool_vector_norms": [
+        0.9999,
+        1.0002,
+        1.0002,
+        0.9999,
+        0.9996,
+        1.0002,
+        0.9997,
+        0.9997,
+        0.9998,
+        0.9996,
+        1.0,
+        1.0,
+        0.9997,
+        0.9999
+      ],
+      "seh": true,
+      "srs": 1.0,
+      "attribution": null
+    },
+    {
+      "case_id": "dev-noop-01",
+      "has_gold": true,
+      "pool_size": 14,
+      "rank_after_fusion": 1,
+      "rank_after_rerank": 1,
+      "fusion_tags": [
+        "gold-dev-noop-01",
+        "d-dev-noop-01-2",
+        "d-dev-noop-01-6",
+        "d-dev-noop-01-15",
+        "d-dev-noop-01-8",
+        "d-dev-noop-01-3",
+        "d-dev-noop-01-1",
+        "d-dev-noop-01-4",
+        "d-dev-noop-01-16",
+        "d-dev-noop-01-0",
+        "d-dev-noop-01-14",
+        "d-dev-noop-01-5",
+        "d-dev-noop-01-10",
+        "d-dev-noop-01-9"
+      ],
+      "adjacency_tags": [],
+      "dedup_input_tags": [],
+      "dedup_input_scores": [],
+      "rerank_top1_tag": "gold-dev-noop-01",
+      "path_returns": {
+        "lexical": 1,
+        "vector": 14,
+        "adjacency": 0
+      },
+      "path_raw_lengths": {
+        "lexical": 1,
+        "vector": 14,
+        "adjacency": 0
+      },
+      "path_fused_lengths": {
+        "lexical": 1,
+        "vector": 14,
+        "adjacency": 0
+      },
+      "fusion_cap": 20,
+      "a5_strength": "strong",
+      "pool_vectors": 14,
+      "pool_vector_norms": [
+        1.0,
+        0.9997,
+        0.9996,
+        1.0003,
+        0.9997,
+        0.9996,
+        1.0003,
+        0.9999,
+        1.0002,
+        1.0002,
+        0.9997,
+        0.9999,
+        0.9998,
+        0.9999
+      ],
+      "seh": true,
+      "srs": 1.0,
+      "attribution": null
+    },
+    {
+      "case_id": "dev-noop-02",
+      "has_gold": true,
+      "pool_size": 14,
+      "rank_after_fusion": 1,
+      "rank_after_rerank": 1,
+      "fusion_tags": [
+        "gold-dev-noop-02",
+        "d-dev-noop-02-2",
+        "d-dev-noop-02-15",
+        "d-dev-noop-02-16",
+        "d-dev-noop-02-10",
+        "d-dev-noop-02-6",
+        "d-dev-noop-02-3",
+        "d-dev-noop-02-1",
+        "d-dev-noop-02-0",
+        "d-dev-noop-02-8",
+        "d-dev-noop-02-14",
+        "d-dev-noop-02-5",
+        "d-dev-noop-02-4",
+        "d-dev-noop-02-9"
+      ],
+      "adjacency_tags": [],
+      "dedup_input_tags": [],
+      "dedup_input_scores": [],
+      "rerank_top1_tag": "gold-dev-noop-02",
+      "path_returns": {
+        "lexical": 1,
+        "vector": 14,
+        "adjacency": 0
+      },
+      "path_raw_lengths": {
+        "lexical": 1,
+        "vector": 14,
+        "adjacency": 0
+      },
+      "path_fused_lengths": {
+        "lexical": 1,
+        "vector": 14,
+        "adjacency": 0
+      },
+      "fusion_cap": 20,
+      "a5_strength": "strong",
+      "pool_vectors": 14,
+      "pool_vector_norms": [
+        0.9998,
+        0.9999,
+        1.0002,
+        0.9997,
+        0.9997,
+        0.9999,
+        0.9996,
+        1.0,
+        1.0003,
+        0.9997,
+        0.9997,
+        0.9999,
+        0.9996,
+        1.0002
+      ],
+      "seh": true,
+      "srs": 1.0,
+      "attribution": null
+    },
+    {
+      "case_id": "dev-noop-03",
+      "has_gold": true,
+      "pool_size": 14,
+      "rank_after_fusion": 1,
+      "rank_after_rerank": 1,
+      "fusion_tags": [
+        "gold-dev-noop-03",
+        "d-dev-noop-03-3",
+        "d-dev-noop-03-2",
+        "d-dev-noop-03-4",
+        "d-dev-noop-03-6",
+        "d-dev-noop-03-1",
+        "d-dev-noop-03-0",
+        "d-dev-noop-03-16",
+        "d-dev-noop-03-10",
+        "d-dev-noop-03-5",
+        "d-dev-noop-03-14",
+        "d-dev-noop-03-15",
+        "d-dev-noop-03-9",
+        "d-dev-noop-03-8"
+      ],
+      "adjacency_tags": [
+        "d-dev-noop-03-3"
+      ],
+      "dedup_input_tags": [],
+      "dedup_input_scores": [],
+      "rerank_top1_tag": "gold-dev-noop-03",
+      "path_returns": {
+        "lexical": 1,
+        "vector": 14,
+        "adjacency": 1
+      },
+      "path_raw_lengths": {
+        "lexical": 1,
+        "vector": 14,
+        "adjacency": 1
+      },
+      "path_fused_lengths": {
+        "lexical": 1,
+        "vector": 14,
+        "adjacency": 1
+      },
+      "fusion_cap": 20,
+      "a5_strength": "strong",
+      "pool_vectors": 14,
+      "pool_vector_norms": [
+        1.0003,
+        0.9997,
+        0.9999,
+        0.9997,
+        0.9997,
+        1.0002,
+        1.0002,
+        0.9999,
+        0.9996,
+        1.0,
+        0.9998,
+        1.0,
+        0.9996,
+        0.9999
+      ],
+      "seh": true,
+      "srs": 1.0,
+      "attribution": null
+    },
+    {
+      "case_id": "dev-noop-04",
+      "has_gold": true,
+      "pool_size": 14,
+      "rank_after_fusion": 1,
+      "rank_after_rerank": 1,
+      "fusion_tags": [
+        "gold-dev-noop-04",
+        "d-dev-noop-04-15",
+        "d-dev-noop-04-0",
+        "d-dev-noop-04-16",
+        "d-dev-noop-04-2",
+        "d-dev-noop-04-1",
+        "d-dev-noop-04-6",
+        "d-dev-noop-04-4",
+        "d-dev-noop-04-5",
+        "d-dev-noop-04-14",
+        "d-dev-noop-04-3",
+        "d-dev-noop-04-10",
+        "d-dev-noop-04-9",
+        "d-dev-noop-04-8"
+      ],
+      "adjacency_tags": [],
+      "dedup_input_tags": [],
+      "dedup_input_scores": [],
+      "rerank_top1_tag": "gold-dev-noop-04",
+      "path_returns": {
+        "lexical": 1,
+        "vector": 14,
+        "adjacency": 0
+      },
+      "path_raw_lengths": {
+        "lexical": 1,
+        "vector": 14,
+        "adjacency": 0
+      },
+      "path_fused_lengths": {
+        "lexical": 1,
+        "vector": 14,
+        "adjacency": 0
+      },
+      "fusion_cap": 20,
+      "a5_strength": "strong",
+      "pool_vectors": 14,
+      "pool_vector_norms": [
+        1.0,
+        1.0002,
+        0.9999,
+        0.9998,
+        0.9999,
+        0.9999,
+        0.9996,
+        1.0003,
+        1.0002,
+        0.9997,
+        0.9996,
+        0.9999,
+        0.9997,
+        0.9997
+      ],
+      "seh": true,
+      "srs": 1.0,
+      "attribution": null
+    },
+    {
+      "case_id": "dev-noop-05",
+      "has_gold": true,
+      "pool_size": 14,
+      "rank_after_fusion": 2,
+      "rank_after_rerank": 2,
+      "fusion_tags": [
+        "d-dev-noop-05-5",
+        "gold-dev-noop-05",
+        "d-dev-noop-05-4",
+        "d-dev-noop-05-17",
+        "d-dev-noop-05-2",
+        "d-dev-noop-05-9",
+        "d-dev-noop-05-1",
+        "d-dev-noop-05-0",
+        "d-dev-noop-05-6",
+        "d-dev-noop-05-3",
+        "d-dev-noop-05-8",
+        "d-dev-noop-05-11",
+        "d-dev-noop-05-16",
+        "d-dev-noop-05-10"
+      ],
+      "adjacency_tags": [
+        "d-dev-noop-05-5"
+      ],
+      "dedup_input_tags": [],
+      "dedup_input_scores": [],
+      "rerank_top1_tag": "d-dev-noop-05-5",
+      "path_returns": {
+        "lexical": 2,
+        "vector": 14,
+        "adjacency": 1
+      },
+      "path_raw_lengths": {
+        "lexical": 2,
+        "vector": 14,
+        "adjacency": 1
+      },
+      "path_fused_lengths": {
+        "lexical": 2,
+        "vector": 14,
+        "adjacency": 1
+      },
+      "fusion_cap": 20,
+      "a5_strength": "strong",
+      "pool_vectors": 14,
+      "pool_vector_norms": [
+        0.9996,
+        0.9996,
+        1.0002,
+        0.9997,
+        0.9999,
+        1.0,
+        1.0002,
+        0.9997,
+        1.0,
+        1.0003,
+        0.9999,
+        0.9999,
+        0.9998,
+        0.9999
+      ],
+      "seh": true,
+      "srs": 0.5,
+      "attribution": null
+    },
+    {
+      "case_id": "dev-noop-06",
+      "has_gold": true,
+      "pool_size": 14,
+      "rank_after_fusion": 1,
+      "rank_after_rerank": 1,
+      "fusion_tags": [
+        "gold-dev-noop-06",
+        "d-dev-noop-06-17",
+        "d-dev-noop-06-0",
+        "d-dev-noop-06-1",
+        "d-dev-noop-06-6",
+        "d-dev-noop-06-11",
+        "d-dev-noop-06-3",
+        "d-dev-noop-06-8",
+        "d-dev-noop-06-2",
+        "d-dev-noop-06-9",
+        "d-dev-noop-06-10",
+        "d-dev-noop-06-5",
+        "d-dev-noop-06-16",
+        "d-dev-noop-06-4"
+      ],
+      "adjacency_tags": [],
+      "dedup_input_tags": [],
+      "dedup_input_scores": [],
+      "rerank_top1_tag": "gold-dev-noop-06",
+      "path_returns": {
+        "lexical": 1,
+        "vector": 14,
+        "adjacency": 0
+      },
+      "path_raw_lengths": {
+        "lexical": 1,
+        "vector": 14,
+        "adjacency": 0
+      },
+      "path_fused_lengths": {
+        "lexical": 1,
+        "vector": 14,
+        "adjacency": 0
+      },
+      "fusion_cap": 20,
+      "a5_strength": "strong",
+      "pool_vectors": 14,
+      "pool_vector_norms": [
+        1.0,
+        0.9996,
+        0.9998,
+        0.9999,
+        0.9999,
+        1.0002,
+        0.9997,
+        1.0003,
+        0.9996,
+        0.9997,
+        0.9999,
+        1.0,
+        1.0002,
+        0.9997
+      ],
+      "seh": true,
+      "srs": 1.0,
+      "attribution": null
+    },
+    {
+      "case_id": "dev-noop-07",
+      "has_gold": true,
+      "pool_size": 14,
+      "rank_after_fusion": 1,
+      "rank_after_rerank": 1,
+      "fusion_tags": [
+        "gold-dev-noop-07",
+        "d-dev-noop-07-2",
+        "d-dev-noop-07-6",
+        "d-dev-noop-07-15",
+        "d-dev-noop-07-8",
+        "d-dev-noop-07-3",
+        "d-dev-noop-07-1",
+        "d-dev-noop-07-4",
+        "d-dev-noop-07-16",
+        "d-dev-noop-07-0",
+        "d-dev-noop-07-5",
+        "d-dev-noop-07-14",
+        "d-dev-noop-07-10",
+        "d-dev-noop-07-9"
+      ],
+      "adjacency_tags": [],
+      "dedup_input_tags": [],
+      "dedup_input_scores": [],
+      "rerank_top1_tag": "gold-dev-noop-07",
+      "path_returns": {
+        "lexical": 1,
+        "vector": 14,
+        "adjacency": 0
+      },
+      "path_raw_lengths": {
+        "lexical": 1,
+        "vector": 14,
+        "adjacency": 0
+      },
+      "path_fused_lengths": {
+        "lexical": 1,
+        "vector": 14,
+        "adjacency": 0
+      },
+      "fusion_cap": 20,
+      "a5_strength": "strong",
+      "pool_vectors": 14,
+      "pool_vector_norms": [
+        1.0002,
+        1.0,
+        1.0002,
+        1.0003,
+        1.0003,
+        0.9997,
+        0.9997,
+        0.9996,
+        0.9999,
+        0.9996,
+        0.9999,
+        0.9997,
+        0.9999,
+        0.9998
+      ],
+      "seh": true,
+      "srs": 1.0,
+      "attribution": null
+    },
+    {
+      "case_id": "dev-sup-01",
+      "has_gold": true,
+      "pool_size": 14,
+      "rank_after_fusion": 1,
+      "rank_after_rerank": 1,
+      "fusion_tags": [
+        "gold-dev-sup-01",
+        "d-dev-sup-01-2",
+        "d-dev-sup-01-1",
+        "d-dev-sup-01-10",
+        "d-dev-sup-01-4",
+        "d-dev-sup-01-6",
+        "d-dev-sup-01-0",
+        "d-dev-sup-01-16",
+        "d-dev-sup-01-3",
+        "d-dev-sup-01-8",
+        "d-dev-sup-01-15",
+        "d-dev-sup-01-5",
+        "d-dev-sup-01-14",
+        "d-dev-sup-01-9"
+      ],
+      "adjacency_tags": [],
+      "dedup_input_tags": [],
+      "dedup_input_scores": [],
+      "rerank_top1_tag": "gold-dev-sup-01",
+      "path_returns": {
+        "lexical": 1,
+        "vector": 14,
+        "adjacency": 0
+      },
+      "path_raw_lengths": {
+        "lexical": 1,
+        "vector": 14,
+        "adjacency": 0
+      },
+      "path_fused_lengths": {
+        "lexical": 1,
+        "vector": 14,
+        "adjacency": 0
+      },
+      "fusion_cap": 20,
+      "a5_strength": "strong",
+      "pool_vectors": 14,
+      "pool_vector_norms": [
+        0.9999,
+        1.0002,
+        1.0003,
+        0.9997,
+        0.9997,
+        0.9999,
+        0.9999,
+        0.9998,
+        0.9999,
+        0.9996,
+        0.9997,
+        1.0,
+        0.9996,
+        1.0002
+      ],
+      "seh": true,
+      "srs": 1.0,
+      "attribution": null
+    },
+    {
+      "case_id": "dev-sup-02",
+      "has_gold": true,
+      "pool_size": 14,
+      "rank_after_fusion": 2,
+      "rank_after_rerank": 2,
+      "fusion_tags": [
+        "d-dev-sup-02-3",
+        "gold-dev-sup-02",
+        "d-dev-sup-02-8",
+        "d-dev-sup-02-2",
+        "d-dev-sup-02-6",
+        "d-dev-sup-02-10",
+        "d-dev-sup-02-16",
+        "d-dev-sup-02-1",
+        "d-dev-sup-02-0",
+        "d-dev-sup-02-4",
+        "d-dev-sup-02-15",
+        "d-dev-sup-02-14",
+        "d-dev-sup-02-5",
+        "d-dev-sup-02-9"
+      ],
+      "adjacency_tags": [
+        "d-dev-sup-02-3"
+      ],
+      "dedup_input_tags": [],
+      "dedup_input_scores": [],
+      "rerank_top1_tag": "d-dev-sup-02-3",
+      "path_returns": {
+        "lexical": 2,
+        "vector": 14,
+        "adjacency": 1
+      },
+      "path_raw_lengths": {
+        "lexical": 2,
+        "vector": 14,
+        "adjacency": 1
+      },
+      "path_fused_lengths": {
+        "lexical": 2,
+        "vector": 14,
+        "adjacency": 1
+      },
+      "fusion_cap": 20,
+      "a5_strength": "strong",
+      "pool_vectors": 14,
+      "pool_vector_norms": [
+        0.9999,
+        0.9997,
+        1.0,
+        1.0002,
+        1.0004,
+        0.9996,
+        0.9999,
+        0.9996,
+        0.9999,
+        1.0,
+        0.9997,
+        1.0003,
+        1.0002,
+        0.9997
+      ],
+      "seh": true,
+      "srs": 0.5,
+      "attribution": null
+    },
+    {
+      "case_id": "dev-sup-03",
+      "has_gold": true,
+      "pool_size": 14,
+      "rank_after_fusion": 1,
+      "rank_after_rerank": 1,
+      "fusion_tags": [
+        "gold-dev-sup-03",
+        "d-dev-sup-03-2",
+        "d-dev-sup-03-0",
+        "d-dev-sup-03-4",
+        "d-dev-sup-03-1",
+        "d-dev-sup-03-6",
+        "d-dev-sup-03-10",
+        "d-dev-sup-03-3",
+        "d-dev-sup-03-15",
+        "d-dev-sup-03-16",
+        "d-dev-sup-03-8",
+        "d-dev-sup-03-5",
+        "d-dev-sup-03-14",
+        "d-dev-sup-03-9"
+      ],
+      "adjacency_tags": [
+        "d-dev-sup-03-2"
+      ],
+      "dedup_input_tags": [],
+      "dedup_input_scores": [],
+      "rerank_top1_tag": "gold-dev-sup-03",
+      "path_returns": {
+        "lexical": 1,
+        "vector": 14,
+        "adjacency": 1
+      },
+      "path_raw_lengths": {
+        "lexical": 1,
+        "vector": 14,
+        "adjacency": 1
+      },
+      "path_fused_lengths": {
+        "lexical": 1,
+        "vector": 14,
+        "adjacency": 1
+      },
+      "fusion_cap": 20,
+      "a5_strength": "strong",
+      "pool_vectors": 14,
+      "pool_vector_norms": [
+        0.9997,
+        0.9997,
+        1.0,
+        1.0,
+        1.0003,
+        1.0002,
+        0.9999,
+        0.9996,
+        0.9996,
+        0.9996,
+        1.0002,
+        0.9997,
+        0.9998,
+        0.9999
+      ],
+      "seh": true,
+      "srs": 1.0,
+      "attribution": null
+    },
+    {
+      "case_id": "dev-sup-04",
+      "has_gold": true,
+      "pool_size": 14,
+      "rank_after_fusion": 1,
+      "rank_after_rerank": 1,
+      "fusion_tags": [
+        "gold-dev-sup-04",
+        "d-dev-sup-04-2",
+        "d-dev-sup-04-15",
+        "d-dev-sup-04-16",
+        "d-dev-sup-04-6",
+        "d-dev-sup-04-1",
+        "d-dev-sup-04-0",
+        "d-dev-sup-04-4",
+        "d-dev-sup-04-5",
+        "d-dev-sup-04-14",
+        "d-dev-sup-04-3",
+        "d-dev-sup-04-10",
+        "d-dev-sup-04-8",
+        "d-dev-sup-04-9"
+      ],
+      "adjacency_tags": [],
+      "dedup_input_tags": [],
+      "dedup_input_scores": [],
+      "rerank_top1_tag": "gold-dev-sup-04",
+      "path_returns": {
+        "lexical": 1,
+        "vector": 14,
+        "adjacency": 0
+      },
+      "path_raw_lengths": {
+        "lexical": 1,
+        "vector": 14,
+        "adjacency": 0
+      },
+      "path_fused_lengths": {
+        "lexical": 1,
+        "vector": 14,
+        "adjacency": 0
+      },
+      "fusion_cap": 20,
+      "a5_strength": "strong",
+      "pool_vectors": 14,
+      "pool_vector_norms": [
+        0.9999,
+        0.9999,
+        0.9997,
+        0.9996,
+        1.0003,
+        1.0004,
+        1.0,
+        0.9997,
+        0.9996,
+        0.9997,
+        1.0002,
+        1.0002,
+        0.9998,
+        0.9999
+      ],
+      "seh": true,
+      "srs": 1.0,
+      "attribution": null
+    },
+    {
+      "case_id": "dev-sup-05",
+      "has_gold": true,
+      "pool_size": 14,
+      "rank_after_fusion": 2,
+      "rank_after_rerank": 2,
+      "fusion_tags": [
+        "d-dev-sup-05-5",
+        "gold-dev-sup-05",
+        "d-dev-sup-05-4",
+        "d-dev-sup-05-6",
+        "d-dev-sup-05-2",
+        "d-dev-sup-05-17",
+        "d-dev-sup-05-0",
+        "d-dev-sup-05-1",
+        "d-dev-sup-05-9",
+        "d-dev-sup-05-16",
+        "d-dev-sup-05-11",
+        "d-dev-sup-05-3",
+        "d-dev-sup-05-8",
+        "d-dev-sup-05-10"
+      ],
+      "adjacency_tags": [
+        "d-dev-sup-05-5"
+      ],
+      "dedup_input_tags": [],
+      "dedup_input_scores": [],
+      "rerank_top1_tag": "d-dev-sup-05-5",
+      "path_returns": {
+        "lexical": 2,
+        "vector": 14,
+        "adjacency": 1
+      },
+      "path_raw_lengths": {
+        "lexical": 2,
+        "vector": 14,
+        "adjacency": 1
+      },
+      "path_fused_lengths": {
+        "lexical": 2,
+        "vector": 14,
+        "adjacency": 1
+      },
+      "fusion_cap": 20,
+      "a5_strength": "strong",
+      "pool_vectors": 14,
+      "pool_vector_norms": [
+        0.9996,
+        0.9999,
+        0.9998,
+        1.0002,
+        0.9996,
+        1.0002,
+        0.9999,
+        0.9997,
+        0.9997,
+        1.0003,
+        0.9999,
+        1.0,
+        1.0,
+        0.9997
+      ],
+      "seh": true,
+      "srs": 0.5,
+      "attribution": null
+    },
+    {
+      "case_id": "dev-sup-06",
+      "has_gold": true,
+      "pool_size": 14,
+      "rank_after_fusion": 1,
+      "rank_after_rerank": 1,
+      "fusion_tags": [
+        "gold-dev-sup-06",
+        "d-dev-sup-06-17",
+        "d-dev-sup-06-0",
+        "d-dev-sup-06-1",
+        "d-dev-sup-06-2",
+        "d-dev-sup-06-6",
+        "d-dev-sup-06-11",
+        "d-dev-sup-06-3",
+        "d-dev-sup-06-5",
+        "d-dev-sup-06-16",
+        "d-dev-sup-06-9",
+        "d-dev-sup-06-8",
+        "d-dev-sup-06-10",
+        "d-dev-sup-06-4"
+      ],
+      "adjacency_tags": [],
+      "dedup_input_tags": [],
+      "dedup_input_scores": [],
+      "rerank_top1_tag": "gold-dev-sup-06",
+      "path_returns": {
+        "lexical": 1,
+        "vector": 14,
+        "adjacency": 0
+      },
+      "path_raw_lengths": {
+        "lexical": 1,
+        "vector": 14,
+        "adjacency": 0
+      },
+      "path_fused_lengths": {
+        "lexical": 1,
+        "vector": 14,
+        "adjacency": 0
+      },
+      "fusion_cap": 20,
+      "a5_strength": "strong",
+      "pool_vectors": 14,
+      "pool_vector_norms": [
+        0.9997,
+        0.9997,
+        0.9997,
+        0.9996,
+        0.9998,
+        0.9996,
+        0.9998,
+        1.0,
+        0.9999,
+        1.0002,
+        1.0002,
+        0.9999,
+        1.0003,
+        1.0
+      ],
+      "seh": true,
+      "srs": 1.0,
+      "attribution": null
+    },
+    {
+      "case_id": "dev-sup-07",
+      "has_gold": true,
+      "pool_size": 14,
+      "rank_after_fusion": 1,
+      "rank_after_rerank": 1,
+      "fusion_tags": [
+        "gold-dev-sup-07",
+        "d-dev-sup-07-17",
+        "d-dev-sup-07-2",
+        "d-dev-sup-07-0",
+        "d-dev-sup-07-6",
+        "d-dev-sup-07-1",
+        "d-dev-sup-07-11",
+        "d-dev-sup-07-5",
+        "d-dev-sup-07-16",
+        "d-dev-sup-07-4",
+        "d-dev-sup-07-3",
+        "d-dev-sup-07-9",
+        "d-dev-sup-07-8",
+        "d-dev-sup-07-10"
+      ],
+      "adjacency_tags": [],
+      "dedup_input_tags": [],
+      "dedup_input_scores": [],
+      "rerank_top1_tag": "gold-dev-sup-07",
+      "path_returns": {
+        "lexical": 1,
+        "vector": 14,
+        "adjacency": 0
+      },
+      "path_raw_lengths": {
+        "lexical": 1,
+        "vector": 14,
+        "adjacency": 0
+      },
+      "path_fused_lengths": {
+        "lexical": 1,
+        "vector": 14,
+        "adjacency": 0
+      },
+      "fusion_cap": 20,
+      "a5_strength": "strong",
+      "pool_vectors": 14,
+      "pool_vector_norms": [
+        0.9998,
+        0.9997,
+        0.9999,
+        0.9996,
+        1.0002,
+        1.0002,
+        1.0,
+        1.0001,
+        0.9996,
+        0.9999,
+        0.9997,
+        1.0,
+        0.9997,
+        0.9999
+      ],
+      "seh": true,
+      "srs": 1.0,
+      "attribution": null
+    }
+  ],
+  "split": "dev",
+  "run_count": 1,
+  "purpose": "A3 exploration: three paths wired, dev split"
+}

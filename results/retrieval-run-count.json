@@ -7,8 +7,9 @@
   "retrieval-independent-cond_heavy-nodedup-poolunrelated.json": 1,
   "retrieval-independent-auth_heavy-nodedup-poolunrelated.json": 1,
   "retrieval-independent-status_only-nodedup-poolunrelated.json": 1,
-  "retrieval-dev-uniform-nodedup-poolunrelated.json": 3,
+  "retrieval-dev-uniform-nodedup-poolunrelated.json": 1,
   "retrieval-test-uniform-nodedup-poolunrelated.json": 1,
   "retrieval-independent-uniform-poolunrelated.json": 1,
-  "retrieval-dev-uniform-nodedup-poolunrelated-pathslexical-vector.json": 2
+  "retrieval-dev-uniform-nodedup-poolunrelated-pathslexical-vector.json": 2,
+  "retrieval-dev-uniform-nodedup-poolunrelated-pathslexical-vector-adjacency.json": 1
 }

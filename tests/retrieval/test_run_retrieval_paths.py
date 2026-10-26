@@ -142,18 +142,23 @@ def test_disabled_path_is_null_not_zero() -> None:
     assert result["paths_unwired"] == []
 
 
-def test_enabled_but_unwired_is_null_and_listed() -> None:
-    """第 1 组的真实状态：默认全开，但 vector/adjacency 还没有调用点。
+def test_unwired_mechanism_is_still_available() -> None:
+    """`paths_unwired` 的机制仍在，只是当前集合为空。
 
-    此时它们必须是 `null` + 出现在 `paths_unwired` 里，
-    不能记成 `0`——那会谎称"跑了但返回空"。
+    第 1 组时它用来区分"没开"与"开了但没接上"。三路接完后集合为空，
+    但机制保留——将来新增路径时仍需要这个区分。
+
+    这里断言两件事：
+    1. 当前三路已全部接线，`paths_unwired` 为空
+    2. `_UNWIRED` 为空集，且未启用的路径记为 `null` 而非 `0`
     """
-    rows = _with_gold("dev.jsonl", 2)
-    specs = _all_specs()
+    from evals.run_retrieval import _UNWIRED
+
+    assert frozenset() == _UNWIRED, "三路应已全部接线"
 
     result = evaluate(
-        rows,
-        all_specs=specs,
+        _with_gold("dev.jsonl", 2),
+        all_specs=_all_specs(),
         weights_name="uniform",
         enable_dedup=False,
         judge=None,
@@ -162,12 +167,25 @@ def test_enabled_but_unwired_is_null_and_listed() -> None:
         paths=ALL_PATHS,
     )
 
+    assert result["paths_unwired"] == []
     assert result["paths_enabled"] == list(ALL_PATHS)
-    # vector 已在第 2 组接上，只剩 adjacency 未接线。
-    # 这条断言会随接线进度变化，是**进度标记**而非缺陷锁定。
-    assert result["paths_unwired"] == ["adjacency"]
+
+
+def test_disabled_path_stays_null() -> None:
+    """未启用的路径必须是 `null`，不能是 `0`。"""
+    result = evaluate(
+        _with_gold("dev.jsonl", 2),
+        all_specs=_all_specs(),
+        weights_name="uniform",
+        enable_dedup=False,
+        judge=None,
+        k=5,
+        pool_mode=PoolMode.UNRELATED,
+        paths=("lexical",),
+    )
+
+    assert result["path_returns"]["vector"] is None
     assert result["path_returns"]["adjacency"] is None
-    assert isinstance(result["path_returns"]["lexical"], int)
 
 
 def test_zero_recall_baseline_scores_zero() -> None:

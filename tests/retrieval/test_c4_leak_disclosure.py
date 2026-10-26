@@ -225,19 +225,24 @@ def test_embedding_is_written_into_the_pool() -> None:
     assert 'text_type="document"' in source, "池内条目必须用 document 侧向量"
 
 
-@pytest.mark.locked_defect
-def test_dedup_receives_ids_not_text() -> None:
-    """缺陷 8：传给 dedup 的第二个字段是 item_id，不是原文。
+def test_dedup_receives_text_and_real_scores() -> None:
+    """缺陷 8 已修复：dedup 收到原文与真实融合分。
 
-    `texts = [(item_id, item_id, 1.0) ...]` —— 三元组是
-    `(id, text, score)`，于是 text 字段拿到的是 UUID，score 是常数 1.0。
+    **原先这条是 `locked_defect`，断言"仍是 `(item_id, item_id, 1.0)`"。**
+    现在改成正向断言。
+
+    注意它只查源码形态。真正的行为验证在
+    `tests/retrieval/test_adjacency_and_dedup.py` 的
+    `test_dedup_receives_real_text` / `test_dedup_receives_varying_scores`，
+    那里用记录型 judge 检查实际入参。
     """
     text = (ROOT / "evals" / "run_retrieval.py").read_text(encoding="utf-8")
 
-    assert "texts = [(item_id, item_id, 1.0) for item_id in order]" in text, (
-        "调用方式变了；若已改成传 item.text 与真实分数，"
-        "请同步更新报告缺陷 8 与 v2 协议的 L7/L8"
+    assert "texts = [(item_id, item_id, 1.0) for item_id in order]" not in text, (
+        "又回到传 id 与常数分了"
     )
+    assert "score_by_id[item_id]" in text, "去重分数应取自融合分"
+    assert "source_text" in text, "文本应从 source_text 读回"
 
 
 @pytest.mark.locked_defect

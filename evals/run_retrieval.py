@@ -35,6 +35,7 @@ from memory.embedding.cache import EmbeddingCache
 from memory.embedding.dashscope import DashScopeEmbedder
 from memory.llm.cache import ResponseCache
 from memory.llm.client import LLMClient
+from memory.retrieval.adjacency import recall_by_adjacency
 from memory.retrieval.condition import condition_match
 from memory.retrieval.dedup import dedup
 from memory.retrieval.equivalence import EquivalenceJudge
@@ -68,20 +69,23 @@ ALL_PATHS: tuple[str, ...] = ("lexical", "vector", "adjacency")
 #: 它们被启用时记为 `null` + 出现在 `paths_unwired`，而不是 `0`——
 #: `0` 的意思是"跑了但返回空"，与"没接上"是两件不同的事。
 #:
-#: vector 已在第 2 组接上，只剩 adjacency。
-_UNWIRED: frozenset[str] = frozenset({"adjacency"})
+#: 三路已全部接线，本集合为空。保留这个机制是为了将来新增路径时
+#: 仍能区分"没开"与"没接上"。
+_UNWIRED: frozenset[str] = frozenset()
 
 
 #: 融合前每路截断到的条数。
 #:
-#: **为什么必须是常数，而不是 `k*4`**：`k` 有两个含义——RRF 的 `k=60`
-#: 与评估的 `K=5`。按前者取 240，远超 RRF 的前提边界 `k+2=62`，等于没截；
-#: 按后者取 20 才是本意。写成常数并解释，避免这个歧义。
+#: **为什么是 20**：20 相对 RRF 的 `k=60` 是 1/3，满足 `L << k`。
+#: **不要按 `k*4` 推算**——`k` 是平滑常数，不是"列表该有多长"的基准。
+#: 按 `60*4=240` 算会得到远超 `k` 的长度，等于没截。
 #:
 #: **为什么截**：实测 lexical 每 case 最多 3 条、vector 约 14 条，
 #: 而 RRF 是 `Σ 1/(k+rank)`——长列表靠"条数多"系统性占优，
-#: 不是靠"更相关"。向量第 14 名的单条得分已达词面第 1 名的 82%，
-#: 不截断的话 A3 会得出"三路更差"，而真实原因是列表长度失衡。
+#: 不是靠"更相关"。向量第 14 名单条得分已是词面第 1 名的 82%。
+#:
+#: **已知限制**：本 cap 在旧数据上**不生效**（池经 `build_pool` 去重后只剩 14 条，
+#: 小于 20）。它防的是"一路几百条刷分"，防不了"一路本来就召回得多"。
 FUSION_CAP = 20
 
 
@@ -294,6 +298,7 @@ def evaluate_case(
             # vector / adjacency 尚未接进本入口（见 _UNWIRED），因此它们的
             # 返回值记为 None，而不是 0——"没接上"与"跑了但空"是两件事。
             path_returns: dict[str, int | None] = {name: None for name in ALL_PATHS}
+            adjacency_tags: list[str] = []
             path_raw_lengths: dict[str, int | None] = {name: None for name in ALL_PATHS}
             path_fused_lengths: dict[str, int | None] = {name: None for name in ALL_PATHS}
             ranked_lists: dict[str, list[str]] = {}
@@ -317,6 +322,24 @@ def evaluate_case(
                 hits = recall_by_vector(store, query_vector, limit=len(pool.items))
                 _record("vector", [i.id for i in hits])
 
+            if "adjacency" in paths:
+                # 邻接的输入取自 **gold 的逻辑键**（design 决策 4）：
+                # 它的语义是"同一逻辑键下的其他条件分支"，与查询文本无关，
+                # 所以它天生"知道答案在哪"。为防白送分，只取同键兄弟，
+                # 并把召回条数单独记录供 A3 判决。
+                adjacency_hits = recall_by_adjacency(
+                    store,
+                    subject=str(gold_spec["subject"]),
+                    relation=str(gold_spec["relation"]),
+                    condition=(
+                        str(gold_spec["condition"]) if gold_spec.get("condition") else None
+                    ),
+                    owner="default",
+                    limit=len(pool.items),
+                )
+                adjacency_tags = [tag_by_id.get(i.id, i.id) for i in adjacency_hits]
+                _record("adjacency", [i.id for i in adjacency_hits])
+
             fused = rrf(ranked_lists, k=60) if ranked_lists else []
             fused_order = [entry.item_id for entry in fused]
             recalled_count = len(fused_order)
@@ -328,14 +351,48 @@ def evaluate_case(
             max_score = max(score_by_id.values()) if score_by_id else 0.0
             query_condition = row.get("condition")
 
+            # 去重位置：**融合后、重排前**（design 决策 1）。
+            # 若放在重排之后，一次合并就可能干掉重排排出的第 1 名，
+            # 等于让二分类模型覆盖四特征权重。
+            dedup_input_tags: list[str] = []
+            dedup_input_scores: list[float] = []
+            if enable_dedup and judge is not None and fused_order:
+                # 批量回读原文（design 决策 2）：逐条 store.get 会把单次评估的
+                # 查询数从 O(1) 推到 O(N)。
+                placeholders = ",".join("?" * len(fused_order))
+                rows_by_id = {
+                    row_[0]: row_[1]
+                    for row_ in store.conn.execute(
+                        f"SELECT id, source_text FROM items WHERE id IN ({placeholders})",
+                        tuple(fused_order),
+                    ).fetchall()
+                }
+                # 入参三元组是 (id, text, score)：
+                # text 必须是原文、score 必须是真实融合分——
+                # 常数分会让 dedup 内部的 (-score, id) 排序退化为字典序。
+                texts = [
+                    (
+                        item_id,
+                        rows_by_id.get(item_id) or tag_by_id.get(item_id, item_id),
+                        score_by_id[item_id],
+                    )
+                    for item_id in fused_order
+                ]
+                kept, _ = dedup(texts, judge=judge, top_k=k)
+                dedup_input_tags = [tag_by_id.get(e[0], e[0]) for e in texts]
+                dedup_input_scores = [float(e[2]) for e in texts]
+                fused_after_dedup = [e[0] for e in kept]
+            else:
+                fused_after_dedup = fused_order
+
             candidates = []
-            for item_id, score in score_by_id.items():
+            for item_id in fused_after_dedup:
                 item = store.get(item_id)
                 candidates.append(
                     _RerankCandidate(
                         item_id=item_id,
                         features=FeatureScores(
-                            base=rrf_norm(score, max_score=max_score),
+                            base=rrf_norm(score_by_id[item_id], max_score=max_score),
                             condition=condition_match(
                                 str(query_condition) if query_condition else None,
                                 item.condition,
@@ -351,11 +408,6 @@ def evaluate_case(
             store.close()
 
     order = [item.item_id for item in ranked]
-
-    if enable_dedup and judge is not None:
-        texts = [(item_id, item_id, 1.0) for item_id in order]
-        kept, _ = dedup(texts, judge=judge, top_k=k)
-        order = [entry[0] for entry in kept]
 
     rank_rerank = order.index(gold_id) + 1 if gold_id in order else None
 
@@ -375,6 +427,9 @@ def evaluate_case(
         # 以下两项用**稳定 tag**，不是 uuid4：A5 要做跨运行逐位比较，
         # 而 uuid 每次运行都不同（实测两次建库 id 完全不同）。
         "fusion_tags": [tag_by_id.get(item_id, item_id) for item_id in fused_order],
+        "adjacency_tags": adjacency_tags,
+        "dedup_input_tags": dedup_input_tags,
+        "dedup_input_scores": dedup_input_scores,
         "rerank_top1_tag": tag_by_id.get(order[0], order[0]) if order else None,
         "path_returns": path_returns,
         "path_raw_lengths": path_raw_lengths,
@@ -474,6 +529,36 @@ def evaluate(
     }
 
 
+def _assert_writable(out: Path, result: dict[str, object], *, overwrite: bool) -> None:
+    """写结果前先做**实验身份检查**。
+
+    缺陷 12：归档文件名不区分实际参与测量的路径集合。
+    默认全开时 `paths_tag` 是空串，输出路径与 C4 归档完全同名——
+    而 C4 归档是在"默认全开、但只接了词面"的代码下产生的。
+    于是任何一次默认参数的重跑都会**静默覆盖归档**，并把两个不同实验
+    算进同一个 `run_count`（实测：3 → 4）。
+
+    因此：目标文件已存在且其 `paths_enabled` 与本次不同时，拒绝写入。
+    归档没有 `paths_enabled` 字段（`None`）视为"未知"，同样拒绝。
+    """
+    if not out.exists() or overwrite:
+        return
+    try:
+        existing = json.loads(out.read_text(encoding="utf-8"))
+    except (json.JSONDecodeError, OSError):
+        existing = {}
+    previous = existing.get("paths_enabled")
+    current = result.get("paths_enabled")
+    if previous != current:
+        raise SystemExit(
+            f"拒绝覆盖 {out.name}：\n"
+            f"  已有文件的 paths_enabled = {previous!r}（None 表示未知，多为 C4 归档）\n"
+            f"  本次运行的 paths_enabled = {current!r}\n"
+            "这会把两个不同的实验写进同一个文件与同一份 run_count。\n"
+            "若确实要覆盖，请显式加 --overwrite；否则换 --paths 或换 --out。"
+        )
+
+
 def _bump_run_count(out: Path) -> int:
     """记录同一配置被跑了几次，使"test 只跑一次"可验证。"""
     counter = OUT_DIR / "retrieval-run-count.json"
@@ -500,6 +585,17 @@ def main(argv: list[str] | None = None) -> int:
         help="候选池难度模式",
     )
     parser.add_argument("--dataset", type=Path, default=None)
+    parser.add_argument(
+        "--out",
+        type=Path,
+        default=None,
+        help="显式指定结果文件（默认按 split/weights/paths 推导）",
+    )
+    parser.add_argument(
+        "--overwrite",
+        action="store_true",
+        help="允许覆盖 paths_enabled 不同的既有结果文件（缺陷 12 的显式逃生口）",
+    )
     parser.add_argument(
         "--paths",
         default=None,
@@ -568,7 +664,10 @@ def main(argv: list[str] | None = None) -> int:
     OUT_DIR.mkdir(parents=True, exist_ok=True)
     suffix = ("-nodedup" if args.no_dedup else "") + f"-pool{args.pool}"
     paths_tag = "" if paths == ALL_PATHS else "-paths" + "-".join(paths or ("none",))
-    out = OUT_DIR / f"retrieval-{args.split}-{args.weights}{suffix}{paths_tag}.json"
+    out = args.out or (
+        OUT_DIR / f"retrieval-{args.split}-{args.weights}{suffix}{paths_tag}.json"
+    )
+    _assert_writable(out, result, overwrite=args.overwrite)
     run_count = _bump_run_count(out)
     result["run_count"] = run_count
     out.write_text(json.dumps(result, ensure_ascii=False, indent=2), encoding="utf-8")

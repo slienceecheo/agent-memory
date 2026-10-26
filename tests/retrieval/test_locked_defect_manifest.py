@@ -40,20 +40,20 @@ DEFECT_TESTS: dict[int, tuple[str, ...]] = {
         "test_unrelated_mode_is_a_file_order_prefix",
     ),
     6: ("test_same_relation_mixes_subjects",),
-    8: (
-        "test_dedup_receives_ids_not_text",
-        "test_constant_scores_turn_dedup_into_a_lexical_sort",
-    ),
 }
 
 # 已修复的缺陷编号 -> 翻面后的正向断言。
 #
-# 缺陷 7（三路召回从未联合跑过）在第 2 组接上词面+向量后部分修复；
-# 邻接仍未接线，由 L6a/L6c 门禁覆盖，等第 3 组接上后整体翻面。
+# 缺陷 7（三路召回从未联合跑过）：第 1–3 组接上三路后修复。
+# 缺陷 8（dedup 收到 id 与常数分）：第 3 组修复。
 REPAIRED: dict[int, tuple[str, ...]] = {
     7: (
         "test_retrieval_entry_now_runs_lexical_and_vector",
         "test_embedding_is_written_into_the_pool",
+    ),
+    8: (
+        "test_dedup_receives_text_and_real_scores",
+        "test_constant_scores_turn_dedup_into_a_lexical_sort",
     ),
 }
 
