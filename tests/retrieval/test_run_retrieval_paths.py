@@ -142,19 +142,22 @@ def test_disabled_path_is_null_not_zero() -> None:
     assert result["paths_unwired"] == []
 
 
-def test_unwired_mechanism_is_still_available() -> None:
-    """`paths_unwired` 的机制仍在，只是当前集合为空。
+def test_unwired_mechanism_marks_paths_as_unwired(monkeypatch) -> None:
+    """机制本身：未接线的路径必须记 `null` 并出现在 `paths_unwired`。
 
-    第 1 组时它用来区分"没开"与"开了但没接上"。三路接完后集合为空，
-    但机制保留——将来新增路径时仍需要这个区分。
+    **必须注入一个假的未接线路径**：`_UNWIRED` 当前是空集，
+    直接断言 `_UNWIRED == frozenset()` 测的是**当前状态**，不是机制——
+    空集时任何实现都能通过。
 
-    这里断言两件事：
-    1. 当前三路已全部接线，`paths_unwired` 为空
-    2. `_UNWIRED` 为空集，且未启用的路径记为 `null` 而非 `0`
+    这也验证 P0-g 的收敛：`active_paths` 是唯一判定点。
+    若"是否调用 recall_by_*"与 `paths_unwired` 各判一次，本条会出现
+    `path_returns["vector"] > 0` 但 `paths_unwired` 含 `vector` 的自相矛盾。
     """
-    from evals.run_retrieval import _UNWIRED
+    import evals.run_retrieval as rr
 
-    assert frozenset() == _UNWIRED, "三路应已全部接线"
+    monkeypatch.setattr(
+        rr, "active_paths", lambda paths: tuple(p for p in paths if p != "vector")
+    )
 
     result = evaluate(
         _with_gold("dev.jsonl", 2),
@@ -164,11 +167,22 @@ def test_unwired_mechanism_is_still_available() -> None:
         judge=None,
         k=5,
         pool_mode=PoolMode.UNRELATED,
-        paths=ALL_PATHS,
+        paths=("lexical", "vector"),
     )
 
-    assert result["paths_unwired"] == []
-    assert result["paths_enabled"] == list(ALL_PATHS)
+    assert result["paths_unwired"] == ["vector"]
+    assert result["path_returns"]["vector"] is None, "未接线时不得有返回值"
+
+
+def test_all_three_paths_are_currently_wired() -> None:
+    """当前三路都已接线。这是**状态断言**，不是机制测试。
+
+    单独放一条，使"机制可用"与"当前全接"两件事分开——
+    将来若再加第四条路径，这条会红，而机制测试不受影响。
+    """
+    from evals.run_retrieval import _UNWIRED
+
+    assert frozenset() == _UNWIRED, "三路应已全部接线"
 
 
 def test_disabled_path_stays_null() -> None:

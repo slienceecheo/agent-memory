@@ -129,6 +129,20 @@ def parse_paths(raw: str | None) -> tuple[str, ...]:
     return tuple(name for name in ALL_PATHS if name in seen)
 
 
+def active_paths(paths: tuple[str, ...]) -> tuple[str, ...]:
+    """**唯一**的「某一路是否真的会被调用」判定。
+
+    为什么必须收敛到一处：`paths_unwired` 与"是否调用 `recall_by_*`"
+    若各判一次，两者可以不一致——那会让 `path_returns["vector"] > 0`
+    与 `paths_unwired` 含 `vector` 同时成立，状态自相矛盾。
+    这与缺陷 12（同一件事在两处定义）是同一类问题。
+
+    测试可通过 monkeypatch 本函数的输出来验证"未接线"机制，
+    而不依赖 `_UNWIRED` 的当前取值。
+    """
+    return tuple(name for name in paths if name not in _UNWIRED)
+
+
 def _rows(path: Path) -> list[dict[str, object]]:
     return [
         json.loads(line)
@@ -303,6 +317,9 @@ def evaluate_case(
             path_fused_lengths: dict[str, int | None] = {name: None for name in ALL_PATHS}
             ranked_lists: dict[str, list[str]] = {}
 
+            # 用 active_paths 判定，与 paths_unwired 同源（P0-g）。
+            enabled = active_paths(paths)
+
             def _record(name: str, ids: list[str]) -> None:
                 """记录原长与截断后长度，并把截断结果放进融合输入。"""
                 path_raw_lengths[name] = len(ids)
@@ -311,18 +328,18 @@ def evaluate_case(
                 path_returns[name] = len(ids)
                 ranked_lists[name] = capped
 
-            if "lexical" in paths:
+            if "lexical" in enabled:
                 lexical = [
                     i.id for i in recall_by_lexical(store, query, limit=len(pool.items))
                 ]
                 _record("lexical", lexical)
 
-            if "vector" in paths and embedder is not None:
+            if "vector" in enabled and embedder is not None:
                 query_vector = embedder.embed(query, text_type="query")
                 hits = recall_by_vector(store, query_vector, limit=len(pool.items))
                 _record("vector", [i.id for i in hits])
 
-            if "adjacency" in paths:
+            if "adjacency" in enabled:
                 # 邻接的输入取自 **gold 的逻辑键**（design 决策 4）：
                 # 它的语义是"同一逻辑键下的其他条件分支"，与查询文本无关，
                 # 所以它天生"知道答案在哪"。为防白送分，只取同键兄弟，
@@ -512,7 +529,7 @@ def evaluate(
         "paths_enabled": list(paths),
         # 只有"启用了但代码里还没有调用点"才算未接线。
         # 未启用的路径是"没开"，不是"没接上"——两者诊断方向不同。
-        "paths_unwired": [name for name in paths if name in _UNWIRED],
+        "paths_unwired": [name for name in paths if name not in active_paths(paths)],
         "path_returns": path_totals,
         "embedding_network_calls": (
             embedder.network_calls - calls_before if embedder is not None else 0
