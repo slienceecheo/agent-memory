@@ -128,7 +128,10 @@ def test_report_documents_the_leak() -> None:
     """
     text = REPORT.read_text(encoding="utf-8")
 
-    assert "事后发现的缺陷" in text
+    # 标题在报告重构成 0.1/0.2/0.3/0.4/0.5 时改过名。
+    # 断言改按内容而不是按旧标题，否则每次重构都要改测试。
+    assert "0.1 最早发现的八个缺陷" in text
+    assert "0.4 缺陷总表（十三条）" in text
     assert "查询就是答案" in text
     assert "0.606" in text
     assert "0.412" in text
