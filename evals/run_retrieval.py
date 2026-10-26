@@ -14,7 +14,9 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
+import subprocess
 import sys
 import tempfile
 from datetime import UTC, datetime
@@ -87,6 +89,73 @@ _UNWIRED: frozenset[str] = frozenset()
 #: **已知限制**：本 cap 在旧数据上**不生效**（池经 `build_pool` 去重后只剩 14 条，
 #: 小于 20）。它防的是"一路几百条刷分"，防不了"一路本来就召回得多"。
 FUSION_CAP = 20
+
+
+def code_version() -> str:
+    """当前代码版本：`<short-rev>` 或 `<short-rev>-dirty`。
+
+    **为什么 `-dirty` 重要**：未提交代码产生的结果**不可复现**，
+    所以必须能从结果文件本身看出来。这一轮曾把工作区未提交的
+    `{1:29, 2:4}` 当成归档读，花了四轮才查清。
+
+    **为什么限定路径**：只看 `evals` 与 `src`。若不限，改一份报告
+    或新增一个临时文件都会标 `-dirty`，标记就失去信息量。
+    """
+    rev = subprocess.run(
+        ["git", "rev-parse", "--short", "HEAD"],
+        cwd=PROJECT_ROOT,
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+    ).stdout.strip()
+    if not rev:
+        # 不是 git 仓库或 git 不可用时，明确标注而不是静默给空。
+        return "unknown"
+
+    dirty = subprocess.run(
+        ["git", "status", "--porcelain", "evals", "src"],
+        cwd=PROJECT_ROOT,
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+    ).stdout.strip()
+
+    return f"{rev}-dirty" if dirty else rev
+
+
+def code_diff_hash() -> str | None:
+    """未提交代码的 diff 摘要（sha256 hex）；干净时为 `None`。
+
+    **只记 `-dirty` 不够**：两份 `-dirty` 结果无法区分
+    （比如"改了 run_retrieval"与"改了 v2_baselines"）。
+    有了 hash，相同即同一份工作区代码，不同即两次不同的未提交状态。
+    """
+    version = code_version()
+    if not version.endswith("-dirty"):
+        return None
+
+    diff = subprocess.run(
+        ["git", "diff", "HEAD", "--", "evals", "src"],
+        cwd=PROJECT_ROOT,
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+    ).stdout
+    # 未跟踪的新文件不在 `git diff` 里，单独补上它们的路径与内容摘要。
+    untracked = subprocess.run(
+        ["git", "ls-files", "--others", "--exclude-standard", "evals", "src"],
+        cwd=PROJECT_ROOT,
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+    ).stdout
+    payload = diff + "\n---untracked---\n" + untracked
+    return hashlib.sha256(payload.encode("utf-8")).hexdigest()
+
+
+def code_fingerprint() -> dict[str, str | None]:
+    """结果文件里要记的代码身份。"""
+    return {"code_version": code_version(), "code_diff_hash": code_diff_hash()}
 
 
 class EmbedderLike(Protocol):
@@ -534,6 +603,7 @@ def evaluate(
         "embedding_network_calls": (
             embedder.network_calls - calls_before if embedder is not None else 0
         ),
+        **code_fingerprint(),
         "seh_at_k": sum(seh_values) / len(seh_values) if seh_values else 0.0,
         "srs": sum(srs_values) / len(srs_values) if srs_values else 0.0,
         "attribution": attribution_breakdown(
