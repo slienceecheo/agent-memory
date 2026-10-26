@@ -56,12 +56,20 @@
 
 ### Requirement: 去重输入的完整性
 
-去重阶段 SHALL 接收候选条目的**原文**与**真实排序分数**，
-MUST NOT 接收条目标识符充当文本、MUST NOT 接收常数充当分数。
+去重阶段 SHALL 接收由**统一规则**构造的可比较文本与**真实排序分数**，
+MUST NOT 接收条目标识符、稳定 tag 或聚合标签充当文本，
+MUST NOT 接收常数充当分数。
 
-#### Scenario: 传入原文
+#### Scenario: 传入可比较的文本
 - **WHEN** 去重被调用
-- **THEN** 每条候选的文本字段等于该条目的原文（`item.text`），不是它的 id
+- **THEN** 两侧文本由同一条规则构造（`subject + relation + value + condition`）
+- **AND** 该规则 MUST 同时含 `value` 与 `condition`：
+  缺 `value` 无法区分"同 relation 不同答案"，缺 `condition` 无法区分 BRANCH 的两个分支
+
+#### Scenario: 原文缺失时不得回退为标识符
+- **WHEN** 条目的原文不可用（干扰项的 `text` 为 `None`）
+- **THEN** 仍按统一规则构造文本，MUST NOT 回退到 id 或 tag
+- **AND** 该回退曾在 C4 出现（缺陷 8），导致排序退化为字典序
 
 #### Scenario: 传入真实分数
 - **WHEN** 去重被调用
@@ -70,6 +78,16 @@ MUST NOT 接收条目标识符充当文本、MUST NOT 接收常数充当分数�
 #### Scenario: 常数分数不得改变顺序
 - **WHEN** 所有候选分数相等且判定全部为"无关"
 - **THEN** 去重后的顺序与输入顺序一致，不得按标识符字典序重排
+
+#### Scenario: 池构造已排除同键条目时的行为
+- **WHEN** 候选池由 `build_pool` 构造（已按 `owner/scope/subject/relation/condition` 去重）
+- **THEN** 去重阶段 MUST NOT 合并任何一对，因为不存在同键条目
+- **AND** 候选数量在去重前后 MUST 相同；若不同，说明池构造或去重规则有变
+
+> 此条记录一个**已知的职责重叠**：`build_pool._key` 与 `dedup` 的目标集合相交。
+> 实测池内同 key 的对数 = 0（3300 对全查过），所以去重当前一条都不会合并。
+> 修缺陷 13（`_key` 加 `value`）时必须同时决定"同 key 同 value 由谁处理"。
+> 没有这条 scenario，spec 会让人以为去重正在正常执行。
 
 #### Scenario: 去重位置在重排之前
 - **WHEN** 启用去重

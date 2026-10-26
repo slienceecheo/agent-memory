@@ -137,3 +137,49 @@ def test_report_cites_fingerprint() -> None:
     assert "189db1d9" in text
     hashes = {_load(name).get("code_diff_hash") for name in CONFIGS.values()}
     assert len(hashes) == 1, f"四份指纹不同：{hashes}"
+
+
+def test_report_states_three_next_steps_with_acceptance() -> None:
+    """三条"下一步"必须各带验收判据，且与实测状态对应。
+
+    只写"要做什么"不够——这三条都属于"修了才知道能不能测"的类型，
+    下一个人需要能判断"修到什么样才算修好"。
+    """
+    text = REPORT.read_text(encoding="utf-8")
+
+    # 三条分别对应缺陷 16 / 13 / 向量阈值
+    assert "修缺陷 16 才能测邻接" in text
+    assert "修缺陷 13 才能测 dedup" in text
+    assert "向量路径需要阈值才能谈贡献" in text
+
+    # 每条都要有验收与当前状态
+    assert text.count("**验收**") >= 3
+    assert text.count("**当前**") >= 3
+
+    # 当前状态必须是可复算的数字，不是形容词
+    assert "0/6 真兄弟" in text
+    assert "0 对同 key" in text
+    assert "14/14" in text
+
+
+def test_report_next_steps_match_measured_state() -> None:
+    """"下一步"里引用的当前状态必须能从结果文件核对。"""
+    text = REPORT.read_text(encoding="utf-8")
+    three = _load(CONFIGS["3paths"])
+    dedup = _load(CONFIGS["dedup"])
+
+    # 邻接：13 条召回
+    assert three["path_returns"]["adjacency"] == 13
+
+    # 向量：mean 等于池大小（14 条）
+    vector_returns = three["path_returns"]["vector"]
+    scored = len(_scored(three))
+    assert round(vector_returns / scored, 2) == 14.00
+
+    # dedup：合并 0 条（输入与融合长度一致）
+    for case in _scored(dedup):
+        fused = case.get("fusion_tags") or []
+        dedup_in = case.get("dedup_input_tags") or []
+        assert len(dedup_in) == len(fused), "去重输入与融合长度应相同（未合并）"
+
+    assert "13 条召回全部是非兄弟" in text
