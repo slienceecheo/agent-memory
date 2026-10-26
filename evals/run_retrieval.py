@@ -242,19 +242,55 @@ def _item(
     )
 
 
+def _dedup_text(item: MemoryItem) -> str:
+    """`dedup` 的比较文本：**必须同时含 condition 与 value**。
+
+    **为什么与 `_embedding_text` 不同**（三条规则各自有理由，不能统一）：
+
+    | 用途 | 构造 | 理由 |
+    |---|---|---|
+    | `_embedding_text` | `subject + relation + value` | 向量不该掺条件 |
+    | `_dedup_text` | `subject + relation + value + condition` | 去重必须区分条件分支 |
+    | `items_fts` | `subject + relation + value + 原文` | 词面要保留原文 |
+
+    **不含 condition 的后果**（实测）：33/33 条 case 的池里都存在
+    "合成文本完全相同、但 condition 不同"的一对（`ruff/None` 与
+    `ruff/backend`）。判官看到两条一字不差的文本几乎必然判 `equivalent`，
+    把一条删掉——而那正是 BRANCH 语义下必须并存的两条。
+
+    **为什么不用源行 `text`**：660 条干扰项里只有 44.1% 的 `value`
+    出现在源行 `text` 里；其余描述的是 `candidate_value`（BRANCH 行），
+    等于给干扰项贴上一句描述别的值的话，比 tag 更误导。
+    """
+    parts = [item.subject, item.relation, item.value]
+    if item.condition:
+        parts.append(item.condition)
+    return " ".join(parts)
+
+
 def _embedding_text(item: MemoryItem) -> str:
     """池内条目送去向量化的文本。
 
-    与 `items_fts` 的索引内容保持一致（`subject + relation + value + 原文`）。
-    **只用 value 会让"深夜"这类短值与其他短值难以区分**——那正是
-    C4 里干扰项无法竞争的老问题换一个位置。
+    **只用 `subject + relation + value`，不读 `item.text`。**
 
-    用 `document` 侧：与查询的 `query` 侧必须分开，实测同文本两侧余弦仅 0.842。
+    两条理由：
+
+    1. **泄露**：`row["text"]` 与 `query` 逐字相同（33/33）。
+       若拼进来，gold 的向量输入就含一份查询副本，余弦测的是自相似。
+       实测平均余弦 0.7419 → 去掉后 0.4586（缺陷 14）。
+
+    2. **对称性**：gold 原先有 `text`、干扰项 `text=None`，
+       两边构造规则不同，使"向量的贡献"无法解释。
+
+    **为什么不干脆把 `text` 也设成 None**：`text` 同时被 FTS 使用
+    （`sqlite._write_fts` 拼 `item.text`）。实测去掉后
+    lexical 召回 41 → 28、gold 命中 33/33 → 20/33、**10 条 case 零召回**。
+    所以 `text` 必须保留给词面，只在向量侧不读它。
+
+    用 `document` 侧：与查询的 `query` 侧必须分开，
+    实测同文本两侧余弦仅 0.842。
     """
-    parts = [item.subject, item.relation, item.value]
-    if item.text:
-        parts.append(item.text)
-    return " ".join(parts)
+    return f"{item.subject} {item.relation} {item.value}"
 
 
 def select_pool_distractors(
@@ -443,25 +479,13 @@ def evaluate_case(
             dedup_input_tags: list[str] = []
             dedup_input_scores: list[float] = []
             if enable_dedup and judge is not None and fused_order:
-                # 批量回读原文（design 决策 2）：逐条 store.get 会把单次评估的
-                # 查询数从 O(1) 推到 O(N)。
-                placeholders = ",".join("?" * len(fused_order))
-                rows_by_id = {
-                    row_[0]: row_[1]
-                    for row_ in store.conn.execute(
-                        f"SELECT id, source_text FROM items WHERE id IN ({placeholders})",
-                        tuple(fused_order),
-                    ).fetchall()
-                }
-                # 入参三元组是 (id, text, score)：
-                # text 必须是原文、score 必须是真实融合分——
-                # 常数分会让 dedup 内部的 (-score, id) 排序退化为字典序。
+                # 入参三元组是 (id, text, score)。
+                # text 用 `_dedup_text`（含 condition 与 value），不是 id、不是 tag：
+                # - 用 id/tag 会让判官没有任何语义可判
+                # - 不含 condition 会让 `ruff/None` 与 `ruff/backend` 变成同文本，
+                #   而这两条必须并存（BRANCH）
                 texts = [
-                    (
-                        item_id,
-                        rows_by_id.get(item_id) or tag_by_id.get(item_id, item_id),
-                        score_by_id[item_id],
-                    )
+                    (item_id, _dedup_text(store.get(item_id)), score_by_id[item_id])
                     for item_id in fused_order
                 ]
                 kept, _ = dedup(texts, judge=judge, top_k=k)

@@ -50,12 +50,16 @@ DEFECT_TESTS: dict[int, tuple[str, ...]] = {
         "test_branch_query_points_at_candidate_not_gold",
     ),
     13: ("test_pool_dedup_drops_distinct_values",),
+    15: ("test_dedup_has_no_legal_merge_target_after_pool_build",),
 }
 
 # 已修复的缺陷编号 -> 翻面后的正向断言。
 #
 # 缺陷 7（三路召回从未联合跑过）：第 1–3 组接上三路后修复。
 # 缺陷 8（dedup 收到 id 与常数分）：第 3 组修复。
+# 缺陷 12（归档文件名不区分路径集合）：加 `_assert_writable` 后修复。
+# 缺陷 14（gold 向量输入含 query 原文）：`_embedding_text` 不再读 text 后修复。
+#   `text` 字段本身保留给 FTS——实测去掉会让 10 条 case 零召回。
 REPAIRED: dict[int, tuple[str, ...]] = {
     7: (
         "test_retrieval_entry_now_runs_lexical_and_vector",
@@ -66,6 +70,7 @@ REPAIRED: dict[int, tuple[str, ...]] = {
         "test_constant_scores_turn_dedup_into_a_lexical_sort",
     ),
     12: ("test_archive_overwrite_is_refused",),
+    14: ("test_gold_document_text_does_not_contain_query",),
 }
 
 
@@ -106,7 +111,7 @@ def test_report_lists_all_defects() -> None:
     函数名不带数字：原先叫 `test_report_lists_eight_defects`，
     加到 13 条时只改断言不改名字，就成了缺陷 6（报告与实现不一致）的同一形态。
     """
-    assert _defect_numbers_in_report() == set(range(1, 14))
+    assert _defect_numbers_in_report() == set(range(1, 16))
 
 
 def test_every_defect_has_a_locked_test() -> None:

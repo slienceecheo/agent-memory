@@ -245,7 +245,10 @@ def test_dedup_receives_text_and_real_scores() -> None:
         "又回到传 id 与常数分了"
     )
     assert "score_by_id[item_id]" in text, "去重分数应取自融合分"
-    assert "source_text" in text, "文本应从 source_text 读回"
+    # 文本不再从 `source_text` 读：那是候选值/新声明的话，不是本条记忆的话。
+    # 用 `_dedup_text`（subject + relation + value + condition）才既含定位字段
+    # 又含条件分支，见 `tests/retrieval/test_dedup_text.py`。
+    assert "_dedup_text(" in text, "去重文本应由 `_dedup_text` 构造"
 
 
 @pytest.mark.locked_defect

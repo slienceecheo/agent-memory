@@ -11,5 +11,9 @@
   "retrieval-test-uniform-nodedup-poolunrelated.json": 1,
   "retrieval-independent-uniform-poolunrelated.json": 1,
   "retrieval-dev-uniform-nodedup-poolunrelated-pathslexical-vector.json": 2,
-  "retrieval-dev-uniform-nodedup-poolunrelated-pathslexical-vector-adjacency.json": 1
+  "retrieval-dev-uniform-nodedup-poolunrelated-pathslexical-vector-adjacency.json": 1,
+  "a3-lexical.json": 1,
+  "a3-lexical-vector.json": 1,
+  "a3-lexical-vector-adjacency.json": 1,
+  "a3-with-dedup.json": 1
 }

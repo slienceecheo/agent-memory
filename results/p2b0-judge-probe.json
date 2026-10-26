@@ -1,0 +1,65 @@
+{
+  "cases": [
+    {
+      "group": "BRANCH same value, different condition",
+      "id": "A",
+      "left": "project:agent-memory code_style ruff",
+      "right": "project:agent-memory code_style ruff backend",
+      "expected": "complementary (or unrelated) — must NOT be equivalent",
+      "got": "complementary",
+      "failed": false,
+      "cached": false
+    },
+    {
+      "group": "BRANCH same value, different condition",
+      "id": "B",
+      "left": "project:agent-memory code_style ruff backend",
+      "right": "project:agent-memory code_style ruff",
+      "expected": "same pair, reversed order",
+      "got": "complementary",
+      "failed": false,
+      "cached": true
+    },
+    {
+      "group": "true equivalent (same fact, different wording)",
+      "id": "C",
+      "left": "project:agent-memory package_manager pnpm",
+      "right": "project:agent-memory package_manager pnpm",
+      "expected": "identical strings",
+      "got": "equivalent",
+      "failed": false,
+      "cached": true
+    },
+    {
+      "group": "different value, same key",
+      "id": "D",
+      "left": "project:agent-memory test_command pytest",
+      "right": "project:agent-memory test_command npm test",
+      "expected": "unrelated — different answers",
+      "got": "unrelated",
+      "failed": false,
+      "cached": false
+    },
+    {
+      "group": "copy of gold, tag fallback (current real input)",
+      "id": "E",
+      "left": "gold-dev-branch-01",
+      "right": "d-dev-branch-01-9",
+      "expected": "unrelated (tags, no semantics)",
+      "got": "unrelated",
+      "failed": false,
+      "cached": false
+    },
+    {
+      "group": "value vs condition swap",
+      "id": "F",
+      "left": "project:agent-memory code_style ruff",
+      "right": "project:agent-memory code_style backend",
+      "expected": "unrelated — value is ruff vs backend",
+      "got": "unrelated",
+      "failed": false,
+      "cached": false
+    }
+  ],
+  "network_calls": 4
+}

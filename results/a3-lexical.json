@@ -1,0 +1,1299 @@
+{
+  "weights": "uniform",
+  "pool_mode": "unrelated",
+  "dedup": false,
+  "k": 5,
+  "cases": 40,
+  "with_gold": 33,
+  "without_gold": 7,
+  "skipped_small_pool": 0,
+  "paths_enabled": [
+    "lexical"
+  ],
+  "paths_unwired": [],
+  "path_returns": {
+    "lexical": 41,
+    "vector": null,
+    "adjacency": null
+  },
+  "embedding_network_calls": 0,
+  "code_version": "899e2b6-dirty",
+  "code_diff_hash": "189db1d9768e366ee5dbd318fea0ab02aa6844a47f20246339149a90db1e73f9",
+  "seh_at_k": 1.0,
+  "srs": 0.9545454545454546,
+  "attribution": {
+    "NOT_IN_POOL": 0,
+    "LOW_RANK": 0,
+    "RERANK_DROPPED": 0
+  },
+  "per_case": [
+    {
+      "case_id": "dev-add-01",
+      "has_gold": false,
+      "pool_size": 0,
+      "rank_after_fusion": null,
+      "rank_after_rerank": null,
+      "seh": null,
+      "srs": null,
+      "attribution": null
+    },
+    {
+      "case_id": "dev-add-02",
+      "has_gold": false,
+      "pool_size": 0,
+      "rank_after_fusion": null,
+      "rank_after_rerank": null,
+      "seh": null,
+      "srs": null,
+      "attribution": null
+    },
+    {
+      "case_id": "dev-add-03",
+      "has_gold": false,
+      "pool_size": 0,
+      "rank_after_fusion": null,
+      "rank_after_rerank": null,
+      "seh": null,
+      "srs": null,
+      "attribution": null
+    },
+    {
+      "case_id": "dev-add-04",
+      "has_gold": false,
+      "pool_size": 0,
+      "rank_after_fusion": null,
+      "rank_after_rerank": null,
+      "seh": null,
+      "srs": null,
+      "attribution": null
+    },
+    {
+      "case_id": "dev-add-05",
+      "has_gold": false,
+      "pool_size": 0,
+      "rank_after_fusion": null,
+      "rank_after_rerank": null,
+      "seh": null,
+      "srs": null,
+      "attribution": null
+    },
+    {
+      "case_id": "dev-add-06",
+      "has_gold": false,
+      "pool_size": 0,
+      "rank_after_fusion": null,
+      "rank_after_rerank": null,
+      "seh": null,
+      "srs": null,
+      "attribution": null
+    },
+    {
+      "case_id": "dev-add-07",
+      "has_gold": false,
+      "pool_size": 0,
+      "rank_after_fusion": null,
+      "rank_after_rerank": null,
+      "seh": null,
+      "srs": null,
+      "attribution": null
+    },
+    {
+      "case_id": "dev-branch-01",
+      "has_gold": true,
+      "pool_size": 14,
+      "rank_after_fusion": 1,
+      "rank_after_rerank": 2,
+      "fusion_tags": [
+        "gold-dev-branch-01",
+        "d-dev-branch-01-0"
+      ],
+      "adjacency_tags": [],
+      "dedup_input_tags": [],
+      "dedup_input_scores": [],
+      "rerank_top1_tag": "d-dev-branch-01-0",
+      "path_returns": {
+        "lexical": 2,
+        "vector": null,
+        "adjacency": null
+      },
+      "path_raw_lengths": {
+        "lexical": 2,
+        "vector": null,
+        "adjacency": null
+      },
+      "path_fused_lengths": {
+        "lexical": 2,
+        "vector": null,
+        "adjacency": null
+      },
+      "fusion_cap": 20,
+      "a5_strength": "strong",
+      "pool_vectors": 0,
+      "pool_vector_norms": [],
+      "seh": true,
+      "srs": 0.5,
+      "attribution": null
+    },
+    {
+      "case_id": "dev-branch-02",
+      "has_gold": true,
+      "pool_size": 14,
+      "rank_after_fusion": 1,
+      "rank_after_rerank": 2,
+      "fusion_tags": [
+        "gold-dev-branch-02",
+        "d-dev-branch-02-0"
+      ],
+      "adjacency_tags": [],
+      "dedup_input_tags": [],
+      "dedup_input_scores": [],
+      "rerank_top1_tag": "d-dev-branch-02-0",
+      "path_returns": {
+        "lexical": 2,
+        "vector": null,
+        "adjacency": null
+      },
+      "path_raw_lengths": {
+        "lexical": 2,
+        "vector": null,
+        "adjacency": null
+      },
+      "path_fused_lengths": {
+        "lexical": 2,
+        "vector": null,
+        "adjacency": null
+      },
+      "fusion_cap": 20,
+      "a5_strength": "strong",
+      "pool_vectors": 0,
+      "pool_vector_norms": [],
+      "seh": true,
+      "srs": 0.5,
+      "attribution": null
+    },
+    {
+      "case_id": "dev-branch-03",
+      "has_gold": true,
+      "pool_size": 14,
+      "rank_after_fusion": 1,
+      "rank_after_rerank": 1,
+      "fusion_tags": [
+        "gold-dev-branch-03"
+      ],
+      "adjacency_tags": [],
+      "dedup_input_tags": [],
+      "dedup_input_scores": [],
+      "rerank_top1_tag": "gold-dev-branch-03",
+      "path_returns": {
+        "lexical": 1,
+        "vector": null,
+        "adjacency": null
+      },
+      "path_raw_lengths": {
+        "lexical": 1,
+        "vector": null,
+        "adjacency": null
+      },
+      "path_fused_lengths": {
+        "lexical": 1,
+        "vector": null,
+        "adjacency": null
+      },
+      "fusion_cap": 20,
+      "a5_strength": "weak",
+      "pool_vectors": 0,
+      "pool_vector_norms": [],
+      "seh": true,
+      "srs": 1.0,
+      "attribution": null
+    },
+    {
+      "case_id": "dev-branch-04",
+      "has_gold": true,
+      "pool_size": 14,
+      "rank_after_fusion": 1,
+      "rank_after_rerank": 1,
+      "fusion_tags": [
+        "gold-dev-branch-04"
+      ],
+      "adjacency_tags": [],
+      "dedup_input_tags": [],
+      "dedup_input_scores": [],
+      "rerank_top1_tag": "gold-dev-branch-04",
+      "path_returns": {
+        "lexical": 1,
+        "vector": null,
+        "adjacency": null
+      },
+      "path_raw_lengths": {
+        "lexical": 1,
+        "vector": null,
+        "adjacency": null
+      },
+      "path_fused_lengths": {
+        "lexical": 1,
+        "vector": null,
+        "adjacency": null
+      },
+      "fusion_cap": 20,
+      "a5_strength": "weak",
+      "pool_vectors": 0,
+      "pool_vector_norms": [],
+      "seh": true,
+      "srs": 1.0,
+      "attribution": null
+    },
+    {
+      "case_id": "dev-branch-05",
+      "has_gold": true,
+      "pool_size": 14,
+      "rank_after_fusion": 1,
+      "rank_after_rerank": 2,
+      "fusion_tags": [
+        "gold-dev-branch-05",
+        "d-dev-branch-05-15",
+        "d-dev-branch-05-4"
+      ],
+      "adjacency_tags": [],
+      "dedup_input_tags": [],
+      "dedup_input_scores": [],
+      "rerank_top1_tag": "d-dev-branch-05-15",
+      "path_returns": {
+        "lexical": 3,
+        "vector": null,
+        "adjacency": null
+      },
+      "path_raw_lengths": {
+        "lexical": 3,
+        "vector": null,
+        "adjacency": null
+      },
+      "path_fused_lengths": {
+        "lexical": 3,
+        "vector": null,
+        "adjacency": null
+      },
+      "fusion_cap": 20,
+      "a5_strength": "strong",
+      "pool_vectors": 0,
+      "pool_vector_norms": [],
+      "seh": true,
+      "srs": 0.5,
+      "attribution": null
+    },
+    {
+      "case_id": "dev-branch-06",
+      "has_gold": true,
+      "pool_size": 14,
+      "rank_after_fusion": 1,
+      "rank_after_rerank": 1,
+      "fusion_tags": [
+        "gold-dev-branch-06"
+      ],
+      "adjacency_tags": [],
+      "dedup_input_tags": [],
+      "dedup_input_scores": [],
+      "rerank_top1_tag": "gold-dev-branch-06",
+      "path_returns": {
+        "lexical": 1,
+        "vector": null,
+        "adjacency": null
+      },
+      "path_raw_lengths": {
+        "lexical": 1,
+        "vector": null,
+        "adjacency": null
+      },
+      "path_fused_lengths": {
+        "lexical": 1,
+        "vector": null,
+        "adjacency": null
+      },
+      "fusion_cap": 20,
+      "a5_strength": "weak",
+      "pool_vectors": 0,
+      "pool_vector_norms": [],
+      "seh": true,
+      "srs": 1.0,
+      "attribution": null
+    },
+    {
+      "case_id": "dev-conf-01",
+      "has_gold": true,
+      "pool_size": 14,
+      "rank_after_fusion": 1,
+      "rank_after_rerank": 1,
+      "fusion_tags": [
+        "gold-dev-conf-01"
+      ],
+      "adjacency_tags": [],
+      "dedup_input_tags": [],
+      "dedup_input_scores": [],
+      "rerank_top1_tag": "gold-dev-conf-01",
+      "path_returns": {
+        "lexical": 1,
+        "vector": null,
+        "adjacency": null
+      },
+      "path_raw_lengths": {
+        "lexical": 1,
+        "vector": null,
+        "adjacency": null
+      },
+      "path_fused_lengths": {
+        "lexical": 1,
+        "vector": null,
+        "adjacency": null
+      },
+      "fusion_cap": 20,
+      "a5_strength": "weak",
+      "pool_vectors": 0,
+      "pool_vector_norms": [],
+      "seh": true,
+      "srs": 1.0,
+      "attribution": null
+    },
+    {
+      "case_id": "dev-conf-02",
+      "has_gold": true,
+      "pool_size": 14,
+      "rank_after_fusion": 1,
+      "rank_after_rerank": 1,
+      "fusion_tags": [
+        "gold-dev-conf-02"
+      ],
+      "adjacency_tags": [],
+      "dedup_input_tags": [],
+      "dedup_input_scores": [],
+      "rerank_top1_tag": "gold-dev-conf-02",
+      "path_returns": {
+        "lexical": 1,
+        "vector": null,
+        "adjacency": null
+      },
+      "path_raw_lengths": {
+        "lexical": 1,
+        "vector": null,
+        "adjacency": null
+      },
+      "path_fused_lengths": {
+        "lexical": 1,
+        "vector": null,
+        "adjacency": null
+      },
+      "fusion_cap": 20,
+      "a5_strength": "weak",
+      "pool_vectors": 0,
+      "pool_vector_norms": [],
+      "seh": true,
+      "srs": 1.0,
+      "attribution": null
+    },
+    {
+      "case_id": "dev-conf-03",
+      "has_gold": true,
+      "pool_size": 14,
+      "rank_after_fusion": 1,
+      "rank_after_rerank": 1,
+      "fusion_tags": [
+        "gold-dev-conf-03"
+      ],
+      "adjacency_tags": [],
+      "dedup_input_tags": [],
+      "dedup_input_scores": [],
+      "rerank_top1_tag": "gold-dev-conf-03",
+      "path_returns": {
+        "lexical": 1,
+        "vector": null,
+        "adjacency": null
+      },
+      "path_raw_lengths": {
+        "lexical": 1,
+        "vector": null,
+        "adjacency": null
+      },
+      "path_fused_lengths": {
+        "lexical": 1,
+        "vector": null,
+        "adjacency": null
+      },
+      "fusion_cap": 20,
+      "a5_strength": "weak",
+      "pool_vectors": 0,
+      "pool_vector_norms": [],
+      "seh": true,
+      "srs": 1.0,
+      "attribution": null
+    },
+    {
+      "case_id": "dev-conf-04",
+      "has_gold": true,
+      "pool_size": 14,
+      "rank_after_fusion": 1,
+      "rank_after_rerank": 1,
+      "fusion_tags": [
+        "gold-dev-conf-04"
+      ],
+      "adjacency_tags": [],
+      "dedup_input_tags": [],
+      "dedup_input_scores": [],
+      "rerank_top1_tag": "gold-dev-conf-04",
+      "path_returns": {
+        "lexical": 1,
+        "vector": null,
+        "adjacency": null
+      },
+      "path_raw_lengths": {
+        "lexical": 1,
+        "vector": null,
+        "adjacency": null
+      },
+      "path_fused_lengths": {
+        "lexical": 1,
+        "vector": null,
+        "adjacency": null
+      },
+      "fusion_cap": 20,
+      "a5_strength": "weak",
+      "pool_vectors": 0,
+      "pool_vector_norms": [],
+      "seh": true,
+      "srs": 1.0,
+      "attribution": null
+    },
+    {
+      "case_id": "dev-conf-05",
+      "has_gold": true,
+      "pool_size": 14,
+      "rank_after_fusion": 1,
+      "rank_after_rerank": 1,
+      "fusion_tags": [
+        "gold-dev-conf-05"
+      ],
+      "adjacency_tags": [],
+      "dedup_input_tags": [],
+      "dedup_input_scores": [],
+      "rerank_top1_tag": "gold-dev-conf-05",
+      "path_returns": {
+        "lexical": 1,
+        "vector": null,
+        "adjacency": null
+      },
+      "path_raw_lengths": {
+        "lexical": 1,
+        "vector": null,
+        "adjacency": null
+      },
+      "path_fused_lengths": {
+        "lexical": 1,
+        "vector": null,
+        "adjacency": null
+      },
+      "fusion_cap": 20,
+      "a5_strength": "weak",
+      "pool_vectors": 0,
+      "pool_vector_norms": [],
+      "seh": true,
+      "srs": 1.0,
+      "attribution": null
+    },
+    {
+      "case_id": "dev-conf-06",
+      "has_gold": true,
+      "pool_size": 14,
+      "rank_after_fusion": 1,
+      "rank_after_rerank": 1,
+      "fusion_tags": [
+        "gold-dev-conf-06"
+      ],
+      "adjacency_tags": [],
+      "dedup_input_tags": [],
+      "dedup_input_scores": [],
+      "rerank_top1_tag": "gold-dev-conf-06",
+      "path_returns": {
+        "lexical": 1,
+        "vector": null,
+        "adjacency": null
+      },
+      "path_raw_lengths": {
+        "lexical": 1,
+        "vector": null,
+        "adjacency": null
+      },
+      "path_fused_lengths": {
+        "lexical": 1,
+        "vector": null,
+        "adjacency": null
+      },
+      "fusion_cap": 20,
+      "a5_strength": "weak",
+      "pool_vectors": 0,
+      "pool_vector_norms": [],
+      "seh": true,
+      "srs": 1.0,
+      "attribution": null
+    },
+    {
+      "case_id": "dev-merge-01",
+      "has_gold": true,
+      "pool_size": 14,
+      "rank_after_fusion": 1,
+      "rank_after_rerank": 1,
+      "fusion_tags": [
+        "gold-dev-merge-01"
+      ],
+      "adjacency_tags": [],
+      "dedup_input_tags": [],
+      "dedup_input_scores": [],
+      "rerank_top1_tag": "gold-dev-merge-01",
+      "path_returns": {
+        "lexical": 1,
+        "vector": null,
+        "adjacency": null
+      },
+      "path_raw_lengths": {
+        "lexical": 1,
+        "vector": null,
+        "adjacency": null
+      },
+      "path_fused_lengths": {
+        "lexical": 1,
+        "vector": null,
+        "adjacency": null
+      },
+      "fusion_cap": 20,
+      "a5_strength": "weak",
+      "pool_vectors": 0,
+      "pool_vector_norms": [],
+      "seh": true,
+      "srs": 1.0,
+      "attribution": null
+    },
+    {
+      "case_id": "dev-merge-02",
+      "has_gold": true,
+      "pool_size": 14,
+      "rank_after_fusion": 1,
+      "rank_after_rerank": 1,
+      "fusion_tags": [
+        "gold-dev-merge-02"
+      ],
+      "adjacency_tags": [],
+      "dedup_input_tags": [],
+      "dedup_input_scores": [],
+      "rerank_top1_tag": "gold-dev-merge-02",
+      "path_returns": {
+        "lexical": 1,
+        "vector": null,
+        "adjacency": null
+      },
+      "path_raw_lengths": {
+        "lexical": 1,
+        "vector": null,
+        "adjacency": null
+      },
+      "path_fused_lengths": {
+        "lexical": 1,
+        "vector": null,
+        "adjacency": null
+      },
+      "fusion_cap": 20,
+      "a5_strength": "weak",
+      "pool_vectors": 0,
+      "pool_vector_norms": [],
+      "seh": true,
+      "srs": 1.0,
+      "attribution": null
+    },
+    {
+      "case_id": "dev-merge-03",
+      "has_gold": true,
+      "pool_size": 14,
+      "rank_after_fusion": 1,
+      "rank_after_rerank": 1,
+      "fusion_tags": [
+        "gold-dev-merge-03"
+      ],
+      "adjacency_tags": [],
+      "dedup_input_tags": [],
+      "dedup_input_scores": [],
+      "rerank_top1_tag": "gold-dev-merge-03",
+      "path_returns": {
+        "lexical": 1,
+        "vector": null,
+        "adjacency": null
+      },
+      "path_raw_lengths": {
+        "lexical": 1,
+        "vector": null,
+        "adjacency": null
+      },
+      "path_fused_lengths": {
+        "lexical": 1,
+        "vector": null,
+        "adjacency": null
+      },
+      "fusion_cap": 20,
+      "a5_strength": "weak",
+      "pool_vectors": 0,
+      "pool_vector_norms": [],
+      "seh": true,
+      "srs": 1.0,
+      "attribution": null
+    },
+    {
+      "case_id": "dev-merge-04",
+      "has_gold": true,
+      "pool_size": 14,
+      "rank_after_fusion": 1,
+      "rank_after_rerank": 1,
+      "fusion_tags": [
+        "gold-dev-merge-04"
+      ],
+      "adjacency_tags": [],
+      "dedup_input_tags": [],
+      "dedup_input_scores": [],
+      "rerank_top1_tag": "gold-dev-merge-04",
+      "path_returns": {
+        "lexical": 1,
+        "vector": null,
+        "adjacency": null
+      },
+      "path_raw_lengths": {
+        "lexical": 1,
+        "vector": null,
+        "adjacency": null
+      },
+      "path_fused_lengths": {
+        "lexical": 1,
+        "vector": null,
+        "adjacency": null
+      },
+      "fusion_cap": 20,
+      "a5_strength": "weak",
+      "pool_vectors": 0,
+      "pool_vector_norms": [],
+      "seh": true,
+      "srs": 1.0,
+      "attribution": null
+    },
+    {
+      "case_id": "dev-merge-05",
+      "has_gold": true,
+      "pool_size": 14,
+      "rank_after_fusion": 1,
+      "rank_after_rerank": 1,
+      "fusion_tags": [
+        "gold-dev-merge-05",
+        "d-dev-merge-05-5"
+      ],
+      "adjacency_tags": [],
+      "dedup_input_tags": [],
+      "dedup_input_scores": [],
+      "rerank_top1_tag": "gold-dev-merge-05",
+      "path_returns": {
+        "lexical": 2,
+        "vector": null,
+        "adjacency": null
+      },
+      "path_raw_lengths": {
+        "lexical": 2,
+        "vector": null,
+        "adjacency": null
+      },
+      "path_fused_lengths": {
+        "lexical": 2,
+        "vector": null,
+        "adjacency": null
+      },
+      "fusion_cap": 20,
+      "a5_strength": "strong",
+      "pool_vectors": 0,
+      "pool_vector_norms": [],
+      "seh": true,
+      "srs": 1.0,
+      "attribution": null
+    },
+    {
+      "case_id": "dev-merge-06",
+      "has_gold": true,
+      "pool_size": 14,
+      "rank_after_fusion": 1,
+      "rank_after_rerank": 1,
+      "fusion_tags": [
+        "gold-dev-merge-06"
+      ],
+      "adjacency_tags": [],
+      "dedup_input_tags": [],
+      "dedup_input_scores": [],
+      "rerank_top1_tag": "gold-dev-merge-06",
+      "path_returns": {
+        "lexical": 1,
+        "vector": null,
+        "adjacency": null
+      },
+      "path_raw_lengths": {
+        "lexical": 1,
+        "vector": null,
+        "adjacency": null
+      },
+      "path_fused_lengths": {
+        "lexical": 1,
+        "vector": null,
+        "adjacency": null
+      },
+      "fusion_cap": 20,
+      "a5_strength": "weak",
+      "pool_vectors": 0,
+      "pool_vector_norms": [],
+      "seh": true,
+      "srs": 1.0,
+      "attribution": null
+    },
+    {
+      "case_id": "dev-merge-07",
+      "has_gold": true,
+      "pool_size": 14,
+      "rank_after_fusion": 1,
+      "rank_after_rerank": 1,
+      "fusion_tags": [
+        "gold-dev-merge-07"
+      ],
+      "adjacency_tags": [],
+      "dedup_input_tags": [],
+      "dedup_input_scores": [],
+      "rerank_top1_tag": "gold-dev-merge-07",
+      "path_returns": {
+        "lexical": 1,
+        "vector": null,
+        "adjacency": null
+      },
+      "path_raw_lengths": {
+        "lexical": 1,
+        "vector": null,
+        "adjacency": null
+      },
+      "path_fused_lengths": {
+        "lexical": 1,
+        "vector": null,
+        "adjacency": null
+      },
+      "fusion_cap": 20,
+      "a5_strength": "weak",
+      "pool_vectors": 0,
+      "pool_vector_norms": [],
+      "seh": true,
+      "srs": 1.0,
+      "attribution": null
+    },
+    {
+      "case_id": "dev-noop-01",
+      "has_gold": true,
+      "pool_size": 14,
+      "rank_after_fusion": 1,
+      "rank_after_rerank": 1,
+      "fusion_tags": [
+        "gold-dev-noop-01"
+      ],
+      "adjacency_tags": [],
+      "dedup_input_tags": [],
+      "dedup_input_scores": [],
+      "rerank_top1_tag": "gold-dev-noop-01",
+      "path_returns": {
+        "lexical": 1,
+        "vector": null,
+        "adjacency": null
+      },
+      "path_raw_lengths": {
+        "lexical": 1,
+        "vector": null,
+        "adjacency": null
+      },
+      "path_fused_lengths": {
+        "lexical": 1,
+        "vector": null,
+        "adjacency": null
+      },
+      "fusion_cap": 20,
+      "a5_strength": "weak",
+      "pool_vectors": 0,
+      "pool_vector_norms": [],
+      "seh": true,
+      "srs": 1.0,
+      "attribution": null
+    },
+    {
+      "case_id": "dev-noop-02",
+      "has_gold": true,
+      "pool_size": 14,
+      "rank_after_fusion": 1,
+      "rank_after_rerank": 1,
+      "fusion_tags": [
+        "gold-dev-noop-02"
+      ],
+      "adjacency_tags": [],
+      "dedup_input_tags": [],
+      "dedup_input_scores": [],
+      "rerank_top1_tag": "gold-dev-noop-02",
+      "path_returns": {
+        "lexical": 1,
+        "vector": null,
+        "adjacency": null
+      },
+      "path_raw_lengths": {
+        "lexical": 1,
+        "vector": null,
+        "adjacency": null
+      },
+      "path_fused_lengths": {
+        "lexical": 1,
+        "vector": null,
+        "adjacency": null
+      },
+      "fusion_cap": 20,
+      "a5_strength": "weak",
+      "pool_vectors": 0,
+      "pool_vector_norms": [],
+      "seh": true,
+      "srs": 1.0,
+      "attribution": null
+    },
+    {
+      "case_id": "dev-noop-03",
+      "has_gold": true,
+      "pool_size": 14,
+      "rank_after_fusion": 1,
+      "rank_after_rerank": 1,
+      "fusion_tags": [
+        "gold-dev-noop-03"
+      ],
+      "adjacency_tags": [],
+      "dedup_input_tags": [],
+      "dedup_input_scores": [],
+      "rerank_top1_tag": "gold-dev-noop-03",
+      "path_returns": {
+        "lexical": 1,
+        "vector": null,
+        "adjacency": null
+      },
+      "path_raw_lengths": {
+        "lexical": 1,
+        "vector": null,
+        "adjacency": null
+      },
+      "path_fused_lengths": {
+        "lexical": 1,
+        "vector": null,
+        "adjacency": null
+      },
+      "fusion_cap": 20,
+      "a5_strength": "weak",
+      "pool_vectors": 0,
+      "pool_vector_norms": [],
+      "seh": true,
+      "srs": 1.0,
+      "attribution": null
+    },
+    {
+      "case_id": "dev-noop-04",
+      "has_gold": true,
+      "pool_size": 14,
+      "rank_after_fusion": 1,
+      "rank_after_rerank": 1,
+      "fusion_tags": [
+        "gold-dev-noop-04"
+      ],
+      "adjacency_tags": [],
+      "dedup_input_tags": [],
+      "dedup_input_scores": [],
+      "rerank_top1_tag": "gold-dev-noop-04",
+      "path_returns": {
+        "lexical": 1,
+        "vector": null,
+        "adjacency": null
+      },
+      "path_raw_lengths": {
+        "lexical": 1,
+        "vector": null,
+        "adjacency": null
+      },
+      "path_fused_lengths": {
+        "lexical": 1,
+        "vector": null,
+        "adjacency": null
+      },
+      "fusion_cap": 20,
+      "a5_strength": "weak",
+      "pool_vectors": 0,
+      "pool_vector_norms": [],
+      "seh": true,
+      "srs": 1.0,
+      "attribution": null
+    },
+    {
+      "case_id": "dev-noop-05",
+      "has_gold": true,
+      "pool_size": 14,
+      "rank_after_fusion": 1,
+      "rank_after_rerank": 1,
+      "fusion_tags": [
+        "gold-dev-noop-05",
+        "d-dev-noop-05-5"
+      ],
+      "adjacency_tags": [],
+      "dedup_input_tags": [],
+      "dedup_input_scores": [],
+      "rerank_top1_tag": "gold-dev-noop-05",
+      "path_returns": {
+        "lexical": 2,
+        "vector": null,
+        "adjacency": null
+      },
+      "path_raw_lengths": {
+        "lexical": 2,
+        "vector": null,
+        "adjacency": null
+      },
+      "path_fused_lengths": {
+        "lexical": 2,
+        "vector": null,
+        "adjacency": null
+      },
+      "fusion_cap": 20,
+      "a5_strength": "strong",
+      "pool_vectors": 0,
+      "pool_vector_norms": [],
+      "seh": true,
+      "srs": 1.0,
+      "attribution": null
+    },
+    {
+      "case_id": "dev-noop-06",
+      "has_gold": true,
+      "pool_size": 14,
+      "rank_after_fusion": 1,
+      "rank_after_rerank": 1,
+      "fusion_tags": [
+        "gold-dev-noop-06"
+      ],
+      "adjacency_tags": [],
+      "dedup_input_tags": [],
+      "dedup_input_scores": [],
+      "rerank_top1_tag": "gold-dev-noop-06",
+      "path_returns": {
+        "lexical": 1,
+        "vector": null,
+        "adjacency": null
+      },
+      "path_raw_lengths": {
+        "lexical": 1,
+        "vector": null,
+        "adjacency": null
+      },
+      "path_fused_lengths": {
+        "lexical": 1,
+        "vector": null,
+        "adjacency": null
+      },
+      "fusion_cap": 20,
+      "a5_strength": "weak",
+      "pool_vectors": 0,
+      "pool_vector_norms": [],
+      "seh": true,
+      "srs": 1.0,
+      "attribution": null
+    },
+    {
+      "case_id": "dev-noop-07",
+      "has_gold": true,
+      "pool_size": 14,
+      "rank_after_fusion": 1,
+      "rank_after_rerank": 1,
+      "fusion_tags": [
+        "gold-dev-noop-07"
+      ],
+      "adjacency_tags": [],
+      "dedup_input_tags": [],
+      "dedup_input_scores": [],
+      "rerank_top1_tag": "gold-dev-noop-07",
+      "path_returns": {
+        "lexical": 1,
+        "vector": null,
+        "adjacency": null
+      },
+      "path_raw_lengths": {
+        "lexical": 1,
+        "vector": null,
+        "adjacency": null
+      },
+      "path_fused_lengths": {
+        "lexical": 1,
+        "vector": null,
+        "adjacency": null
+      },
+      "fusion_cap": 20,
+      "a5_strength": "weak",
+      "pool_vectors": 0,
+      "pool_vector_norms": [],
+      "seh": true,
+      "srs": 1.0,
+      "attribution": null
+    },
+    {
+      "case_id": "dev-sup-01",
+      "has_gold": true,
+      "pool_size": 14,
+      "rank_after_fusion": 1,
+      "rank_after_rerank": 1,
+      "fusion_tags": [
+        "gold-dev-sup-01"
+      ],
+      "adjacency_tags": [],
+      "dedup_input_tags": [],
+      "dedup_input_scores": [],
+      "rerank_top1_tag": "gold-dev-sup-01",
+      "path_returns": {
+        "lexical": 1,
+        "vector": null,
+        "adjacency": null
+      },
+      "path_raw_lengths": {
+        "lexical": 1,
+        "vector": null,
+        "adjacency": null
+      },
+      "path_fused_lengths": {
+        "lexical": 1,
+        "vector": null,
+        "adjacency": null
+      },
+      "fusion_cap": 20,
+      "a5_strength": "weak",
+      "pool_vectors": 0,
+      "pool_vector_norms": [],
+      "seh": true,
+      "srs": 1.0,
+      "attribution": null
+    },
+    {
+      "case_id": "dev-sup-02",
+      "has_gold": true,
+      "pool_size": 14,
+      "rank_after_fusion": 1,
+      "rank_after_rerank": 1,
+      "fusion_tags": [
+        "gold-dev-sup-02",
+        "d-dev-sup-02-3"
+      ],
+      "adjacency_tags": [],
+      "dedup_input_tags": [],
+      "dedup_input_scores": [],
+      "rerank_top1_tag": "gold-dev-sup-02",
+      "path_returns": {
+        "lexical": 2,
+        "vector": null,
+        "adjacency": null
+      },
+      "path_raw_lengths": {
+        "lexical": 2,
+        "vector": null,
+        "adjacency": null
+      },
+      "path_fused_lengths": {
+        "lexical": 2,
+        "vector": null,
+        "adjacency": null
+      },
+      "fusion_cap": 20,
+      "a5_strength": "strong",
+      "pool_vectors": 0,
+      "pool_vector_norms": [],
+      "seh": true,
+      "srs": 1.0,
+      "attribution": null
+    },
+    {
+      "case_id": "dev-sup-03",
+      "has_gold": true,
+      "pool_size": 14,
+      "rank_after_fusion": 1,
+      "rank_after_rerank": 1,
+      "fusion_tags": [
+        "gold-dev-sup-03"
+      ],
+      "adjacency_tags": [],
+      "dedup_input_tags": [],
+      "dedup_input_scores": [],
+      "rerank_top1_tag": "gold-dev-sup-03",
+      "path_returns": {
+        "lexical": 1,
+        "vector": null,
+        "adjacency": null
+      },
+      "path_raw_lengths": {
+        "lexical": 1,
+        "vector": null,
+        "adjacency": null
+      },
+      "path_fused_lengths": {
+        "lexical": 1,
+        "vector": null,
+        "adjacency": null
+      },
+      "fusion_cap": 20,
+      "a5_strength": "weak",
+      "pool_vectors": 0,
+      "pool_vector_norms": [],
+      "seh": true,
+      "srs": 1.0,
+      "attribution": null
+    },
+    {
+      "case_id": "dev-sup-04",
+      "has_gold": true,
+      "pool_size": 14,
+      "rank_after_fusion": 1,
+      "rank_after_rerank": 1,
+      "fusion_tags": [
+        "gold-dev-sup-04"
+      ],
+      "adjacency_tags": [],
+      "dedup_input_tags": [],
+      "dedup_input_scores": [],
+      "rerank_top1_tag": "gold-dev-sup-04",
+      "path_returns": {
+        "lexical": 1,
+        "vector": null,
+        "adjacency": null
+      },
+      "path_raw_lengths": {
+        "lexical": 1,
+        "vector": null,
+        "adjacency": null
+      },
+      "path_fused_lengths": {
+        "lexical": 1,
+        "vector": null,
+        "adjacency": null
+      },
+      "fusion_cap": 20,
+      "a5_strength": "weak",
+      "pool_vectors": 0,
+      "pool_vector_norms": [],
+      "seh": true,
+      "srs": 1.0,
+      "attribution": null
+    },
+    {
+      "case_id": "dev-sup-05",
+      "has_gold": true,
+      "pool_size": 14,
+      "rank_after_fusion": 1,
+      "rank_after_rerank": 1,
+      "fusion_tags": [
+        "gold-dev-sup-05",
+        "d-dev-sup-05-5"
+      ],
+      "adjacency_tags": [],
+      "dedup_input_tags": [],
+      "dedup_input_scores": [],
+      "rerank_top1_tag": "gold-dev-sup-05",
+      "path_returns": {
+        "lexical": 2,
+        "vector": null,
+        "adjacency": null
+      },
+      "path_raw_lengths": {
+        "lexical": 2,
+        "vector": null,
+        "adjacency": null
+      },
+      "path_fused_lengths": {
+        "lexical": 2,
+        "vector": null,
+        "adjacency": null
+      },
+      "fusion_cap": 20,
+      "a5_strength": "strong",
+      "pool_vectors": 0,
+      "pool_vector_norms": [],
+      "seh": true,
+      "srs": 1.0,
+      "attribution": null
+    },
+    {
+      "case_id": "dev-sup-06",
+      "has_gold": true,
+      "pool_size": 14,
+      "rank_after_fusion": 1,
+      "rank_after_rerank": 1,
+      "fusion_tags": [
+        "gold-dev-sup-06"
+      ],
+      "adjacency_tags": [],
+      "dedup_input_tags": [],
+      "dedup_input_scores": [],
+      "rerank_top1_tag": "gold-dev-sup-06",
+      "path_returns": {
+        "lexical": 1,
+        "vector": null,
+        "adjacency": null
+      },
+      "path_raw_lengths": {
+        "lexical": 1,
+        "vector": null,
+        "adjacency": null
+      },
+      "path_fused_lengths": {
+        "lexical": 1,
+        "vector": null,
+        "adjacency": null
+      },
+      "fusion_cap": 20,
+      "a5_strength": "weak",
+      "pool_vectors": 0,
+      "pool_vector_norms": [],
+      "seh": true,
+      "srs": 1.0,
+      "attribution": null
+    },
+    {
+      "case_id": "dev-sup-07",
+      "has_gold": true,
+      "pool_size": 14,
+      "rank_after_fusion": 1,
+      "rank_after_rerank": 1,
+      "fusion_tags": [
+        "gold-dev-sup-07"
+      ],
+      "adjacency_tags": [],
+      "dedup_input_tags": [],
+      "dedup_input_scores": [],
+      "rerank_top1_tag": "gold-dev-sup-07",
+      "path_returns": {
+        "lexical": 1,
+        "vector": null,
+        "adjacency": null
+      },
+      "path_raw_lengths": {
+        "lexical": 1,
+        "vector": null,
+        "adjacency": null
+      },
+      "path_fused_lengths": {
+        "lexical": 1,
+        "vector": null,
+        "adjacency": null
+      },
+      "fusion_cap": 20,
+      "a5_strength": "weak",
+      "pool_vectors": 0,
+      "pool_vector_norms": [],
+      "seh": true,
+      "srs": 1.0,
+      "attribution": null
+    }
+  ],
+  "split": "dev",
+  "run_count": 1
+}
