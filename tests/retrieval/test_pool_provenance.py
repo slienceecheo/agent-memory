@@ -94,8 +94,12 @@ def test_length_mismatch_is_rejected() -> None:
 # ---------- 真实数据 ----------
 
 
+@pytest.mark.locked_defect
 def test_non_dev_selection_is_all_from_dev(corpus) -> None:
-    """缺陷 9：非 dev split 选出的干扰项 100% 来自 dev。"""
+    """缺陷 9：非 dev split 选出的干扰项 100% 来自 dev。
+
+    这是缺陷 5 的后果（同源）：取消 `others[:limit]` 截断后立刻按比例混合。
+    """
     specs, origins, rows_by_split = corpus
 
     for split in ("test", "independent"):

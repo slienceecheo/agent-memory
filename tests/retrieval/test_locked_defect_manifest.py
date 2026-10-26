@@ -40,6 +40,16 @@ DEFECT_TESTS: dict[int, tuple[str, ...]] = {
         "test_unrelated_mode_is_a_file_order_prefix",
     ),
     6: ("test_same_relation_mixes_subjects",),
+    9: ("test_non_dev_selection_is_all_from_dev",),
+    10: (
+        "test_test_and_dev_share_mirrored_branches",
+        "test_test_split_is_not_independent",
+    ),
+    11: (
+        "test_condition_match_prefers_unstated_over_mismatched",
+        "test_branch_query_points_at_candidate_not_gold",
+    ),
+    13: ("test_pool_dedup_drops_distinct_values",),
 }
 
 # 已修复的缺陷编号 -> 翻面后的正向断言。
@@ -55,13 +65,22 @@ REPAIRED: dict[int, tuple[str, ...]] = {
         "test_dedup_receives_text_and_real_scores",
         "test_constant_scores_turn_dedup_into_a_lexical_sort",
     ),
+    12: ("test_archive_overwrite_is_refused",),
 }
 
 
 def _defect_numbers_in_report() -> set[int]:
-    """报告第 0.1 节末尾那张"八个缺陷"表里的编号。"""
+    """报告「缺陷总表」里的编号。
+
+    定位锚点是 `### 0.4 缺陷总表`，不是旧版的 `#### 这一节的结论`——
+    后者在报告重构成 0.2/0.3/0.4 时被移走了。锚点写死会在重构时静默失效
+    （`IndexError` 而不是「找不到表」），所以这里显式检查。
+    """
     text = REPORT.read_text(encoding="utf-8")
-    section = text.split("#### 这一节的结论")[1].split("## 1.")[0]
+    anchor = "### 0.4 缺陷总表"
+    if anchor not in text:
+        pytest.fail(f"报告里找不到「{anchor}」这一节，无法核对缺陷表")
+    section = text.split(anchor)[1].split("#### ")[0]
     return {int(match) for match in re.findall(r"^\| (\d+) \|", section, re.MULTILINE)}
 
 
@@ -81,9 +100,13 @@ def _marked_test_names() -> set[str]:
     return names
 
 
-def test_report_lists_eight_defects() -> None:
-    """报告第 0.1 节必须列出八个缺陷。数量变化时要同步改映射。"""
-    assert _defect_numbers_in_report() == set(range(1, 9))
+def test_report_lists_all_defects() -> None:
+    """报告缺陷表的编号必须与映射表一致。
+
+    函数名不带数字：原先叫 `test_report_lists_eight_defects`，
+    加到 13 条时只改断言不改名字，就成了缺陷 6（报告与实现不一致）的同一形态。
+    """
+    assert _defect_numbers_in_report() == set(range(1, 14))
 
 
 def test_every_defect_has_a_locked_test() -> None:
