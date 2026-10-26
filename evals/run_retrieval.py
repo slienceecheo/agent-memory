@@ -129,6 +129,12 @@ def code_diff_hash() -> str | None:
     **只记 `-dirty` 不够**：两份 `-dirty` 结果无法区分
     （比如"改了 run_retrieval"与"改了 v2_baselines"）。
     有了 hash，相同即同一份工作区代码，不同即两次不同的未提交状态。
+
+    **已知局限：只覆盖 `evals/` 与 `src/`，不覆盖 `data/` 与 `results/`。**
+    若实验涉及数据集变更，`code_diff_hash` 抓不到——那需要另行记录
+    数据指纹（测试命名约定 `test_data_fingerprint_*`）。
+    v2 数据集冻结前，「哪个文件算数据」的语义还不稳定，
+    所以这里不加 `data_hash`；冻结后应当补上。
     """
     version = code_version()
     if not version.endswith("-dirty"):

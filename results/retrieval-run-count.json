@@ -15,5 +15,6 @@
   "a3-lexical.json": 1,
   "a3-lexical-vector.json": 1,
   "a3-lexical-vector-adjacency.json": 1,
-  "a3-with-dedup.json": 1
+  "a3-with-dedup.json": 1,
+  "a3-with-dedup-rerun.json": 1
 }

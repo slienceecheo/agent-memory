@@ -50,7 +50,14 @@ DEFECT_TESTS: dict[int, tuple[str, ...]] = {
         "test_branch_query_points_at_candidate_not_gold",
     ),
     13: ("test_pool_dedup_drops_distinct_values",),
-    15: ("test_dedup_has_no_legal_merge_target_after_pool_build",),
+    15: (
+        "test_dedup_has_no_legal_merge_target_after_pool_build",
+        "test_dedup_breaks_ties_by_id_not_by_input_order",
+    ),
+    16: (
+        "test_adjacency_has_no_legal_target_on_dev",
+        "test_adjacency_siblings_exist_but_are_truncated_away",
+    ),
 }
 
 # 已修复的缺陷编号 -> 翻面后的正向断言。
@@ -111,7 +118,7 @@ def test_report_lists_all_defects() -> None:
     函数名不带数字：原先叫 `test_report_lists_eight_defects`，
     加到 13 条时只改断言不改名字，就成了缺陷 6（报告与实现不一致）的同一形态。
     """
-    assert _defect_numbers_in_report() == set(range(1, 16))
+    assert _defect_numbers_in_report() == set(range(1, 17))
 
 
 def test_every_defect_has_a_locked_test() -> None:
