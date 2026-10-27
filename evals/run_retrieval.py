@@ -384,15 +384,30 @@ def evaluate_case(
             "attribution": None,
         }
 
+    # 干扰项的 `text`：优先用 spec 自带的 `memory_text`。
+    #
+    # C4 的 gold spec 没有这个字段，所以那条路径仍然得到 `text=None`——
+    # 行为自动分化，不需要开关。而 v2 的 spec 有 `memory_text`，
+    # 丢掉它会让 FTS 索引里只剩 value，共享情境词进不去（缺陷 2 复发）。
     distractors = [
-        _item({"text": ""}, spec, tag=f"d-{row['id']}-{i}", text=None)
+        _item(
+            {"text": ""},
+            spec,
+            tag=f"d-{row['id']}-{i}",
+            text=str(spec.get("memory_text") or "") or None,
+        )
         for i, spec in enumerate(selected)
     ]
 
     with tempfile.TemporaryDirectory() as directory:
         store = SqliteStore(Path(directory) / "eval.db")
         try:
-            gold = _item(row, gold_spec, tag=f"gold-{row['id']}", text=str(row.get("text") or ""))
+            # gold 的 `text`：v2 用 spec 的 `memory_text`（= 产生这条记忆的原话），
+            # C4 用 row 的 `text`（那是 query 的副本，见缺陷 14）。
+            # 两者都保留，是因为 `_embedding_text` 已经不读 `text`，
+            # 而 FTS 需要它——**FTS 的输入不该等于查询**（缺陷 1）。
+            gold_text = str(gold_spec.get("memory_text") or row.get("text") or "") or None
+            gold = _item(row, gold_spec, tag=f"gold-{row['id']}", text=gold_text)
             pool = build_pool(gold, distractors, seed=0)
 
             id_map: dict[str, MemoryItem] = {}
@@ -581,6 +596,21 @@ def evaluate(
     paths: tuple[str, ...] = ALL_PATHS,
     embedder: EmbedderLike | None = None,
 ) -> dict[str, object]:
+    # 缺陷 17：请求 vector 但不给 embedder 时必须抛错，不能静默跳过。
+    #
+    # 实测后果：同一数据同一代码，给 embedder 是 SEH@5=1.000，
+    # 不给是 0.667，而 `path_returns["vector"]` 只是从 144 变成 None、
+    # `paths_unwired` 一直是空——与"只开 lexical"完全无法区分。
+    # 在测量工具里，静默降级比抛错危险得多。
+    # 缺陷 17 的抛错检查必须用 active_paths，不能看原始 paths：
+    # 否则"未接线"的 vector 会先被抛错拦住，机制本身测不到。
+    if "vector" in active_paths(paths) and embedder is None:
+        raise ValueError(
+            "paths 含 'vector' 但没有提供 embedder：向量路径会被静默跳过，"
+            "而结果看起来完全正常（path_returns['vector'] 记 None，"
+            "paths_unwired 为空）。请注入 embedder，或把 'vector' 从 paths 里去掉。"
+        )
+
     calls_before = embedder.network_calls if embedder is not None else 0
     per_case = [
         evaluate_case(
@@ -734,15 +764,29 @@ def main(argv: list[str] | None = None) -> int:
     if not path.exists():
         print(f"数据集不存在：{path}", file=sys.stderr)
         return 2
-    rows = _rows(path)
+
+    # v2 是一个**目录**（memories.jsonl + queries.jsonl），不是单文件。
+    # 适配层只做字段映射；池构造仍走 build_pool，保证与 C4 可比。
+    if path.is_dir():
+        from evals.datasets.v2_adapter import load_rows
+
+        rows = load_rows(path)
+        print(f"v2 数据集：{path}（{len(rows)} 条查询）")
+    else:
+        rows = _rows(path)
 
     all_specs: list[dict[str, object]] = []
-    for name in ("dev.jsonl", "test.jsonl", "independent.jsonl"):
-        other = DATA / name
-        if other.exists():
-            all_specs.extend(
-                [row["gold"] for row in _rows(other) if row.get("gold")]  # type: ignore[misc]
-            )
+    if path.is_dir():
+        # v2：干扰项只能来自**本数据集自己的**记忆库。
+        # 若混入 conflict-set 的 gold，就是缺陷 9（池 100% 来自 dev）的复发。
+        all_specs = [row["gold"] for row in rows if row.get("gold")]
+    else:
+        for name in ("dev.jsonl", "test.jsonl", "independent.jsonl"):
+            other = DATA / name
+            if other.exists():
+                all_specs.extend(
+                    [row["gold"] for row in _rows(other) if row.get("gold")]  # type: ignore[misc]
+                )
 
     judge: EquivalenceJudge | None = None
     settings: Settings | None = None

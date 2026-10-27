@@ -102,6 +102,7 @@ def test_result_payload_includes_code_fingerprint() -> None:
         enable_dedup=False,
         judge=None,
         k=5,
+        paths=(),  # 零召回基线：不需要 embedder（缺陷 17）
     )
 
     assert "code_version" in result

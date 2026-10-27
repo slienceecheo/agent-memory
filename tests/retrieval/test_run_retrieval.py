@@ -75,6 +75,7 @@ def test_evaluate_skips_when_pool_too_small() -> None:
         judge=None,
         k=5,
         pool_mode=PoolMode.SAME_RELATION,
+        paths=("lexical",),
     )
 
     assert result["skipped_small_pool"] > 0
@@ -94,6 +95,9 @@ def test_evaluate_records_pool_mode() -> None:
         judge=None,
         k=5,
         pool_mode=PoolMode.UNRELATED,
+        # 这些测试只关心池模式与归因，与向量无关。
+        # 显式只开词面：请求 vector 而不给 embedder 会抛错（缺陷 17）。
+        paths=("lexical",),
     )
 
     assert result["pool_mode"] == "unrelated"
@@ -112,6 +116,9 @@ def test_unrelated_pool_is_evaluable() -> None:
         judge=None,
         k=5,
         pool_mode=PoolMode.UNRELATED,
+        # 这些测试只关心池模式与归因，与向量无关。
+        # 显式只开词面：请求 vector 而不给 embedder 会抛错（缺陷 17）。
+        paths=("lexical",),
     )
 
     assert result["with_gold"] >= 20
@@ -129,6 +136,9 @@ def test_attribution_has_all_three_keys() -> None:
         judge=None,
         k=5,
         pool_mode=PoolMode.UNRELATED,
+        # 这些测试只关心池模式与归因，与向量无关。
+        # 显式只开词面：请求 vector 而不给 embedder 会抛错（缺陷 17）。
+        paths=("lexical",),
     )
 
     assert set(result["attribution"]) == {"NOT_IN_POOL", "LOW_RANK", "RERANK_DROPPED"}
@@ -147,6 +157,9 @@ def test_without_gold_cases_are_counted() -> None:
         judge=None,
         k=5,
         pool_mode=PoolMode.UNRELATED,
+        # 这些测试只关心池模式与归因，与向量无关。
+        # 显式只开词面：请求 vector 而不给 embedder 会抛错（缺陷 17）。
+        paths=("lexical",),
     )
 
     assert result["without_gold"] == 4
@@ -169,6 +182,9 @@ def test_low_difficulty_scores_are_locked() -> None:
         judge=None,
         k=5,
         pool_mode=PoolMode.UNRELATED,
+        # 这些测试只关心池模式与归因，与向量无关。
+        # 显式只开词面：请求 vector 而不给 embedder 会抛错（缺陷 17）。
+        paths=("lexical",),
     )
 
     assert result["seh_at_k"] == pytest.approx(1.0)

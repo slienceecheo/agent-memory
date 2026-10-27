@@ -78,6 +78,7 @@ REPAIRED: dict[int, tuple[str, ...]] = {
     ),
     12: ("test_archive_overwrite_is_refused",),
     14: ("test_gold_document_text_does_not_contain_query",),
+    17: ("test_vector_without_embedder_raises",),
 }
 
 
@@ -118,7 +119,7 @@ def test_report_lists_all_defects() -> None:
     函数名不带数字：原先叫 `test_report_lists_eight_defects`，
     加到 13 条时只改断言不改名字，就成了缺陷 6（报告与实现不一致）的同一形态。
     """
-    assert _defect_numbers_in_report() == set(range(1, 17))
+    assert _defect_numbers_in_report() == set(range(1, 18))
 
 
 def test_every_defect_has_a_locked_test() -> None:

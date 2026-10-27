@@ -536,6 +536,47 @@ def check_l6c_paths_return_nonempty(dataset: Dataset) -> Check:
     )
 
 
+def check_f17_every_branch_queried(dataset: Dataset) -> Check:
+    """F17：每个 condition 分支都必须至少被一条查询指向。
+
+    **L5 检查的是"池里有几条候选"，不是"有几条被查询指向过"。**
+    按旧口径（每 subject 4 条 A 轴查询）构造数据时，一个有 4 个 relation 的
+    subject 只有 4 条查询 → 每 relation 1 条。其余分支会进池（L5 绿），
+    但永远不会成为任何查询的 gold。
+
+    这是 C4 缺陷 3 的精确重演：**池里有 3 条 ≠ 有查询在考这 3 条。**
+
+    判定：对每个 `(subject, relation)`，其每个 condition 分支都必须至少是
+    一条查询的 `gold_memory_id`。
+    """
+    pointed = {q.gold_memory_id for q in dataset.queries}
+
+    groups: dict[tuple[str, str], list[str]] = {}
+    for memory in dataset.memories:
+        if memory.status.value != "ACTIVE":
+            continue
+        groups.setdefault((memory.subject, memory.relation), []).append(memory.memory_id)
+
+    untested: list[str] = []
+    for (subject, relation), memory_ids in groups.items():
+        # 单值 relation（只有一个分支）不适用"每分支一条"：
+        # 它天然没有条件维度，编造分支会让 condition_match 假性有效（§3.4）。
+        if len(memory_ids) < 2:
+            continue
+        for memory_id in memory_ids:
+            if memory_id not in pointed:
+                untested.append(f"{subject}/{relation}:{memory_id}")
+
+    return Check(
+        "F17",
+        "每个 condition 分支都被查询指向",
+        not untested,
+        f"{len(groups)} 个 (subject,relation) 组，全部分支都有查询"
+        if not untested
+        else f"{len(untested)} 个分支从未成为 gold：{untested[:5]}",
+    )
+
+
 ALL_CHECKS = (
     check_l1_no_verbatim_text,
     check_l2_no_gold_value,
@@ -554,6 +595,7 @@ ALL_CHECKS = (
     check_f13_cue_mix,
     check_f15_axis_a_needs_seh1,
     check_f16_baseline_formula,
+    check_f17_every_branch_queried,
 )
 
 

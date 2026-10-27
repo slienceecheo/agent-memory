@@ -1,0 +1,460 @@
+{
+  "weights": "uniform",
+  "pool_mode": "unrelated",
+  "dedup": false,
+  "k": 5,
+  "cases": 12,
+  "with_gold": 12,
+  "without_gold": 0,
+  "skipped_small_pool": 0,
+  "paths_enabled": [
+    "lexical"
+  ],
+  "paths_unwired": [],
+  "path_returns": {
+    "lexical": 10,
+    "vector": null,
+    "adjacency": null
+  },
+  "embedding_network_calls": 0,
+  "code_version": "8b1b600-dirty",
+  "code_diff_hash": "0db53dcc7f63b4167774c94ae2bb627dddb0b1d35ab253ca541affe41c8f9c22",
+  "seh_at_k": 0.6666666666666666,
+  "srs": 0.6666666666666666,
+  "attribution": {
+    "NOT_IN_POOL": 4,
+    "LOW_RANK": 0,
+    "RERANK_DROPPED": 0
+  },
+  "per_case": [
+    {
+      "case_id": "ledger-q1",
+      "has_gold": true,
+      "pool_size": 12,
+      "rank_after_fusion": 1,
+      "rank_after_rerank": 1,
+      "fusion_tags": [
+        "gold-ledger-q1"
+      ],
+      "adjacency_tags": [],
+      "dedup_input_tags": [],
+      "dedup_input_scores": [],
+      "rerank_top1_tag": "gold-ledger-q1",
+      "path_returns": {
+        "lexical": 1,
+        "vector": null,
+        "adjacency": null
+      },
+      "path_raw_lengths": {
+        "lexical": 1,
+        "vector": null,
+        "adjacency": null
+      },
+      "path_fused_lengths": {
+        "lexical": 1,
+        "vector": null,
+        "adjacency": null
+      },
+      "fusion_cap": 20,
+      "a5_strength": "weak",
+      "pool_vectors": 0,
+      "pool_vector_norms": [],
+      "seh": true,
+      "srs": 1.0,
+      "attribution": null
+    },
+    {
+      "case_id": "ledger-q2",
+      "has_gold": true,
+      "pool_size": 12,
+      "rank_after_fusion": 1,
+      "rank_after_rerank": 1,
+      "fusion_tags": [
+        "gold-ledger-q2"
+      ],
+      "adjacency_tags": [],
+      "dedup_input_tags": [],
+      "dedup_input_scores": [],
+      "rerank_top1_tag": "gold-ledger-q2",
+      "path_returns": {
+        "lexical": 1,
+        "vector": null,
+        "adjacency": null
+      },
+      "path_raw_lengths": {
+        "lexical": 1,
+        "vector": null,
+        "adjacency": null
+      },
+      "path_fused_lengths": {
+        "lexical": 1,
+        "vector": null,
+        "adjacency": null
+      },
+      "fusion_cap": 20,
+      "a5_strength": "weak",
+      "pool_vectors": 0,
+      "pool_vector_norms": [],
+      "seh": true,
+      "srs": 1.0,
+      "attribution": null
+    },
+    {
+      "case_id": "ledger-q3",
+      "has_gold": true,
+      "pool_size": 12,
+      "rank_after_fusion": null,
+      "rank_after_rerank": null,
+      "fusion_tags": [],
+      "adjacency_tags": [],
+      "dedup_input_tags": [],
+      "dedup_input_scores": [],
+      "rerank_top1_tag": null,
+      "path_returns": {
+        "lexical": 0,
+        "vector": null,
+        "adjacency": null
+      },
+      "path_raw_lengths": {
+        "lexical": 0,
+        "vector": null,
+        "adjacency": null
+      },
+      "path_fused_lengths": {
+        "lexical": 0,
+        "vector": null,
+        "adjacency": null
+      },
+      "fusion_cap": 20,
+      "a5_strength": "weak",
+      "pool_vectors": 0,
+      "pool_vector_norms": [],
+      "seh": false,
+      "srs": 0.0,
+      "attribution": "NOT_IN_POOL"
+    },
+    {
+      "case_id": "ledger-q4",
+      "has_gold": true,
+      "pool_size": 12,
+      "rank_after_fusion": null,
+      "rank_after_rerank": null,
+      "fusion_tags": [],
+      "adjacency_tags": [],
+      "dedup_input_tags": [],
+      "dedup_input_scores": [],
+      "rerank_top1_tag": null,
+      "path_returns": {
+        "lexical": 0,
+        "vector": null,
+        "adjacency": null
+      },
+      "path_raw_lengths": {
+        "lexical": 0,
+        "vector": null,
+        "adjacency": null
+      },
+      "path_fused_lengths": {
+        "lexical": 0,
+        "vector": null,
+        "adjacency": null
+      },
+      "fusion_cap": 20,
+      "a5_strength": "weak",
+      "pool_vectors": 0,
+      "pool_vector_norms": [],
+      "seh": false,
+      "srs": 0.0,
+      "attribution": "NOT_IN_POOL"
+    },
+    {
+      "case_id": "ledger-q5",
+      "has_gold": true,
+      "pool_size": 12,
+      "rank_after_fusion": 1,
+      "rank_after_rerank": 1,
+      "fusion_tags": [
+        "gold-ledger-q5"
+      ],
+      "adjacency_tags": [],
+      "dedup_input_tags": [],
+      "dedup_input_scores": [],
+      "rerank_top1_tag": "gold-ledger-q5",
+      "path_returns": {
+        "lexical": 1,
+        "vector": null,
+        "adjacency": null
+      },
+      "path_raw_lengths": {
+        "lexical": 1,
+        "vector": null,
+        "adjacency": null
+      },
+      "path_fused_lengths": {
+        "lexical": 1,
+        "vector": null,
+        "adjacency": null
+      },
+      "fusion_cap": 20,
+      "a5_strength": "weak",
+      "pool_vectors": 0,
+      "pool_vector_norms": [],
+      "seh": true,
+      "srs": 1.0,
+      "attribution": null
+    },
+    {
+      "case_id": "ledger-q6",
+      "has_gold": true,
+      "pool_size": 12,
+      "rank_after_fusion": 1,
+      "rank_after_rerank": 1,
+      "fusion_tags": [
+        "gold-ledger-q6"
+      ],
+      "adjacency_tags": [],
+      "dedup_input_tags": [],
+      "dedup_input_scores": [],
+      "rerank_top1_tag": "gold-ledger-q6",
+      "path_returns": {
+        "lexical": 1,
+        "vector": null,
+        "adjacency": null
+      },
+      "path_raw_lengths": {
+        "lexical": 1,
+        "vector": null,
+        "adjacency": null
+      },
+      "path_fused_lengths": {
+        "lexical": 1,
+        "vector": null,
+        "adjacency": null
+      },
+      "fusion_cap": 20,
+      "a5_strength": "weak",
+      "pool_vectors": 0,
+      "pool_vector_norms": [],
+      "seh": true,
+      "srs": 1.0,
+      "attribution": null
+    },
+    {
+      "case_id": "ledger-q7",
+      "has_gold": true,
+      "pool_size": 12,
+      "rank_after_fusion": null,
+      "rank_after_rerank": null,
+      "fusion_tags": [],
+      "adjacency_tags": [],
+      "dedup_input_tags": [],
+      "dedup_input_scores": [],
+      "rerank_top1_tag": null,
+      "path_returns": {
+        "lexical": 0,
+        "vector": null,
+        "adjacency": null
+      },
+      "path_raw_lengths": {
+        "lexical": 0,
+        "vector": null,
+        "adjacency": null
+      },
+      "path_fused_lengths": {
+        "lexical": 0,
+        "vector": null,
+        "adjacency": null
+      },
+      "fusion_cap": 20,
+      "a5_strength": "weak",
+      "pool_vectors": 0,
+      "pool_vector_norms": [],
+      "seh": false,
+      "srs": 0.0,
+      "attribution": "NOT_IN_POOL"
+    },
+    {
+      "case_id": "ledger-q8",
+      "has_gold": true,
+      "pool_size": 12,
+      "rank_after_fusion": null,
+      "rank_after_rerank": null,
+      "fusion_tags": [
+        "d-ledger-q8-8"
+      ],
+      "adjacency_tags": [],
+      "dedup_input_tags": [],
+      "dedup_input_scores": [],
+      "rerank_top1_tag": "d-ledger-q8-8",
+      "path_returns": {
+        "lexical": 1,
+        "vector": null,
+        "adjacency": null
+      },
+      "path_raw_lengths": {
+        "lexical": 1,
+        "vector": null,
+        "adjacency": null
+      },
+      "path_fused_lengths": {
+        "lexical": 1,
+        "vector": null,
+        "adjacency": null
+      },
+      "fusion_cap": 20,
+      "a5_strength": "weak",
+      "pool_vectors": 0,
+      "pool_vector_norms": [],
+      "seh": false,
+      "srs": 0.0,
+      "attribution": "NOT_IN_POOL"
+    },
+    {
+      "case_id": "ledger-q9",
+      "has_gold": true,
+      "pool_size": 12,
+      "rank_after_fusion": 1,
+      "rank_after_rerank": 1,
+      "fusion_tags": [
+        "gold-ledger-q9"
+      ],
+      "adjacency_tags": [],
+      "dedup_input_tags": [],
+      "dedup_input_scores": [],
+      "rerank_top1_tag": "gold-ledger-q9",
+      "path_returns": {
+        "lexical": 1,
+        "vector": null,
+        "adjacency": null
+      },
+      "path_raw_lengths": {
+        "lexical": 1,
+        "vector": null,
+        "adjacency": null
+      },
+      "path_fused_lengths": {
+        "lexical": 1,
+        "vector": null,
+        "adjacency": null
+      },
+      "fusion_cap": 20,
+      "a5_strength": "weak",
+      "pool_vectors": 0,
+      "pool_vector_norms": [],
+      "seh": true,
+      "srs": 1.0,
+      "attribution": null
+    },
+    {
+      "case_id": "ledger-q10",
+      "has_gold": true,
+      "pool_size": 12,
+      "rank_after_fusion": 1,
+      "rank_after_rerank": 1,
+      "fusion_tags": [
+        "gold-ledger-q10"
+      ],
+      "adjacency_tags": [],
+      "dedup_input_tags": [],
+      "dedup_input_scores": [],
+      "rerank_top1_tag": "gold-ledger-q10",
+      "path_returns": {
+        "lexical": 1,
+        "vector": null,
+        "adjacency": null
+      },
+      "path_raw_lengths": {
+        "lexical": 1,
+        "vector": null,
+        "adjacency": null
+      },
+      "path_fused_lengths": {
+        "lexical": 1,
+        "vector": null,
+        "adjacency": null
+      },
+      "fusion_cap": 20,
+      "a5_strength": "weak",
+      "pool_vectors": 0,
+      "pool_vector_norms": [],
+      "seh": true,
+      "srs": 1.0,
+      "attribution": null
+    },
+    {
+      "case_id": "ledger-q11",
+      "has_gold": true,
+      "pool_size": 12,
+      "rank_after_fusion": 1,
+      "rank_after_rerank": 1,
+      "fusion_tags": [
+        "gold-ledger-q11"
+      ],
+      "adjacency_tags": [],
+      "dedup_input_tags": [],
+      "dedup_input_scores": [],
+      "rerank_top1_tag": "gold-ledger-q11",
+      "path_returns": {
+        "lexical": 1,
+        "vector": null,
+        "adjacency": null
+      },
+      "path_raw_lengths": {
+        "lexical": 1,
+        "vector": null,
+        "adjacency": null
+      },
+      "path_fused_lengths": {
+        "lexical": 1,
+        "vector": null,
+        "adjacency": null
+      },
+      "fusion_cap": 20,
+      "a5_strength": "weak",
+      "pool_vectors": 0,
+      "pool_vector_norms": [],
+      "seh": true,
+      "srs": 1.0,
+      "attribution": null
+    },
+    {
+      "case_id": "ledger-q12",
+      "has_gold": true,
+      "pool_size": 12,
+      "rank_after_fusion": 2,
+      "rank_after_rerank": 1,
+      "fusion_tags": [
+        "d-ledger-q12-6",
+        "gold-ledger-q12"
+      ],
+      "adjacency_tags": [],
+      "dedup_input_tags": [],
+      "dedup_input_scores": [],
+      "rerank_top1_tag": "gold-ledger-q12",
+      "path_returns": {
+        "lexical": 2,
+        "vector": null,
+        "adjacency": null
+      },
+      "path_raw_lengths": {
+        "lexical": 2,
+        "vector": null,
+        "adjacency": null
+      },
+      "path_fused_lengths": {
+        "lexical": 2,
+        "vector": null,
+        "adjacency": null
+      },
+      "fusion_cap": 20,
+      "a5_strength": "strong",
+      "pool_vectors": 0,
+      "pool_vector_norms": [],
+      "seh": true,
+      "srs": 1.0,
+      "attribution": null
+    }
+  ],
+  "split": "independent",
+  "run_count": 1
+}
