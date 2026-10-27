@@ -22,5 +22,7 @@
   "v2-sample-lexical-text.json": 1,
   "v2-lexical.json": 1,
   "v2-lexical-vector.json": 1,
-  "v2-lexical-vector-adjacency.json": 1
+  "v2-lexical-vector-adjacency.json": 1,
+  "v2-vector.json": 1,
+  "v2-vector-adjacency.json": 1
 }

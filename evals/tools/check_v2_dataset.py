@@ -577,6 +577,59 @@ def check_f17_every_branch_queried(dataset: Dataset) -> Check:
     )
 
 
+def check_f18_authority_is_justified(dataset: Dataset) -> Check:
+    """F18：每条非 `user_direct` 的记忆，其 `memory_text` 必须说明来源。
+
+    **这条防的是"为凑方差而降级来源"。**
+
+    C4 的 `test_rerank_variance` 断言"真实数据里 authority 必须不止一个取值"。
+    那条测试跑的是 conflict-set，不是 v2。但造 v2 数据时照着那个经验，
+    给两条记忆降了级——**而协议从未要求 authority 有方差**。
+
+    实测后果：`ledger-oncall-4`（赵启/法定节假日）是 `third_party`，
+    在 `uniform` 权重下算 authority 罚分 −0.25，而它的对手只丢 0.25×0.5=0.125。
+    于是它在 base（1.000 vs 0.910）与 cond（1.00 vs 0.50）上都占优，
+    却掉到第 3 名（缺陷 18）。
+
+    判据是**文本必须自解释来源**，而不是"分布必须如何"——
+    因为 authority 的分布本来就该由场景决定，不该有配额。
+    """
+    cues = (
+        "HR",
+        "系统",
+        "同事",
+        "转述",
+        "文档",
+        "听说",
+        "群里",
+        "审计",
+        "邮件",
+        "工单",
+        "外部",
+        "第三方",
+        "截图",
+        "会议纪要",
+    )
+
+    unexplained: list[str] = []
+    for memory in dataset.memories:
+        if memory.authority.value == "user_direct":
+            continue
+        if not any(cue in memory.memory_text for cue in cues):
+            unexplained.append(
+                f"{memory.memory_id}({memory.authority.value}): {memory.memory_text!r}"
+            )
+
+    return Check(
+        "F18",
+        "非 user_direct 的来源必须在原文里自解释",
+        not unexplained,
+        "没有非 user_direct 的记忆，或全部自解释"
+        if not unexplained
+        else f"{len(unexplained)} 条来源降级没有场景依据：{unexplained[:3]}",
+    )
+
+
 ALL_CHECKS = (
     check_l1_no_verbatim_text,
     check_l2_no_gold_value,
@@ -596,6 +649,7 @@ ALL_CHECKS = (
     check_f15_axis_a_needs_seh1,
     check_f16_baseline_formula,
     check_f17_every_branch_queried,
+    check_f18_authority_is_justified,
 )
 
 
