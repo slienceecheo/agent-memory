@@ -282,11 +282,23 @@ uv run --no-sync pytest -m integrity_check -q                      # 1 条，检
 
 ## 已知未完成（归档时明确记录，不是疏忽）
 
-### 1. `evaluation-harness` 的「路径贡献的可测性」缺 MUST
+### 1. `evaluation-harness` 的「路径贡献的可测性」用中文规范词
 
-该 requirement 用了 `SHALL`，但三条 scenario 内没有 `MUST`。
-**没有 MUST 的 scenario 只是说明文**，下次改动时不会被视为约束。
-补 MUST 属于新变更（spec 已归档）。
+该 requirement 陈述句用 `SHALL`，scenario 内用**中文规范词**"不得"（2 处），
+不是英文 `MUST`。
+
+**这不是缺陷，是全仓库的书写习惯**：229 条 scenario 里有 **175 条（76%）**
+不含任何规范词——`conflict-resolution` 29/35、`evaluation-harness` 34/44、
+`llm-and-embedding-io` 20/26、`memory-retrieval` 44/62、`memory-store` 48/62。
+
+`openspec validate --strict` 接受这种写法。若将来要统一规范词，
+应作为独立的一致性整理，不与能力变更混做。
+
+> **一次真实的误判，值得记下来**：我曾用 `grep "MUST"` 扫这些 spec，
+> 得到"0 个含 MUST"，于是写进 HANDOFF 说"缺 MUST，需要开变更补"。
+> 而这个仓库的 spec 是中文写的，规范词是"不得/必须/禁止"。
+> **检索条件错了，结论也就错了。** 与前面几次（绝对阈值当排名、
+> 工作区当归档、同进程测跨进程）是同一形态：检查工具本身不成立。
 
 ### 2. F6 / F13 未达标（v2 的工作）
 
