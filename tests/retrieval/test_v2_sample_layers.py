@@ -36,7 +36,11 @@ def test_report_exists() -> None:
 
 
 def test_report_presents_three_layers() -> None:
-    """报告必须有三个阶段，且写明只有第三层可用。"""
+    """报告必须有三个阶段，且写明只有第三层可用。
+
+    三层是**装置状态**的记录（①修 harness 前 / ②未传 embedder / ③装置完整），
+    与五组配置分解是两回事：前者记"装置接没接上"，后者记"每条路径贡献多少"。
+    """
     text = REPORT.read_text(encoding="utf-8")
 
     assert "装置状态决定一切" in text
@@ -44,6 +48,57 @@ def test_report_presents_three_layers() -> None:
     assert "② 修 harness 后，未传 embedder" in text
     assert "③ 传 embedder 后" in text
     assert "只有 ③ 是可用数据" in text
+
+
+def test_report_has_five_config_decomposition() -> None:
+    """五组配置的分解表必须存在，且每个指标都带分母。"""
+    text = REPORT.read_text(encoding="utf-8")
+
+    assert "五组配置的完整分解" in text
+    assert "每个数字都带分母" in text
+    # 五组的名字都要出现
+    for config in ("`lexical`", "`vector`", "`lex+vec`", "`vec+adj`", "`3paths`"):
+        assert config in text
+    # A 轴与整池的分母必须分别标注
+    assert "A 轴 `SEH@1`" in text
+    assert "n=10" in text
+    assert "池 12 条" in text
+
+
+def test_report_distinguishes_the_two_ones() -> None:
+    """两个 `SEH@5 = 1.000` 必须标明各自的**分母**。
+
+    这是唯一能让读者分辨"空操作"与"真实成绩"的东西——
+    段落标题做不到，数字本身也做不到。
+    """
+    text = REPORT.read_text(encoding="utf-8")
+    section = text.split("两个 `SEH@5 = 1.000` 的含义完全不同")[1].split("\n## ")[0]
+
+    assert "融合输入 1 条" in section
+    assert "池 12 条" in section
+    assert "空操作" in section
+    assert "真实成绩" in section
+
+
+def test_report_documents_q4_three_layer_chain() -> None:
+    """q4 的三层失败链必须三个原因都写，不能只写邻接。"""
+    text = REPORT.read_text(encoding="utf-8")
+    section = text.split("q4 的三层失败链")[1].split("\n## ")[0]
+
+    assert "向量" in section and "重排" in section and "邻接" in section
+    # 三个缺陷编号都要出现
+    assert "18" in section and "19" in section and "16" in section
+    # 四特征值要在
+    assert "auth" in section
+    assert "−0.1025" in section or "-0.1025" in section
+
+
+def test_report_states_gate_pass_count() -> None:
+    """门禁状态必须写明 13/18，且说明 F18 的失败是正确的失败。"""
+    text = REPORT.read_text(encoding="utf-8")
+
+    assert "13/18" in text
+    assert "F18 的失败是正确的失败" in text
 
 
 def test_layer_three_numbers_match_results() -> None:
