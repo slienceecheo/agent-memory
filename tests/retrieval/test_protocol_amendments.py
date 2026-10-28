@@ -153,3 +153,40 @@ def test_f20_documents_its_weak_evidence() -> None:
     assert "n=4" in text
     # 报告必须给实测值，不能只写"通过"
     assert "报告必须给出实测掉幅" in text or "报告必须写实测掉幅" in text
+
+
+def test_section_11_2_defines_what_counts_as_a_score() -> None:
+    """§11.2 的"分数"必须被定义为检索指标，不含门禁结果。
+
+    否则协议死锁：任何为让门禁可判而做的口径澄清都会被判违规，
+    而"挑一个能过的阈值"和"把模糊定义写清楚"就分不开了。
+    """
+    text = (ROOT / PROTO).read_text(encoding="utf-8")
+
+    assert "§11.2 里\"分数\"的定义" in text or '11.2 里"分数"的定义' in text
+    assert "系统检索指标" in text
+    assert "数据合格性检查" in text
+    # 必须明确说合格性检查不属于"分数"
+    assert "**否**" in text
+
+
+def test_r2_tag_records_data_was_not_modified() -> None:
+    """r2 tag 的说明必须写明数据文件未被修改，并给出可复算命令。"""
+    result = subprocess.run(
+        ["git", "tag", "-l", "-n99", "dataset-v2-protocol-r2"],
+        cwd=ROOT,
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+    )
+    if result.returncode != 0 or "r2" not in result.stdout:
+        pytest.skip("r2 tag 不存在")
+
+    body = result.stdout
+    assert "597cf6a" in body, "tag 说明必须给出数据的首个 commit"
+    assert "未修改" in body
+    assert "provisional" in body
+    # 必须写明放宽过一次，不能只说收紧
+    assert "放宽 1 次" in body or "放宽" in body
+    assert "33.3%" in body and "40.0%" in body
