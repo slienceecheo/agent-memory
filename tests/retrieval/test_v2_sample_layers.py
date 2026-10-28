@@ -97,8 +97,9 @@ def test_report_states_gate_pass_count() -> None:
     """门禁状态必须写明通过数，且说明 F18 的失败是正确的失败。"""
     text = REPORT.read_text(encoding="utf-8")
 
-    assert "17/20" in text
+    assert "19/22" in text
     assert "F18 的失败是正确的失败" in text
+    assert "F19a" in text and "F19b" in text
 
 
 def test_gate_count_matches_actual_runs() -> None:

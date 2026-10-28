@@ -630,22 +630,26 @@ def check_f18_authority_is_justified(dataset: Dataset) -> Check:
     )
 
 
-def check_f19_implicit_gold_recalled(dataset: Dataset) -> Check:
-    """F19：每条 implicit 查询的 gold 必须至少被一路召回。
+def check_f19a_implicit_gold_complete(dataset: Dataset) -> Check:
+    """F19a：implicit 查询的 gold **数据完整**（在库、有原文）。
 
-    **否则该查询测的是"召回失败"，不是"条件区分"。**
+    这条检查的是**字段完整性**，不是"能否被召回"。
 
-    这两件事在指标上无法区分：都表现为 `rank=None` 或排名很低。
-    实测样例：12/12 全部召回（`never_recalled = 0`），所以这一条现在通过。
-    它防的是铺开时的退化——若某个 implicit 查询写得语义太远，
-    连向量也召不回，那它的 0 分会被误记成"条件区分失败"。
+    两者在当前样例上恰好等价（12/12 都能召回），但机制不同：
 
-    **这里只做数据侧检查**（gold 在记忆库里、query 非空）。
-    "某一路是否召回 gold"需要跑评测，属 F20 的消融范畴。
+    | 检查 | 做法 |
+    |---|---|
+    | 数据完整性 | gold 在 `memories.jsonl` 里且有 `memory_text` |
+    | 可被召回 | 真跑一次召回，看 gold 是否出现在返回列表里 |
+
+    **实测反例**：`q3` 的 gold（林晓）在库、有原文，但**词面路径召回 0 条**。
+    所以"数据完整"通过，并不意味着"召回成功"。后者是 F19b。
+
+    本条的独立价值：防止 gold 缺失或原文为空导致向量无从匹配。
     """
     implicit = [q for q in dataset.queries if q.cue_type.value == "implicit"]
     if not implicit:
-        return Check("F19", "implicit 查询的 gold 可被召回", False, "没有 implicit 查询")
+        return Check("F19a", "implicit 的 gold 数据完整", False, "没有 implicit 查询")
 
     problems: list[str] = []
     for query in implicit:
@@ -660,12 +664,98 @@ def check_f19_implicit_gold_recalled(dataset: Dataset) -> Check:
             problems.append(f"{query.query_id}: gold 没有原文，向量无从匹配")
 
     return Check(
-        "F19",
-        "implicit 查询的 gold 可被召回",
+        "F19a",
+        "implicit 的 gold 数据完整",
         not problems,
         f"{len(implicit)} 条 implicit，gold 都在库且有原文"
         if not problems
         else f"{len(problems)} 条有问题：{problems[:3]}",
+    )
+
+
+def check_f19b_implicit_gold_recalled(dataset: Dataset) -> Check:
+    """F19b：每条 implicit 的 gold 必须**真的被召回**（rank 不为 None）。
+
+    **这才是"防止召回失败被记成条件区分失败"的那一条。**
+
+    F19a 只检查字段完整性。实测反例：`q3` 的 gold 在库、有原文，
+    但词面路径召回 0 条——若只看 F19a，它通过，而它的 0 分实际上是召回失败。
+
+    判据来自 `results/v2-sample-condition-ablation.json` 的 `with_condition`：
+    有 condition 配置下，**仅限 implicit 查询**的 `rank` 必须都不为 None。
+
+    为什么不直接用结果里的 `never_recalled_with`：那是**全数据集**（含 C 轴）
+    的计数。用它会让本门禁在两种情况下说谎——
+    一个 C 轴 case 召回失败时它红（与 implicit 无关），
+    而 implicit 的失败被别处抵消时它绿（正是要防的情况）。
+    """
+    payload = _load_run("v2-sample-condition-ablation.json")
+    if payload is None:
+        return Check(
+            "F19b",
+            "implicit 的 gold 真的被召回",
+            False,
+            "缺少 v2-sample-condition-ablation.json；先跑 evals.tools.ablate_condition",
+        )
+
+    implicit_ids = {
+        q.query_id for q in dataset.queries if q.cue_type.value == "implicit"
+    }
+    if not implicit_ids:
+        return Check("F19b", "implicit 的 gold 真的被召回", False, "没有 implicit 查询")
+
+    ranks = payload.get("with_condition") or {}
+    missing = sorted(implicit_ids - set(ranks))
+    never_recalled = sorted(cid for cid in implicit_ids if ranks.get(cid) is None)
+
+    if missing:
+        return Check(
+            "F19b",
+            "implicit 的 gold 真的被召回",
+            False,
+            f"消融结果里没有这些 implicit 的排名：{missing[:3]}（结果过期？）",
+        )
+
+    return Check(
+        "F19b",
+        "implicit 的 gold 真的被召回",
+        not never_recalled,
+        f"{len(implicit_ids)} 条 implicit，三路全开时全部被召回"
+        if not never_recalled
+        else f"{len(never_recalled)} 条 implicit 从未被召回：{never_recalled[:3]}",
+    )
+
+
+def check_f20_condition_contributes() -> Check:
+    """F20：条件消融后 A 轴 `SEH@1` 掉幅必须 ≥ 0.3。
+
+    **为什么需要**：有人可以写出一批"explicit 占多数、condition 全都匹配"的
+    查询，也得到很高的 `SEH@1`——而 A 轴的设计意图（多个条件分支里挑对）
+    完全落空。只报分数看不出来。
+
+    实现放在 `evals/tools/ablate_condition.py`（它要跑评测，较重），
+    但本门禁**收进 `run_all()`**，读它的结果 JSON。
+    否则 `run_all()` 只跑 F1–F19，F20 没人跑会成为隐患。
+    """
+    payload = _load_run("v2-sample-condition-ablation.json")
+    if payload is None:
+        return Check(
+            "F20",
+            "condition 对 A 轴有贡献",
+            False,
+            "缺少 v2-sample-condition-ablation.json；先跑 evals.tools.ablate_condition",
+        )
+
+    drop = payload.get("drop")
+    threshold = payload.get("threshold", 0.30)
+    with_cond = payload.get("axis_a_seh1_with")
+    without_cond = payload.get("axis_a_seh1_without")
+    return Check(
+        "F20",
+        "condition 对 A 轴有贡献",
+        bool(payload.get("passed")),
+        f"A 轴 SEH@1 {with_cond} → {without_cond}，"
+        f"掉幅 {float(drop):+.4f}（阈值 ≥{threshold}）",  # type: ignore[arg-type]
     )
 
 
@@ -689,7 +779,9 @@ ALL_CHECKS = (
     check_f16_baseline_formula,
     check_f17_every_branch_queried,
     check_f18_authority_is_justified,
-    check_f19_implicit_gold_recalled,
+    check_f19a_implicit_gold_complete,
+    check_f19b_implicit_gold_recalled,
+    check_f20_condition_contributes,
 )
 
 
