@@ -47,21 +47,37 @@ def test_gates_result_exists_and_matches_report() -> None:
     )
 
 
-def test_five_gates_fail_and_are_named() -> None:
-    """L6a/L6b/L6c/L7-L8/F6/F13 必须在报告里被明确标为未通过。
+def test_previously_failing_gates_now_pass_and_are_named() -> None:
+    """L6a/L6b/L6c/L7-L8 现在通过——**这是修复提交时该翻转的断言**。
 
-    若有人偷偷把它们改成 ✅ 而不修代码，这里会失败。
+    这四条曾锁着"三路召回未接线 / 池里没向量 / dedup 收到 id"的现状。
+    `7854cb2`（`wire-three-way-recall`）修好之后，这里必须翻面，
+    否则测试会一直断言"现在是坏的"，而实际已经修好。
+
+    翻转的依据不是"想让它过"，而是：
+
+    | 证据 | 位置 |
+    |---|---|
+    | 三路都有调用点 | `evals/run_retrieval.py` 的三个 `recall_by_*` |
+    | 池内写入向量 | 同文件 `embedding=embedding`（第 428 行） |
+    | `embedder=None` 且要求向量时抛错 | 缺陷 17 的修复 |
+
+    **F6 与 F13 仍然必须是红的**——它们是构造性的/阈值性的，
+    不会因为修好评测入口而变绿。
     """
     if not GATES.exists():
         pytest.skip("门禁结果缺失")
 
     results = {r["code"]: r["passed"] for r in json.loads(GATES.read_text(encoding="utf-8"))}
 
-    assert results["L6a"] is False, "三路召回现在都调用了？请更新报告与协议"
-    assert results["L6b"] is False, "池构造开始写向量了？请更新报告与协议"
-    assert results["L6c"] is False, "三路都返回非空了？请更新报告与协议"
-    assert results["L7/L8"] is False, "dedup 入参修好了？请更新报告与协议"
-    assert results["F6"] is False
+    assert results["L6a"] is True, "三路召回又没接上了？"
+    assert results["L6b"] is True, "池里又不写向量了？"
+    assert results["L6c"] is True, "三路里又有返回空的？"
+    # L7 已并入 L8（L7 是"dedup 收到文本"、L8 是"收到真实分数"，
+    # 分两条会让前者单独通过而后者不通过——一个名字一件事）
+    assert results["L8"] is True, "dedup 又收到 id 或常数分了？"
+
+    assert results["F6"] is False, "单作者样例不该通过 F6"
     assert results["F13"] is False, "样例只有 40%，逐 subject 需 50%"
 
 

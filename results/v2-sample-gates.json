@@ -32,26 +32,26 @@
   {
     "code": "L6a",
     "title": "三路召回都被调用",
-    "passed": false,
-    "detail": "当前调用 ['lexical']；缺 ['adjacency', 'vector']"
+    "passed": true,
+    "detail": "来自 a3-lexical-vector-adjacency.json：enabled=['adjacency', 'lexical', 'vector'], unwired=[]"
   },
   {
     "code": "L6b",
     "title": "池构造写入向量",
-    "passed": false,
-    "detail": "评测入口里 `embedding=` 出现 0 次（向量一路空转）"
+    "passed": true,
+    "detail": "33 条 case 全部写入；范数 0.9996–1.0004（8 个不同值）"
   },
   {
     "code": "L6c",
     "title": "三路召回都返回非空",
-    "passed": false,
-    "detail": "未进入评测的路径：['adjacency', 'vector']"
+    "passed": true,
+    "detail": "来自 a3-lexical-vector-adjacency.json：{'lexical': 41, 'vector': 462, 'adjacency': 13}"
   },
   {
-    "code": "L7/L8",
-    "title": "dedup 收到文本与真实分数",
-    "passed": false,
-    "detail": "仍是 (item_id, item_id, 1.0)"
+    "code": "L8",
+    "title": "dedup 分数有方差",
+    "passed": true,
+    "detail": "33 条 case 的分数都有方差"
   },
   {
     "code": "L9",
@@ -100,5 +100,35 @@
     "title": "随机基线实测与公式偏差 < 0.02",
     "passed": true,
     "detail": "A: 公式 0.3000/1.0000 实测 0.2988/1.0000；C: 公式 0.0833/0.4167 实测 0.0825/0.4218"
+  },
+  {
+    "code": "F17",
+    "title": "每个 condition 分支都被查询指向",
+    "passed": true,
+    "detail": "5 个 (subject,relation) 组，全部分支都有查询"
+  },
+  {
+    "code": "F18",
+    "title": "非 user_direct 的来源必须在原文里自解释",
+    "passed": false,
+    "detail": "2 条来源降级没有场景依据：[\"ledger-oncall-4(third_party): '节假日值班归赵启，他要回老家的话会提前说'\", \"ledger-deploy-3(user_document): '实在赶进度就先丢临时测试机，别碰生产'\"]"
+  },
+  {
+    "code": "F19a",
+    "title": "implicit 的 gold 数据完整",
+    "passed": true,
+    "detail": "4 条 implicit，gold 都在库且有原文"
+  },
+  {
+    "code": "F19b",
+    "title": "implicit 的 gold 真的被召回",
+    "passed": true,
+    "detail": "4 条 implicit，三路全开时全部被召回"
+  },
+  {
+    "code": "F20",
+    "title": "condition 对 A 轴有贡献",
+    "passed": true,
+    "detail": "A 轴 SEH@1 0.9 → 0.3，掉幅 +0.6000（阈值 ≥0.3）"
   }
 ]

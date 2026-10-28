@@ -122,6 +122,25 @@ def test_gate_count_matches_actual_runs() -> None:
     assert failed == {"F6", "F13", "F18"}, f"未通过项变了：{failed}"
 
 
+def test_conclusion_section_has_no_stale_gate_numbers() -> None:
+    """「结论」一节里不能同时出现多个通过数。
+
+    **这是真实发生过的问题**：结论节写着 11/17，而门禁实际早已是 19/22，
+    因为行文只更新了某一处。同一份报告里两个数字并存，
+    读者无从判断哪个是当前状态。
+    """
+    import re
+
+    text = REPORT.read_text(encoding="utf-8")
+    match = re.search(r"## 结论.*?(?=\n## |\Z)", text, re.S)
+    assert match is not None, "报告缺少结论节"
+    section = match.group(0)
+
+    stale = ["11/17", "12/16", "13/18", "17/20"]
+    found = [n for n in stale if n in section]
+    assert not found, f"结论节里有过期通过数：{found}"
+
+
 def test_layer_three_numbers_match_results() -> None:
     """第三层的三个数字必须与结果文件一致。"""
     for name, (label, expected) in LAYERS.items():
