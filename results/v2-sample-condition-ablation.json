@@ -1,0 +1,51 @@
+{
+  "with_condition": {
+    "ledger-q1": 1,
+    "ledger-q2": 1,
+    "ledger-q3": 1,
+    "ledger-q4": 6,
+    "ledger-q5": 1,
+    "ledger-q6": 1,
+    "ledger-q7": 1,
+    "ledger-q8": 1,
+    "ledger-q9": 1,
+    "ledger-q10": 1,
+    "ledger-q11": 1,
+    "ledger-q12": 1
+  },
+  "without_condition": {
+    "ledger-q1": 2,
+    "ledger-q2": 2,
+    "ledger-q3": 3,
+    "ledger-q4": 12,
+    "ledger-q5": 2,
+    "ledger-q6": 1,
+    "ledger-q7": 11,
+    "ledger-q8": 6,
+    "ledger-q9": 1,
+    "ledger-q10": 1,
+    "ledger-q11": 1,
+    "ledger-q12": 1
+  },
+  "axis_a_seh1_with": 0.9,
+  "axis_a_seh1_without": 0.3,
+  "drop": 0.6000000000000001,
+  "implicit_with": 0.75,
+  "implicit_without": 0.0,
+  "explicit_with": 1.0,
+  "explicit_without": 0.5,
+  "changed": [
+    "ledger-q1",
+    "ledger-q2",
+    "ledger-q3",
+    "ledger-q4",
+    "ledger-q5",
+    "ledger-q7",
+    "ledger-q8"
+  ],
+  "never_recalled_with": 0,
+  "never_recalled_without": 0,
+  "dataset": "data\\retrieval-v2\\sample",
+  "threshold": 0.3,
+  "passed": true
+}

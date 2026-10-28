@@ -630,6 +630,45 @@ def check_f18_authority_is_justified(dataset: Dataset) -> Check:
     )
 
 
+def check_f19_implicit_gold_recalled(dataset: Dataset) -> Check:
+    """F19：每条 implicit 查询的 gold 必须至少被一路召回。
+
+    **否则该查询测的是"召回失败"，不是"条件区分"。**
+
+    这两件事在指标上无法区分：都表现为 `rank=None` 或排名很低。
+    实测样例：12/12 全部召回（`never_recalled = 0`），所以这一条现在通过。
+    它防的是铺开时的退化——若某个 implicit 查询写得语义太远，
+    连向量也召不回，那它的 0 分会被误记成"条件区分失败"。
+
+    **这里只做数据侧检查**（gold 在记忆库里、query 非空）。
+    "某一路是否召回 gold"需要跑评测，属 F20 的消融范畴。
+    """
+    implicit = [q for q in dataset.queries if q.cue_type.value == "implicit"]
+    if not implicit:
+        return Check("F19", "implicit 查询的 gold 可被召回", False, "没有 implicit 查询")
+
+    problems: list[str] = []
+    for query in implicit:
+        try:
+            gold = dataset.memory(query.gold_memory_id)
+        except Exception:
+            problems.append(f"{query.query_id}: gold 不在记忆库")
+            continue
+        if not query.query.strip():
+            problems.append(f"{query.query_id}: query 为空")
+        if not gold.memory_text.strip():
+            problems.append(f"{query.query_id}: gold 没有原文，向量无从匹配")
+
+    return Check(
+        "F19",
+        "implicit 查询的 gold 可被召回",
+        not problems,
+        f"{len(implicit)} 条 implicit，gold 都在库且有原文"
+        if not problems
+        else f"{len(problems)} 条有问题：{problems[:3]}",
+    )
+
+
 ALL_CHECKS = (
     check_l1_no_verbatim_text,
     check_l2_no_gold_value,
@@ -650,6 +689,7 @@ ALL_CHECKS = (
     check_f16_baseline_formula,
     check_f17_every_branch_queried,
     check_f18_authority_is_justified,
+    check_f19_implicit_gold_recalled,
 )
 
 

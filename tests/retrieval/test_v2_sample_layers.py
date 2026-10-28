@@ -94,11 +94,31 @@ def test_report_documents_q4_three_layer_chain() -> None:
 
 
 def test_report_states_gate_pass_count() -> None:
-    """门禁状态必须写明 13/18，且说明 F18 的失败是正确的失败。"""
+    """门禁状态必须写明通过数，且说明 F18 的失败是正确的失败。"""
     text = REPORT.read_text(encoding="utf-8")
 
-    assert "13/18" in text
+    assert "17/20" in text
     assert "F18 的失败是正确的失败" in text
+
+
+def test_gate_count_matches_actual_runs() -> None:
+    """报告写的通过数必须与实际运行一致。"""
+    from evals.datasets.retrieval_v2 import load_dataset
+    from evals.tools.check_v2_dataset import run_all
+
+    sample = ROOT / "data" / "retrieval-v2" / "sample"
+    if not sample.exists():
+        pytest.skip("样例数据集缺失")
+
+    results = run_all(load_dataset(sample))
+    passed = sum(1 for r in results if r.passed)
+    text = REPORT.read_text(encoding="utf-8")
+
+    assert f"{passed}/{len(results)}" in text, (
+        f"实际 {passed}/{len(results)}，报告写的不一致"
+    )
+    failed = {r.code for r in results if not r.passed}
+    assert failed == {"F6", "F13", "F18"}, f"未通过项变了：{failed}"
 
 
 def test_layer_three_numbers_match_results() -> None:
