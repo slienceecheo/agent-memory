@@ -18,13 +18,11 @@
   "a3-with-dedup.json": 1,
   "a3-with-dedup-rerun.json": 1,
   "v2-sample-lexical.json": 1,
-  "v2-sample-threeway.json": 4,
+  "v2-sample-threeway.json": 6,
   "v2-sample-lexical-text.json": 1,
-  "v2-lexical.json": 3,
-  "v2-lexical-vector.json": 3,
-  "v2-lexical-vector-adjacency.json": 3,
-  "v2-vector.json": 3,
-  "v2-vector-adjacency.json": 3,
-  "probe-lexvec.json": 1,
-  "det-threeway.json": 1
+  "v2-ledger-lexical.json": 5,
+  "v2-ledger-vector.json": 5,
+  "v2-ledger-lexical-vector.json": 5,
+  "v2-ledger-vector-adjacency.json": 5,
+  "v2-ledger-lexical-vector-adjacency.json": 5
 }

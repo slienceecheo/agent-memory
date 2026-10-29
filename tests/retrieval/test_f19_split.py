@@ -108,7 +108,7 @@ def test_f19a_passes_even_when_lexical_recall_fails() -> None:
     assert q3.query.strip()
 
     # 但词面召回是 0——需要 F19b 才能发现
-    lexical_result = ROOT / "results" / "v2-lexical.json"
+    lexical_result = ROOT / "results" / "v2-ledger-lexical.json"
     if not lexical_result.exists():
         pytest.skip("词面结果缺失")
     import json

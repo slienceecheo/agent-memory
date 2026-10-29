@@ -18,9 +18,9 @@ REPORT = ROOT / "docs" / "reports" / "v2-sample-validation.md"
 
 LAYERS = {
     "v2-sample-lexical.json": ("①", 0.6667),
-    "v2-lexical.json": ("③ lexical", 0.6667),
-    "v2-lexical-vector.json": ("③ lex+vec", 1.0000),
-    "v2-lexical-vector-adjacency.json": ("③ 3paths", 0.9167),
+    "v2-ledger-lexical.json": ("③ lexical", 0.6667),
+    "v2-ledger-lexical-vector.json": ("③ lex+vec", 1.0000),
+    "v2-ledger-lexical-vector-adjacency.json": ("③ 3paths", 0.9167),
 }
 
 
@@ -159,7 +159,7 @@ def test_vector_returns_are_present_only_with_embedder() -> None:
 
     区分 ③ 与 ②/① 的唯一可观测差异就是这一列。
     """
-    with_vec = _load("v2-lexical-vector.json")
+    with_vec = _load("v2-ledger-lexical-vector.json")
     assert with_vec["path_returns"]["vector"] is not None
     assert with_vec["path_returns"]["vector"] > 0
 
@@ -187,11 +187,11 @@ def test_implicit_cases_are_rescued_by_vector() -> None:
 
     lex = {
         c["case_id"]: c["rank_after_rerank"]
-        for c in _load("v2-lexical.json")["per_case"]  # type: ignore[index]
+        for c in _load("v2-ledger-lexical.json")["per_case"]  # type: ignore[index]
     }
     lexvec = {
         c["case_id"]: c["rank_after_rerank"]
-        for c in _load("v2-lexical-vector.json")["per_case"]  # type: ignore[index]
+        for c in _load("v2-ledger-lexical-vector.json")["per_case"]  # type: ignore[index]
     }
 
     for cid in implicit:
@@ -204,11 +204,11 @@ def test_adjacency_hurts_on_v2() -> None:
     """邻接在 v2 上有真兄弟，结果仍变差（q4 从 3 掉到 6）。"""
     lexvec = {
         c["case_id"]: c["rank_after_rerank"]
-        for c in _load("v2-lexical-vector.json")["per_case"]  # type: ignore[index]
+        for c in _load("v2-ledger-lexical-vector.json")["per_case"]  # type: ignore[index]
     }
     three = {
         c["case_id"]: c["rank_after_rerank"]
-        for c in _load("v2-lexical-vector-adjacency.json")["per_case"]  # type: ignore[index]
+        for c in _load("v2-ledger-lexical-vector-adjacency.json")["per_case"]  # type: ignore[index]
     }
 
     assert lexvec["ledger-q4"] == 3

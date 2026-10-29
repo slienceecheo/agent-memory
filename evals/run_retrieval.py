@@ -598,6 +598,41 @@ def evaluate_case(
 
     rank_rerank = order.index(gold_tag) + 1 if gold_tag in order else None
 
+    # 并列参与度：有多少条的名次是被"破并列判据"决定的。
+    #
+    # **为什么按 top1 / K 边界分开**：一个 `tie_count` 无法区分三种情况——
+    #   第 1、2 名并列 -> 影响 `SEH@1`
+    #   第 5、6 名并列 -> 影响 `SEH@5`
+    #   第 9、10 名并列 -> 不影响任何指标
+    # 三者计数都是 1，但含义完全不同。
+    #
+    # **实测（`data/retrieval-v2/sample`）**：
+    #
+    # | 配置 | tie_at_top1 | tie_at_k_boundary |
+    # |---|---|---|
+    # | 真实（condition 未消融） | **0** | 0 |
+    # | 消融（condition 抹平） | **1**（`ledger-q1`） | 0 |
+    #
+    # 真实配置 0 条，所以 `0.9000` 不含判据决定的成分；
+    # 消融后的 `0.3000` 里有 1/10 由判据决定。
+    # **这是消融实验的产物，不是数据常态**——抹平 condition 后，
+    # `gold` 与 `d-0` 的四特征（base/condition/authority/status）逐位相同。
+    score_by_tag = {item.item_id: item.score for item in ranked}
+    tie_at_top1 = 0
+    tie_at_k_boundary = 0
+    if order:
+        top_score = score_by_tag[order[0]]
+        tie_at_top1 = sum(
+            1 for tag in order[1:] if score_by_tag[tag] == top_score
+        )
+        if len(order) >= k:
+            kth_score = score_by_tag[order[k - 1]]
+            tie_at_k_boundary = sum(
+                1
+                for tag in order[k:]
+                if score_by_tag[tag] == kth_score
+            )
+
     attribution = attribute_failure(
         gold_in_pool=True,
         rank_after_fusion=rank_fusion,
@@ -618,6 +653,10 @@ def evaluate_case(
         "dedup_input_tags": dedup_input_tags,
         "dedup_input_scores": dedup_input_scores,
         "rerank_top1_tag": tag_by_id.get(order[0], order[0]) if order else None,
+        # 并列参与度（见上方注释）：名次有多少是被破并列判据决定的。
+        "tie_at_top1": tie_at_top1,
+        "tie_at_k_boundary": tie_at_k_boundary,
+        "tie_resolved_by": "fusion_order",
         # 完整 rerank 顺序（tag 形式）。
         #
         # **为什么必须有**：只有 gold 的名次时，无法回答"gold 在竞争集内排第几"。
@@ -781,13 +820,21 @@ def _assert_writable(out: Path, result: dict[str, object], *, overwrite: bool) -
 
 
 def _bump_run_count(out: Path) -> int:
-    """记录同一配置被跑了几次，使"test 只跑一次"可验证。"""
+    """记录同一配置被跑了几次，使"test 只跑一次"可验证。
+
+    **只统计 `results/` 下的正式输出**：诊断脚本常把结果写到临时目录，
+    那些不该混进"这个配置跑了几次"的账本里——否则探针会污染计数。
+    实测污染：三个探针往账本里写进了 `det-threeway.json` 之类的键。
+    """
     counter = OUT_DIR / "retrieval-run-count.json"
     counts: dict[str, int] = {}
     if counter.exists():
         counts = json.loads(counter.read_text(encoding="utf-8"))
     key = out.name
     counts[key] = counts.get(key, 0) + 1
+    if out.parent.resolve() != OUT_DIR.resolve():
+        # 临时输出：计数但不落账，避免污染正式账本
+        return counts[key]
     OUT_DIR.mkdir(parents=True, exist_ok=True)
     counter.write_text(json.dumps(counts, ensure_ascii=False, indent=2), encoding="utf-8")
     return counts[key]
@@ -820,6 +867,9 @@ def _previous_provenance(out: Path) -> dict[str, object] | None:
         "code_version": old.get("code_version"),
         "code_diff_hash": old.get("code_diff_hash"),
         "run_count": old.get("run_count"),
+        # 必须带上已有的 supersedes，否则覆盖时会把历史抹掉：
+        # 链条 A -> B -> B 里，第二次 B 覆盖 B 会丢掉"A 被作废"这条记录。
+        "supersedes": old.get("supersedes"),
     }
 
 
@@ -936,13 +986,28 @@ def main(argv: list[str] | None = None) -> int:
     previous = _previous_provenance(out)
     run_count = _bump_run_count(out)
     result["run_count"] = run_count
-    # 只有当**代码状态不同**时才记 supersedes。
-    # 同一状态重跑两次不该标作废——那会让"验证确定性"看起来像"改了结论"。
-    if previous is not None and (
-        previous.get("code_version") != result.get("code_version")
-        or previous.get("code_diff_hash") != result.get("code_diff_hash")
-    ):
-        result["supersedes"] = previous
+    # 覆盖必须被记录，**且不能因为"这次状态没变"就丢掉历史**。
+    #
+    # 早先的实现只在"本次 vs 上次状态不同"时写 `supersedes`。
+    # 于是链条 A -> B -> B 里，第二次 B 覆盖 B 会把 A 的记录抹掉，
+    # 而 A 才是真正被作废的那次。
+    #
+    # 正确做法：**继承**已有的 `supersedes`；只有当前状态与该记录不同
+    # 才把它补上。同一状态反复重跑不应产生新的作废声明。
+    if previous is not None:
+        inherited = previous.get("supersedes")
+        same_as_previous = (
+            previous.get("code_version") == result.get("code_version")
+            and previous.get("code_diff_hash") == result.get("code_diff_hash")
+        )
+        if isinstance(inherited, dict):
+            result["supersedes"] = inherited
+        elif not same_as_previous:
+            result["supersedes"] = {
+                "code_version": previous.get("code_version"),
+                "code_diff_hash": previous.get("code_diff_hash"),
+                "run_count": previous.get("run_count"),
+            }
     out.write_text(json.dumps(result, ensure_ascii=False, indent=2), encoding="utf-8")
 
     returns = " ".join(

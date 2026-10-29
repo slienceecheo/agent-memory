@@ -19,8 +19,8 @@
     "adjacency": 24
   },
   "embedding_network_calls": 0,
-  "code_version": "9489e46-dirty",
-  "code_diff_hash": "54ce1aca6f6bf30d8c686d7768849b05f16a536cfdcacad323182188dc226c85",
+  "code_version": "ac219df-dirty",
+  "code_diff_hash": "b72c59df2f3e7f1f18cc6b1b38bdc7c42e05630ba855b53c1b4f2871c4f7470a",
   "seh_at_k": 0.9166666666666666,
   "srs": 0.9305555555555555,
   "attribution": {
@@ -57,6 +57,9 @@
       "dedup_input_tags": [],
       "dedup_input_scores": [],
       "rerank_top1_tag": "gold-ledger-q1",
+      "tie_at_top1": 0,
+      "tie_at_k_boundary": 0,
+      "tie_resolved_by": "fusion_order",
       "rerank_order_tags": [
         "gold-ledger-q1",
         "d-ledger-q1-9",
@@ -185,6 +188,9 @@
       "dedup_input_tags": [],
       "dedup_input_scores": [],
       "rerank_top1_tag": "gold-ledger-q2",
+      "tie_at_top1": 0,
+      "tie_at_k_boundary": 0,
+      "tie_resolved_by": "fusion_order",
       "rerank_order_tags": [
         "gold-ledger-q2",
         "d-ledger-q2-1",
@@ -313,6 +319,9 @@
       "dedup_input_tags": [],
       "dedup_input_scores": [],
       "rerank_top1_tag": "gold-ledger-q3",
+      "tie_at_top1": 0,
+      "tie_at_k_boundary": 0,
+      "tie_resolved_by": "fusion_order",
       "rerank_order_tags": [
         "gold-ledger-q3",
         "d-ledger-q3-1",
@@ -441,6 +450,9 @@
       "dedup_input_tags": [],
       "dedup_input_scores": [],
       "rerank_top1_tag": "d-ledger-q4-2",
+      "tie_at_top1": 0,
+      "tie_at_k_boundary": 0,
+      "tie_resolved_by": "fusion_order",
       "rerank_order_tags": [
         "d-ledger-q4-2",
         "d-ledger-q4-0",
@@ -568,6 +580,9 @@
       "dedup_input_tags": [],
       "dedup_input_scores": [],
       "rerank_top1_tag": "gold-ledger-q5",
+      "tie_at_top1": 0,
+      "tie_at_k_boundary": 0,
+      "tie_resolved_by": "fusion_order",
       "rerank_order_tags": [
         "gold-ledger-q5",
         "d-ledger-q5-10",
@@ -695,6 +710,9 @@
       "dedup_input_tags": [],
       "dedup_input_scores": [],
       "rerank_top1_tag": "gold-ledger-q6",
+      "tie_at_top1": 0,
+      "tie_at_k_boundary": 0,
+      "tie_resolved_by": "fusion_order",
       "rerank_order_tags": [
         "gold-ledger-q6",
         "d-ledger-q6-6",
@@ -822,6 +840,9 @@
       "dedup_input_tags": [],
       "dedup_input_scores": [],
       "rerank_top1_tag": "gold-ledger-q7",
+      "tie_at_top1": 0,
+      "tie_at_k_boundary": 0,
+      "tie_resolved_by": "fusion_order",
       "rerank_order_tags": [
         "gold-ledger-q7",
         "d-ledger-q7-10",
@@ -949,6 +970,9 @@
       "dedup_input_tags": [],
       "dedup_input_scores": [],
       "rerank_top1_tag": "gold-ledger-q8",
+      "tie_at_top1": 0,
+      "tie_at_k_boundary": 0,
+      "tie_resolved_by": "fusion_order",
       "rerank_order_tags": [
         "gold-ledger-q8",
         "d-ledger-q8-8",
@@ -1076,6 +1100,9 @@
       "dedup_input_tags": [],
       "dedup_input_scores": [],
       "rerank_top1_tag": "gold-ledger-q9",
+      "tie_at_top1": 0,
+      "tie_at_k_boundary": 0,
+      "tie_resolved_by": "fusion_order",
       "rerank_order_tags": [
         "gold-ledger-q9",
         "d-ledger-q9-8",
@@ -1203,6 +1230,9 @@
       "dedup_input_tags": [],
       "dedup_input_scores": [],
       "rerank_top1_tag": "gold-ledger-q10",
+      "tie_at_top1": 0,
+      "tie_at_k_boundary": 0,
+      "tie_resolved_by": "fusion_order",
       "rerank_order_tags": [
         "gold-ledger-q10",
         "d-ledger-q10-10",
@@ -1327,6 +1357,9 @@
       "dedup_input_tags": [],
       "dedup_input_scores": [],
       "rerank_top1_tag": "gold-ledger-q11",
+      "tie_at_top1": 0,
+      "tie_at_k_boundary": 0,
+      "tie_resolved_by": "fusion_order",
       "rerank_order_tags": [
         "gold-ledger-q11",
         "d-ledger-q11-9",
@@ -1451,6 +1484,9 @@
       "dedup_input_tags": [],
       "dedup_input_scores": [],
       "rerank_top1_tag": "gold-ledger-q12",
+      "tie_at_top1": 0,
+      "tie_at_k_boundary": 0,
+      "tie_resolved_by": "fusion_order",
       "rerank_order_tags": [
         "gold-ledger-q12",
         "d-ledger-q12-6",
@@ -1553,10 +1589,10 @@
     }
   ],
   "split": "independent",
-  "run_count": 4,
+  "run_count": 6,
   "supersedes": {
-    "code_version": "9489e46",
-    "code_diff_hash": null,
-    "run_count": 3
+    "code_version": "8b1b600-dirty",
+    "code_diff_hash": "0db53dcc7f63b4167774c94ae2bb627dddb0b1d35ab253ca541affe41c8f9c22",
+    "run_count": 1
   }
 }

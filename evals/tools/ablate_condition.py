@@ -56,7 +56,14 @@ def _cue_seh1(
     return sum(1 for cid in ids if ranks[cid] == 1) / len(ids)
 
 
-def _run(rows: list[dict[str, Any]], *, embedder: Any) -> dict[str, int | None]:
+def _run(
+    rows: list[dict[str, Any]], *, embedder: Any
+) -> tuple[dict[str, int | None], dict[str, dict[str, int | str]]]:
+    """跑一次，返回 (名次, 并列参与度)。
+
+    **并列参与度必须按配置分别记录**：真实配置与消融配置的并列数不同，
+    混在一起会让"12 条里 1 条"被误读成常态。
+    """
     specs = [r["gold"] for r in rows if r["gold"]]
     result = evaluate(
         rows,
@@ -69,11 +76,19 @@ def _run(rows: list[dict[str, Any]], *, embedder: Any) -> dict[str, int | None]:
         paths=("lexical", "vector", "adjacency"),
         embedder=embedder,
     )
-    return {
-        c["case_id"]: c["rank_after_rerank"]
-        for c in result["per_case"]  # type: ignore[union-attr]
-        if c.get("has_gold") and not c.get("skipped")
-    }
+    ranks: dict[str, int | None] = {}
+    ties: dict[str, dict[str, int | str]] = {}
+    for case in result["per_case"]:  # type: ignore[union-attr]
+        if not case.get("has_gold") or case.get("skipped"):
+            continue
+        cid = case["case_id"]
+        ranks[cid] = case["rank_after_rerank"]
+        ties[cid] = {
+            "tie_at_top1": int(case.get("tie_at_top1") or 0),
+            "tie_at_k_boundary": int(case.get("tie_at_k_boundary") or 0),
+            "tie_resolved_by": str(case.get("tie_resolved_by") or "none"),
+        }
+    return ranks, ties
 
 
 def ablate(dataset_dir: Path, *, embedder: Any) -> dict[str, Any]:
@@ -83,14 +98,14 @@ def ablate(dataset_dir: Path, *, embedder: Any) -> dict[str, Any]:
     axis_of = {q.query_id: q.axis.value for q in ds.queries}
     cue_of = {q.query_id: q.cue_type.value for q in ds.queries}
 
-    with_cond = _run(base_rows, embedder=embedder)
+    with_cond, ties_with = _run(base_rows, embedder=embedder)
 
     ablated_rows = []
     for row in base_rows:
         r = dict(row)
         r["condition"] = None
         ablated_rows.append(r)
-    without_cond = _run(ablated_rows, embedder=embedder)
+    without_cond, ties_without = _run(ablated_rows, embedder=embedder)
 
     changed = [
         cid for cid in with_cond if with_cond[cid] != without_cond.get(cid)
@@ -109,6 +124,20 @@ def ablate(dataset_dir: Path, *, embedder: Any) -> dict[str, Any]:
         "changed": changed,
         "never_recalled_with": sum(1 for v in with_cond.values() if v is None),
         "never_recalled_without": sum(1 for v in without_cond.values() if v is None),
+        # **并列参与度按配置分开**：真实配置 0 条、消融配置 1 条。
+        # 合并成一个数会让"12 条里 1 条"被误读成常态。
+        "ties_with": {
+            k: v
+            for k, v in ties_with.items()
+            if v["tie_at_top1"] or v["tie_at_k_boundary"]
+        },
+        "ties_without": {
+            k: v
+            for k, v in ties_without.items()
+            if v["tie_at_top1"] or v["tie_at_k_boundary"]
+        },
+        "tie_at_top1_with": sum(v["tie_at_top1"] for v in ties_with.values()),  # type: ignore[misc]
+        "tie_at_top1_without": sum(v["tie_at_top1"] for v in ties_without.values()),  # type: ignore[misc]
     }
 
 

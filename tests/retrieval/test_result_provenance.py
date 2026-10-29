@@ -27,11 +27,11 @@ ROOT = Path(__file__).resolve().parents[2]
 RESULTS = ROOT / "results"
 
 CONFIGS = [
-    "v2-lexical.json",
-    "v2-vector.json",
-    "v2-lexical-vector.json",
-    "v2-vector-adjacency.json",
-    "v2-lexical-vector-adjacency.json",
+    "v2-ledger-lexical.json",
+    "v2-ledger-vector.json",
+    "v2-ledger-lexical-vector.json",
+    "v2-ledger-vector-adjacency.json",
+    "v2-ledger-lexical-vector-adjacency.json",
     "v2-sample-threeway.json",
 ]
 
@@ -89,9 +89,16 @@ def test_overwrite_is_recorded_when_code_state_changed() -> None:
     for name, old in superseded.items():
         assert isinstance(old, dict), f"{name} 的 supersedes 不是对象"
         assert "code_version" in old
-        assert old["code_version"] != _load(name)["code_version"], (
-            f"{name} 的 supersedes 与当前版本相同，不该记录"
+        assert "code_diff_hash" in old
+        # 判据是**完整状态**（version + diff hash），不只是 version：
+        # 同一 commit 上 `ruff --fix` 之后 diff hash 会变，
+        # 只比 version 会把"代码确实变了"误判成"同一状态"。
+        current = _load(name)
+        same = (
+            old["code_version"] == current["code_version"]
+            and old["code_diff_hash"] == current["code_diff_hash"]
         )
+        assert not same, f"{name} 的 supersedes 与当前完整状态相同，不该记录"
 
 
 def test_supersedes_old_versions_are_from_git_history() -> None:
@@ -129,11 +136,11 @@ def test_numbers_unchanged_by_the_rerun() -> None:
     若某个数字变了，说明代码改动影响了结果，那"补齐字段"就变成了"换了实验"。
     """
     expected = {
-        "v2-lexical.json": 0.6667,
-        "v2-vector.json": 1.0000,
-        "v2-lexical-vector.json": 1.0000,
-        "v2-vector-adjacency.json": 0.9167,
-        "v2-lexical-vector-adjacency.json": 0.9167,
+        "v2-ledger-lexical.json": 0.6667,
+        "v2-ledger-vector.json": 1.0000,
+        "v2-ledger-lexical-vector.json": 1.0000,
+        "v2-ledger-vector-adjacency.json": 0.9167,
+        "v2-ledger-lexical-vector-adjacency.json": 0.9167,
         "v2-sample-threeway.json": 0.9167,
     }
     for name, value in expected.items():
@@ -165,8 +172,8 @@ def test_word_path_contributes_nothing_on_axis_a() -> None:
         }
         return sum(1 for qid in a_ids if ranks[qid] == 1) / len(a_ids)
 
-    with_lex = axis_a_seh1("v2-lexical-vector.json")
-    without_lex = axis_a_seh1("v2-vector.json")
+    with_lex = axis_a_seh1("v2-ledger-lexical-vector.json")
+    without_lex = axis_a_seh1("v2-ledger-vector.json")
 
     assert with_lex == pytest.approx(without_lex, abs=1e-4), (
         f"词面在 A 轴上有了增量：lex+vec={with_lex} vector={without_lex}"

@@ -8,37 +8,37 @@
   "without_gold": 0,
   "skipped_small_pool": 0,
   "paths_enabled": [
-    "vector",
-    "adjacency"
+    "lexical",
+    "vector"
   ],
   "paths_unwired": [],
   "path_returns": {
-    "lexical": null,
+    "lexical": 14,
     "vector": 144,
-    "adjacency": 24
+    "adjacency": null
   },
   "embedding_network_calls": 0,
-  "code_version": "9489e46-dirty",
-  "code_diff_hash": "54ce1aca6f6bf30d8c686d7768849b05f16a536cfdcacad323182188dc226c85",
-  "seh_at_k": 0.9166666666666666,
-  "srs": 0.9305555555555555,
+  "code_version": "ac219df-dirty",
+  "code_diff_hash": "b72c59df2f3e7f1f18cc6b1b38bdc7c42e05630ba855b53c1b4f2871c4f7470a",
+  "seh_at_k": 1.0,
+  "srs": 0.9444444444444445,
   "attribution": {
     "NOT_IN_POOL": 0,
     "LOW_RANK": 1,
-    "RERANK_DROPPED": 1
+    "RERANK_DROPPED": 0
   },
   "per_case": [
     {
       "case_id": "ledger-q1",
       "has_gold": true,
       "pool_size": 12,
-      "rank_after_fusion": 4,
+      "rank_after_fusion": 1,
       "rank_after_rerank": 1,
       "fusion_tags": [
+        "gold-ledger-q1",
+        "d-ledger-q1-2",
         "d-ledger-q1-0",
         "d-ledger-q1-1",
-        "d-ledger-q1-2",
-        "gold-ledger-q1",
         "d-ledger-q1-5",
         "d-ledger-q1-9",
         "d-ledger-q1-3",
@@ -48,20 +48,19 @@
         "d-ledger-q1-6",
         "d-ledger-q1-7"
       ],
-      "adjacency_tags": [
-        "d-ledger-q1-2",
-        "d-ledger-q1-1",
-        "d-ledger-q1-0"
-      ],
+      "adjacency_tags": [],
       "dedup_input_tags": [],
       "dedup_input_scores": [],
       "rerank_top1_tag": "gold-ledger-q1",
+      "tie_at_top1": 0,
+      "tie_at_k_boundary": 0,
+      "tie_resolved_by": "fusion_order",
       "rerank_order_tags": [
         "gold-ledger-q1",
-        "d-ledger-q1-0",
-        "d-ledger-q1-1",
         "d-ledger-q1-9",
         "d-ledger-q1-10",
+        "d-ledger-q1-0",
+        "d-ledger-q1-1",
         "d-ledger-q1-3",
         "d-ledger-q1-8",
         "d-ledger-q1-4",
@@ -121,19 +120,19 @@
         }
       },
       "path_returns": {
-        "lexical": null,
+        "lexical": 2,
         "vector": 12,
-        "adjacency": 3
+        "adjacency": null
       },
       "path_raw_lengths": {
-        "lexical": null,
+        "lexical": 2,
         "vector": 12,
-        "adjacency": 3
+        "adjacency": null
       },
       "path_fused_lengths": {
-        "lexical": null,
+        "lexical": 2,
         "vector": 12,
-        "adjacency": 3
+        "adjacency": null
       },
       "fusion_cap": 20,
       "a5_strength": "strong",
@@ -160,13 +159,13 @@
       "case_id": "ledger-q2",
       "has_gold": true,
       "pool_size": 12,
-      "rank_after_fusion": 4,
+      "rank_after_fusion": 2,
       "rank_after_rerank": 1,
       "fusion_tags": [
         "d-ledger-q2-1",
-        "d-ledger-q2-2",
-        "d-ledger-q2-0",
         "gold-ledger-q2",
+        "d-ledger-q2-0",
+        "d-ledger-q2-2",
         "d-ledger-q2-5",
         "d-ledger-q2-3",
         "d-ledger-q2-8",
@@ -176,20 +175,19 @@
         "d-ledger-q2-10",
         "d-ledger-q2-7"
       ],
-      "adjacency_tags": [
-        "d-ledger-q2-1",
-        "d-ledger-q2-2",
-        "d-ledger-q2-0"
-      ],
+      "adjacency_tags": [],
       "dedup_input_tags": [],
       "dedup_input_scores": [],
       "rerank_top1_tag": "gold-ledger-q2",
+      "tie_at_top1": 0,
+      "tie_at_k_boundary": 0,
+      "tie_resolved_by": "fusion_order",
       "rerank_order_tags": [
         "gold-ledger-q2",
         "d-ledger-q2-1",
-        "d-ledger-q2-0",
         "d-ledger-q2-9",
         "d-ledger-q2-10",
+        "d-ledger-q2-0",
         "d-ledger-q2-3",
         "d-ledger-q2-8",
         "d-ledger-q2-6",
@@ -249,19 +247,19 @@
         }
       },
       "path_returns": {
-        "lexical": null,
+        "lexical": 2,
         "vector": 12,
-        "adjacency": 3
+        "adjacency": null
       },
       "path_raw_lengths": {
-        "lexical": null,
+        "lexical": 2,
         "vector": 12,
-        "adjacency": 3
+        "adjacency": null
       },
       "path_fused_lengths": {
-        "lexical": null,
+        "lexical": 2,
         "vector": 12,
-        "adjacency": 3
+        "adjacency": null
       },
       "fusion_cap": 20,
       "a5_strength": "strong",
@@ -288,13 +286,13 @@
       "case_id": "ledger-q3",
       "has_gold": true,
       "pool_size": 12,
-      "rank_after_fusion": 4,
+      "rank_after_fusion": 1,
       "rank_after_rerank": 1,
       "fusion_tags": [
+        "gold-ledger-q3",
         "d-ledger-q3-2",
         "d-ledger-q3-1",
         "d-ledger-q3-0",
-        "gold-ledger-q3",
         "d-ledger-q3-5",
         "d-ledger-q3-8",
         "d-ledger-q3-9",
@@ -304,20 +302,19 @@
         "d-ledger-q3-10",
         "d-ledger-q3-4"
       ],
-      "adjacency_tags": [
-        "d-ledger-q3-2",
-        "d-ledger-q3-1",
-        "d-ledger-q3-0"
-      ],
+      "adjacency_tags": [],
       "dedup_input_tags": [],
       "dedup_input_scores": [],
       "rerank_top1_tag": "gold-ledger-q3",
+      "tie_at_top1": 0,
+      "tie_at_k_boundary": 0,
+      "tie_resolved_by": "fusion_order",
       "rerank_order_tags": [
         "gold-ledger-q3",
-        "d-ledger-q3-1",
-        "d-ledger-q3-0",
         "d-ledger-q3-9",
         "d-ledger-q3-10",
+        "d-ledger-q3-1",
+        "d-ledger-q3-0",
         "d-ledger-q3-8",
         "d-ledger-q3-6",
         "d-ledger-q3-3",
@@ -377,19 +374,19 @@
         }
       },
       "path_returns": {
-        "lexical": null,
+        "lexical": 0,
         "vector": 12,
-        "adjacency": 3
+        "adjacency": null
       },
       "path_raw_lengths": {
-        "lexical": null,
+        "lexical": 0,
         "vector": 12,
-        "adjacency": 3
+        "adjacency": null
       },
       "path_fused_lengths": {
-        "lexical": null,
+        "lexical": 0,
         "vector": 12,
-        "adjacency": 3
+        "adjacency": null
       },
       "fusion_cap": 20,
       "a5_strength": "strong",
@@ -416,14 +413,14 @@
       "case_id": "ledger-q4",
       "has_gold": true,
       "pool_size": 12,
-      "rank_after_fusion": 4,
-      "rank_after_rerank": 6,
+      "rank_after_fusion": 1,
+      "rank_after_rerank": 3,
       "fusion_tags": [
-        "d-ledger-q4-2",
-        "d-ledger-q4-0",
-        "d-ledger-q4-1",
         "gold-ledger-q4",
+        "d-ledger-q4-2",
+        "d-ledger-q4-1",
         "d-ledger-q4-5",
+        "d-ledger-q4-0",
         "d-ledger-q4-3",
         "d-ledger-q4-10",
         "d-ledger-q4-9",
@@ -432,21 +429,20 @@
         "d-ledger-q4-8",
         "d-ledger-q4-6"
       ],
-      "adjacency_tags": [
-        "d-ledger-q4-0",
-        "d-ledger-q4-2",
-        "d-ledger-q4-1"
-      ],
+      "adjacency_tags": [],
       "dedup_input_tags": [],
       "dedup_input_scores": [],
-      "rerank_top1_tag": "d-ledger-q4-2",
+      "rerank_top1_tag": "d-ledger-q4-10",
+      "tie_at_top1": 0,
+      "tie_at_k_boundary": 0,
+      "tie_resolved_by": "fusion_order",
       "rerank_order_tags": [
-        "d-ledger-q4-2",
-        "d-ledger-q4-0",
-        "d-ledger-q4-1",
         "d-ledger-q4-10",
         "d-ledger-q4-9",
         "gold-ledger-q4",
+        "d-ledger-q4-2",
+        "d-ledger-q4-1",
+        "d-ledger-q4-0",
         "d-ledger-q4-3",
         "d-ledger-q4-4",
         "d-ledger-q4-7",
@@ -505,19 +501,19 @@
         }
       },
       "path_returns": {
-        "lexical": null,
+        "lexical": 0,
         "vector": 12,
-        "adjacency": 3
+        "adjacency": null
       },
       "path_raw_lengths": {
-        "lexical": null,
+        "lexical": 0,
         "vector": 12,
-        "adjacency": 3
+        "adjacency": null
       },
       "path_fused_lengths": {
-        "lexical": null,
+        "lexical": 0,
         "vector": 12,
-        "adjacency": 3
+        "adjacency": null
       },
       "fusion_cap": 20,
       "a5_strength": "strong",
@@ -536,20 +532,20 @@
         1.0002,
         1.0002
       ],
-      "seh": false,
-      "srs": 0.16666666666666666,
-      "attribution": "RERANK_DROPPED"
+      "seh": true,
+      "srs": 0.3333333333333333,
+      "attribution": null
     },
     {
       "case_id": "ledger-q5",
       "has_gold": true,
       "pool_size": 12,
-      "rank_after_fusion": 3,
+      "rank_after_fusion": 2,
       "rank_after_rerank": 1,
       "fusion_tags": [
         "d-ledger-q5-5",
-        "d-ledger-q5-4",
         "gold-ledger-q5",
+        "d-ledger-q5-4",
         "d-ledger-q5-0",
         "d-ledger-q5-2",
         "d-ledger-q5-1",
@@ -560,19 +556,19 @@
         "d-ledger-q5-9",
         "d-ledger-q5-7"
       ],
-      "adjacency_tags": [
-        "d-ledger-q5-5",
-        "d-ledger-q5-4"
-      ],
+      "adjacency_tags": [],
       "dedup_input_tags": [],
       "dedup_input_scores": [],
       "rerank_top1_tag": "gold-ledger-q5",
+      "tie_at_top1": 0,
+      "tie_at_k_boundary": 0,
+      "tie_resolved_by": "fusion_order",
       "rerank_order_tags": [
         "gold-ledger-q5",
-        "d-ledger-q5-4",
         "d-ledger-q5-10",
         "d-ledger-q5-9",
         "d-ledger-q5-5",
+        "d-ledger-q5-4",
         "d-ledger-q5-0",
         "d-ledger-q5-2",
         "d-ledger-q5-1",
@@ -632,19 +628,19 @@
         }
       },
       "path_returns": {
-        "lexical": null,
+        "lexical": 2,
         "vector": 12,
-        "adjacency": 2
+        "adjacency": null
       },
       "path_raw_lengths": {
-        "lexical": null,
+        "lexical": 2,
         "vector": 12,
-        "adjacency": 2
+        "adjacency": null
       },
       "path_fused_lengths": {
-        "lexical": null,
+        "lexical": 2,
         "vector": 12,
-        "adjacency": 2
+        "adjacency": null
       },
       "fusion_cap": 20,
       "a5_strength": "strong",
@@ -671,41 +667,41 @@
       "case_id": "ledger-q6",
       "has_gold": true,
       "pool_size": 12,
-      "rank_after_fusion": 5,
+      "rank_after_fusion": 1,
       "rank_after_rerank": 1,
       "fusion_tags": [
+        "gold-ledger-q6",
+        "d-ledger-q6-6",
         "d-ledger-q6-5",
-        "d-ledger-q6-4",
         "d-ledger-q6-3",
         "d-ledger-q6-0",
-        "gold-ledger-q6",
         "d-ledger-q6-8",
         "d-ledger-q6-2",
         "d-ledger-q6-1",
-        "d-ledger-q6-6",
+        "d-ledger-q6-4",
         "d-ledger-q6-10",
         "d-ledger-q6-7",
         "d-ledger-q6-9"
       ],
-      "adjacency_tags": [
-        "d-ledger-q6-5",
-        "d-ledger-q6-4"
-      ],
+      "adjacency_tags": [],
       "dedup_input_tags": [],
       "dedup_input_scores": [],
       "rerank_top1_tag": "gold-ledger-q6",
+      "tie_at_top1": 0,
+      "tie_at_k_boundary": 0,
+      "tie_resolved_by": "fusion_order",
       "rerank_order_tags": [
         "gold-ledger-q6",
+        "d-ledger-q6-6",
         "d-ledger-q6-10",
-        "d-ledger-q6-4",
         "d-ledger-q6-9",
-        "d-ledger-q6-5",
         "d-ledger-q6-0",
         "d-ledger-q6-8",
         "d-ledger-q6-2",
         "d-ledger-q6-1",
-        "d-ledger-q6-6",
+        "d-ledger-q6-4",
         "d-ledger-q6-7",
+        "d-ledger-q6-5",
         "d-ledger-q6-3"
       ],
       "pool_tag_meta": {
@@ -759,19 +755,19 @@
         }
       },
       "path_returns": {
-        "lexical": null,
+        "lexical": 2,
         "vector": 12,
-        "adjacency": 2
+        "adjacency": null
       },
       "path_raw_lengths": {
-        "lexical": null,
+        "lexical": 2,
         "vector": 12,
-        "adjacency": 2
+        "adjacency": null
       },
       "path_fused_lengths": {
-        "lexical": null,
+        "lexical": 2,
         "vector": 12,
-        "adjacency": 2
+        "adjacency": null
       },
       "fusion_cap": 20,
       "a5_strength": "strong",
@@ -798,11 +794,9 @@
       "case_id": "ledger-q7",
       "has_gold": true,
       "pool_size": 12,
-      "rank_after_fusion": 3,
+      "rank_after_fusion": 1,
       "rank_after_rerank": 1,
       "fusion_tags": [
-        "d-ledger-q7-5",
-        "d-ledger-q7-4",
         "gold-ledger-q7",
         "d-ledger-q7-10",
         "d-ledger-q7-1",
@@ -811,28 +805,30 @@
         "d-ledger-q7-8",
         "d-ledger-q7-2",
         "d-ledger-q7-6",
+        "d-ledger-q7-5",
         "d-ledger-q7-7",
+        "d-ledger-q7-4",
         "d-ledger-q7-9"
       ],
-      "adjacency_tags": [
-        "d-ledger-q7-5",
-        "d-ledger-q7-4"
-      ],
+      "adjacency_tags": [],
       "dedup_input_tags": [],
       "dedup_input_scores": [],
       "rerank_top1_tag": "gold-ledger-q7",
+      "tie_at_top1": 0,
+      "tie_at_k_boundary": 0,
+      "tie_resolved_by": "fusion_order",
       "rerank_order_tags": [
         "gold-ledger-q7",
         "d-ledger-q7-10",
-        "d-ledger-q7-5",
-        "d-ledger-q7-4",
         "d-ledger-q7-9",
         "d-ledger-q7-1",
         "d-ledger-q7-0",
         "d-ledger-q7-8",
         "d-ledger-q7-2",
         "d-ledger-q7-6",
+        "d-ledger-q7-5",
         "d-ledger-q7-7",
+        "d-ledger-q7-4",
         "d-ledger-q7-3"
       ],
       "pool_tag_meta": {
@@ -886,19 +882,19 @@
         }
       },
       "path_returns": {
-        "lexical": null,
+        "lexical": 0,
         "vector": 12,
-        "adjacency": 2
+        "adjacency": null
       },
       "path_raw_lengths": {
-        "lexical": null,
+        "lexical": 0,
         "vector": 12,
-        "adjacency": 2
+        "adjacency": null
       },
       "path_fused_lengths": {
-        "lexical": null,
+        "lexical": 0,
         "vector": 12,
-        "adjacency": 2
+        "adjacency": null
       },
       "fusion_cap": 20,
       "a5_strength": "strong",
@@ -929,34 +925,34 @@
       "rank_after_rerank": 1,
       "fusion_tags": [
         "d-ledger-q8-8",
-        "d-ledger-q8-7",
         "d-ledger-q8-2",
         "d-ledger-q8-3",
         "d-ledger-q8-0",
         "d-ledger-q8-1",
         "d-ledger-q8-6",
+        "d-ledger-q8-7",
         "gold-ledger-q8",
         "d-ledger-q8-10",
         "d-ledger-q8-4",
         "d-ledger-q8-5",
         "d-ledger-q8-9"
       ],
-      "adjacency_tags": [
-        "d-ledger-q8-8",
-        "d-ledger-q8-7"
-      ],
+      "adjacency_tags": [],
       "dedup_input_tags": [],
       "dedup_input_scores": [],
       "rerank_top1_tag": "gold-ledger-q8",
+      "tie_at_top1": 0,
+      "tie_at_k_boundary": 0,
+      "tie_resolved_by": "fusion_order",
       "rerank_order_tags": [
         "gold-ledger-q8",
         "d-ledger-q8-8",
-        "d-ledger-q8-7",
         "d-ledger-q8-10",
         "d-ledger-q8-9",
         "d-ledger-q8-2",
         "d-ledger-q8-0",
         "d-ledger-q8-1",
+        "d-ledger-q8-7",
         "d-ledger-q8-4",
         "d-ledger-q8-5",
         "d-ledger-q8-6",
@@ -1013,19 +1009,19 @@
         }
       },
       "path_returns": {
-        "lexical": null,
+        "lexical": 1,
         "vector": 12,
-        "adjacency": 2
+        "adjacency": null
       },
       "path_raw_lengths": {
-        "lexical": null,
+        "lexical": 1,
         "vector": 12,
-        "adjacency": 2
+        "adjacency": null
       },
       "path_fused_lengths": {
-        "lexical": null,
+        "lexical": 1,
         "vector": 12,
-        "adjacency": 2
+        "adjacency": null
       },
       "fusion_cap": 20,
       "a5_strength": "strong",
@@ -1052,13 +1048,13 @@
       "case_id": "ledger-q9",
       "has_gold": true,
       "pool_size": 12,
-      "rank_after_fusion": 4,
+      "rank_after_fusion": 1,
       "rank_after_rerank": 1,
       "fusion_tags": [
+        "gold-ledger-q9",
+        "d-ledger-q9-6",
         "d-ledger-q9-8",
         "d-ledger-q9-7",
-        "d-ledger-q9-6",
-        "gold-ledger-q9",
         "d-ledger-q9-3",
         "d-ledger-q9-1",
         "d-ledger-q9-0",
@@ -1068,19 +1064,19 @@
         "d-ledger-q9-9",
         "d-ledger-q9-4"
       ],
-      "adjacency_tags": [
-        "d-ledger-q9-8",
-        "d-ledger-q9-7"
-      ],
+      "adjacency_tags": [],
       "dedup_input_tags": [],
       "dedup_input_scores": [],
       "rerank_top1_tag": "gold-ledger-q9",
+      "tie_at_top1": 0,
+      "tie_at_k_boundary": 0,
+      "tie_resolved_by": "fusion_order",
       "rerank_order_tags": [
         "gold-ledger-q9",
-        "d-ledger-q9-8",
-        "d-ledger-q9-7",
         "d-ledger-q9-10",
         "d-ledger-q9-9",
+        "d-ledger-q9-8",
+        "d-ledger-q9-7",
         "d-ledger-q9-1",
         "d-ledger-q9-0",
         "d-ledger-q9-2",
@@ -1140,19 +1136,19 @@
         }
       },
       "path_returns": {
-        "lexical": null,
+        "lexical": 1,
         "vector": 12,
-        "adjacency": 2
+        "adjacency": null
       },
       "path_raw_lengths": {
-        "lexical": null,
+        "lexical": 1,
         "vector": 12,
-        "adjacency": 2
+        "adjacency": null
       },
       "path_fused_lengths": {
-        "lexical": null,
+        "lexical": 1,
         "vector": 12,
-        "adjacency": 2
+        "adjacency": null
       },
       "fusion_cap": 20,
       "a5_strength": "strong",
@@ -1179,38 +1175,38 @@
       "case_id": "ledger-q10",
       "has_gold": true,
       "pool_size": 12,
-      "rank_after_fusion": 3,
+      "rank_after_fusion": 1,
       "rank_after_rerank": 1,
       "fusion_tags": [
-        "d-ledger-q10-7",
-        "d-ledger-q10-8",
         "gold-ledger-q10",
         "d-ledger-q10-6",
         "d-ledger-q10-2",
         "d-ledger-q10-10",
         "d-ledger-q10-0",
+        "d-ledger-q10-7",
         "d-ledger-q10-1",
         "d-ledger-q10-3",
         "d-ledger-q10-9",
+        "d-ledger-q10-8",
         "d-ledger-q10-5",
         "d-ledger-q10-4"
       ],
-      "adjacency_tags": [
-        "d-ledger-q10-7",
-        "d-ledger-q10-8"
-      ],
+      "adjacency_tags": [],
       "dedup_input_tags": [],
       "dedup_input_scores": [],
       "rerank_top1_tag": "gold-ledger-q10",
+      "tie_at_top1": 0,
+      "tie_at_k_boundary": 0,
+      "tie_resolved_by": "fusion_order",
       "rerank_order_tags": [
         "gold-ledger-q10",
-        "d-ledger-q10-7",
         "d-ledger-q10-10",
-        "d-ledger-q10-8",
         "d-ledger-q10-9",
         "d-ledger-q10-2",
         "d-ledger-q10-0",
+        "d-ledger-q10-7",
         "d-ledger-q10-1",
+        "d-ledger-q10-8",
         "d-ledger-q10-5",
         "d-ledger-q10-4",
         "d-ledger-q10-6",
@@ -1267,19 +1263,19 @@
         }
       },
       "path_returns": {
-        "lexical": null,
+        "lexical": 1,
         "vector": 12,
-        "adjacency": 2
+        "adjacency": null
       },
       "path_raw_lengths": {
-        "lexical": null,
+        "lexical": 1,
         "vector": 12,
-        "adjacency": 2
+        "adjacency": null
       },
       "path_fused_lengths": {
-        "lexical": null,
+        "lexical": 1,
         "vector": 12,
-        "adjacency": 2
+        "adjacency": null
       },
       "fusion_cap": 20,
       "a5_strength": "strong",
@@ -1326,6 +1322,9 @@
       "dedup_input_tags": [],
       "dedup_input_scores": [],
       "rerank_top1_tag": "gold-ledger-q11",
+      "tie_at_top1": 0,
+      "tie_at_k_boundary": 0,
+      "tie_resolved_by": "fusion_order",
       "rerank_order_tags": [
         "gold-ledger-q11",
         "d-ledger-q11-9",
@@ -1391,19 +1390,19 @@
         }
       },
       "path_returns": {
-        "lexical": null,
+        "lexical": 1,
         "vector": 12,
-        "adjacency": 0
+        "adjacency": null
       },
       "path_raw_lengths": {
-        "lexical": null,
+        "lexical": 1,
         "vector": 12,
-        "adjacency": 0
+        "adjacency": null
       },
       "path_fused_lengths": {
-        "lexical": null,
+        "lexical": 1,
         "vector": 12,
-        "adjacency": 0
+        "adjacency": null
       },
       "fusion_cap": 20,
       "a5_strength": "strong",
@@ -1450,8 +1449,12 @@
       "dedup_input_tags": [],
       "dedup_input_scores": [],
       "rerank_top1_tag": "gold-ledger-q12",
+      "tie_at_top1": 0,
+      "tie_at_k_boundary": 0,
+      "tie_resolved_by": "fusion_order",
       "rerank_order_tags": [
         "gold-ledger-q12",
+        "d-ledger-q12-6",
         "d-ledger-q12-5",
         "d-ledger-q12-0",
         "d-ledger-q12-4",
@@ -1461,7 +1464,6 @@
         "d-ledger-q12-10",
         "d-ledger-q12-1",
         "d-ledger-q12-8",
-        "d-ledger-q12-6",
         "d-ledger-q12-3"
       ],
       "pool_tag_meta": {
@@ -1515,19 +1517,19 @@
         }
       },
       "path_returns": {
-        "lexical": null,
+        "lexical": 2,
         "vector": 12,
-        "adjacency": 0
+        "adjacency": null
       },
       "path_raw_lengths": {
-        "lexical": null,
+        "lexical": 2,
         "vector": 12,
-        "adjacency": 0
+        "adjacency": null
       },
       "path_fused_lengths": {
-        "lexical": null,
+        "lexical": 2,
         "vector": 12,
-        "adjacency": 0
+        "adjacency": null
       },
       "fusion_cap": 20,
       "a5_strength": "strong",
@@ -1552,10 +1554,10 @@
     }
   ],
   "split": "independent",
-  "run_count": 3,
+  "run_count": 5,
   "supersedes": {
-    "code_version": "9489e46",
-    "code_diff_hash": null,
-    "run_count": 2
+    "code_version": "ac219df-dirty",
+    "code_diff_hash": "0d4988f0af48934b2f8cb89b17d91c68ef7fea246f7066a4ba03fed83eb59da4",
+    "run_count": 1
   }
 }
