@@ -442,7 +442,7 @@ gold     0.6702     0.50   1.00   1.00   0.7925397234003722
 所以"implicit 100% 依赖 condition、explicit 只有 33%"这个推断不成立——
 实测是 100% vs 50%（按 `SEH@1` 掉幅算）。
 
-## 门禁状态：20/26 通过
+## 门禁状态：21/27 通过
 
 | 未通过 | 性质 |
 |---|---|
@@ -520,7 +520,7 @@ git log --oneline -- data/retrieval-v2/sample/
 
 > **"样例符合 v2 标准"这一结论的依据强度，弱于"标准先定、数据后造"的情形。**
 
-必须连同这条一起读，才能理解 20/26 意味着什么。详见协议 §0.1。
+必须连同这条一起读，才能理解 21/27 意味着什么。详见协议 §0.1。
 
 ### F20 的阈值为什么不能只看"通过"
 
@@ -539,7 +539,7 @@ tag 之前先把门禁跑完一轮，而不是先 tag 再补。
 ## 结论
 
 `uv run --no-sync python -m evals.tools.check_v2_dataset data/retrieval-v2/sample`
-（结果 `results/v2-sample-gates.json`）：**20/26 通过**。
+（结果 `results/v2-sample-gates.json`）：**21/27 通过**。
 
 | 检查 | 状态 |
 |---|---|

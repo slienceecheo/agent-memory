@@ -55,17 +55,17 @@ def test_ablation_has_exactly_one_top1_tie() -> None:
     """消融配置 1 条 top1 并列，且是 `ledger-q1`。"""
     payload = _load(ABLATION)
 
-    assert payload["tie_at_top1_with"] == 0
-    assert payload["tie_at_top1_without"] == 1
-    assert payload["ties_with"] == {}
-    assert set(payload["ties_without"]) == {"ledger-q1"}  # type: ignore[arg-type]
+    assert payload["tie_at_top1_with_condition"] == 0
+    assert payload["tie_at_top1_without_condition"] == 1
+    assert payload["tie_report"]["with_condition"] == {}
+    assert set(payload["tie_report"]["without_condition"]) == {"ledger-q1"}  # type: ignore[arg-type]
 
 
 def test_tie_is_recorded_with_its_resolver() -> None:
     """并列必须记下用了什么判据——否则"由判据决定"无法审计。"""
     payload = _load(ABLATION)
 
-    entry = payload["ties_without"]["ledger-q1"]  # type: ignore[index]
+    entry = payload["tie_report"]["without_condition"]["ledger-q1"]  # type: ignore[index]
     assert entry["tie_resolved_by"] == "fusion_order"
     assert entry["tie_at_top1"] == 1
     assert entry["tie_at_k_boundary"] == 0
@@ -83,7 +83,7 @@ def test_tie_is_a_product_of_ablation_not_of_the_data() -> None:
     real_ties = sum(
         int(c.get("tie_at_top1") or 0) for c in real["per_case"]  # type: ignore[index]
     )
-    abl_ties = int(abl["tie_at_top1_without"])  # type: ignore[arg-type]
+    abl_ties = int(abl["tie_at_top1_without_condition"])  # type: ignore[arg-type]
 
     assert real_ties == 0
     assert abl_ties == 1
@@ -111,5 +111,5 @@ def test_float_equality_is_the_only_reason_for_the_tie() -> None:
     payload = _load(ABLATION)
     # 若并列是"接近"而非"相同"，消融配置下应出现大量并列；
     # 实际只有 1 条，说明判据是精确相等。
-    assert payload["tie_at_top1_without"] == 1
-    assert len(payload["ties_without"]) == 1  # type: ignore[arg-type]
+    assert payload["tie_at_top1_without_condition"] == 1
+    assert len(payload["tie_report"]["without_condition"]) == 1  # type: ignore[arg-type]

@@ -129,13 +129,13 @@
     "code": "F19b",
     "title": "implicit 的 gold 真的被召回",
     "passed": true,
-    "detail": "4 条 implicit，三路全开时全部被召回"
+    "detail": "4 条 implicit，三路全开时全部被召回（来源 v2-sample-condition-ablation.json）"
   },
   {
     "code": "F20",
     "title": "condition 对 A 轴有贡献",
     "passed": true,
-    "detail": "A 轴 SEH@1 0.9 → 0.3，掉幅 +0.6000（阈值 ≥0.3）"
+    "detail": "A 轴 SEH@1 0.9 → 0.3，掉幅 +0.6000（阈值 ≥0.3；来源 v2-sample-condition-ablation.json）"
   },
   {
     "code": "F21a",
@@ -154,5 +154,11 @@
     "title": "每 subject A 轴查询 ≥ 6",
     "passed": true,
     "detail": "1/1 个 subject 合格"
+  },
+  {
+    "code": "F24",
+    "title": "A 轴未饱和（SEH@1 不得满分）",
+    "passed": true,
+    "detail": "随机基线 0.3000，竞争集均值 3.40"
   }
 ]

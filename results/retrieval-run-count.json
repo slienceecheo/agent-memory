@@ -24,5 +24,10 @@
   "v2-ledger-vector.json": 5,
   "v2-ledger-lexical-vector.json": 5,
   "v2-ledger-vector-adjacency.json": 5,
-  "v2-ledger-lexical-vector-adjacency.json": 5
+  "v2-ledger-lexical-vector-adjacency.json": 5,
+  "v2-billing-lexical-vector-adjacency.json": 1,
+  "v2-billing-lexical.json": 1,
+  "v2-billing-vector.json": 1,
+  "v2-billing-lexical-vector.json": 1,
+  "v2-billing-vector-adjacency.json": 1
 }

@@ -126,18 +126,27 @@ def ablate(dataset_dir: Path, *, embedder: Any) -> dict[str, Any]:
         "never_recalled_without": sum(1 for v in without_cond.values() if v is None),
         # **并列参与度按配置分开**：真实配置 0 条、消融配置 1 条。
         # 合并成一个数会让"12 条里 1 条"被误读成常态。
-        "ties_with": {
-            k: v
-            for k, v in ties_with.items()
-            if v["tie_at_top1"] or v["tie_at_k_boundary"]
+        #
+        # 键名带完整后缀，避免 `ties_without` 被读成"没有并列"
+        # （它的意思是"without-condition 消融配置下"，不是"张数=0"）。
+        "tie_report": {
+            "with_condition": {
+                k: v
+                for k, v in ties_with.items()
+                if v["tie_at_top1"] or v["tie_at_k_boundary"]
+            },
+            "without_condition": {
+                k: v
+                for k, v in ties_without.items()
+                if v["tie_at_top1"] or v["tie_at_k_boundary"]
+            },
         },
-        "ties_without": {
-            k: v
-            for k, v in ties_without.items()
-            if v["tie_at_top1"] or v["tie_at_k_boundary"]
-        },
-        "tie_at_top1_with": sum(v["tie_at_top1"] for v in ties_with.values()),  # type: ignore[misc]
-        "tie_at_top1_without": sum(v["tie_at_top1"] for v in ties_without.values()),  # type: ignore[misc]
+        "tie_at_top1_with_condition": sum(
+            v["tie_at_top1"] for v in ties_with.values()  # type: ignore[misc]
+        ),
+        "tie_at_top1_without_condition": sum(
+            v["tie_at_top1"] for v in ties_without.values()  # type: ignore[misc]
+        ),
     }
 
 

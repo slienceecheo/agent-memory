@@ -1,0 +1,69 @@
+{
+  "with_condition": {
+    "billing-a1": 1,
+    "billing-a2": 1,
+    "billing-a3": 1,
+    "billing-a4": 1,
+    "billing-a5": 1,
+    "billing-a6": 1,
+    "billing-a7": 1,
+    "billing-a8": 1,
+    "billing-a9": 1,
+    "billing-c1": 2,
+    "billing-c2": 2,
+    "billing-c3": 3
+  },
+  "without_condition": {
+    "billing-a1": 1,
+    "billing-a2": 5,
+    "billing-a3": 3,
+    "billing-a4": 1,
+    "billing-a5": 2,
+    "billing-a6": 3,
+    "billing-a7": 3,
+    "billing-a8": 2,
+    "billing-a9": 3,
+    "billing-c1": 2,
+    "billing-c2": 2,
+    "billing-c3": 3
+  },
+  "axis_a_seh1_with": 1.0,
+  "axis_a_seh1_without": 0.2222222222222222,
+  "drop": 0.7777777777777778,
+  "implicit_with": 1.0,
+  "implicit_without": 0.0,
+  "explicit_with": 1.0,
+  "explicit_without": 0.6666666666666666,
+  "changed": [
+    "billing-a2",
+    "billing-a3",
+    "billing-a5",
+    "billing-a6",
+    "billing-a7",
+    "billing-a8",
+    "billing-a9"
+  ],
+  "never_recalled_with": 0,
+  "never_recalled_without": 0,
+  "tie_report": {
+    "with_condition": {
+      "billing-c2": {
+        "tie_at_top1": 1,
+        "tie_at_k_boundary": 0,
+        "tie_resolved_by": "fusion_order"
+      }
+    },
+    "without_condition": {
+      "billing-c2": {
+        "tie_at_top1": 1,
+        "tie_at_k_boundary": 0,
+        "tie_resolved_by": "fusion_order"
+      }
+    }
+  },
+  "tie_at_top1_with_condition": 1,
+  "tie_at_top1_without_condition": 1,
+  "dataset": "data\\retrieval-v2\\billing",
+  "threshold": 0.3,
+  "passed": true
+}

@@ -1,0 +1,1011 @@
+{
+  "weights": "uniform",
+  "pool_mode": "unrelated",
+  "dedup": false,
+  "k": 5,
+  "cases": 12,
+  "with_gold": 12,
+  "without_gold": 0,
+  "skipped_small_pool": 0,
+  "paths_enabled": [
+    "lexical"
+  ],
+  "paths_unwired": [],
+  "path_returns": {
+    "lexical": 22,
+    "vector": null,
+    "adjacency": null
+  },
+  "embedding_network_calls": 0,
+  "code_version": "bfce310-dirty",
+  "code_diff_hash": "c753acb716ea92bac8d856e736a30f04b04040c6453e1dc8f2449d7aa0aad6c5",
+  "seh_at_k": 0.75,
+  "srs": 0.75,
+  "attribution": {
+    "NOT_IN_POOL": 3,
+    "LOW_RANK": 0,
+    "RERANK_DROPPED": 0
+  },
+  "per_case": [
+    {
+      "case_id": "billing-a1",
+      "has_gold": true,
+      "pool_size": 9,
+      "rank_after_fusion": 1,
+      "rank_after_rerank": 1,
+      "fusion_tags": [
+        "gold-billing-a1",
+        "d-billing-a1-1",
+        "d-billing-a1-2",
+        "d-billing-a1-6"
+      ],
+      "adjacency_tags": [],
+      "dedup_input_tags": [],
+      "dedup_input_scores": [],
+      "rerank_top1_tag": "gold-billing-a1",
+      "tie_at_top1": 0,
+      "tie_at_k_boundary": 0,
+      "tie_resolved_by": "fusion_order",
+      "rerank_order_tags": [
+        "gold-billing-a1",
+        "d-billing-a1-2",
+        "d-billing-a1-6",
+        "d-billing-a1-1"
+      ],
+      "pool_tag_meta": {
+        "gold-billing-a1": {
+          "subject": "project:billing",
+          "relation": "invoice_currency"
+        },
+        "d-billing-a1-7": {
+          "subject": "project:billing",
+          "relation": "settlement_cycle"
+        },
+        "d-billing-a1-3": {
+          "subject": "project:billing",
+          "relation": "tax_region"
+        },
+        "d-billing-a1-5": {
+          "subject": "project:billing",
+          "relation": "settlement_cycle"
+        },
+        "d-billing-a1-0": {
+          "subject": "project:billing",
+          "relation": "invoice_currency"
+        },
+        "d-billing-a1-6": {
+          "subject": "project:billing",
+          "relation": "settlement_cycle"
+        },
+        "d-billing-a1-2": {
+          "subject": "project:billing",
+          "relation": "tax_region"
+        },
+        "d-billing-a1-4": {
+          "subject": "project:billing",
+          "relation": "tax_region"
+        },
+        "d-billing-a1-1": {
+          "subject": "project:billing",
+          "relation": "invoice_currency"
+        }
+      },
+      "path_returns": {
+        "lexical": 4,
+        "vector": null,
+        "adjacency": null
+      },
+      "path_raw_lengths": {
+        "lexical": 4,
+        "vector": null,
+        "adjacency": null
+      },
+      "path_fused_lengths": {
+        "lexical": 4,
+        "vector": null,
+        "adjacency": null
+      },
+      "fusion_cap": 20,
+      "a5_strength": "strong",
+      "pool_vectors": 0,
+      "pool_vector_norms": [],
+      "seh": true,
+      "srs": 1.0,
+      "attribution": null
+    },
+    {
+      "case_id": "billing-a2",
+      "has_gold": true,
+      "pool_size": 9,
+      "rank_after_fusion": null,
+      "rank_after_rerank": null,
+      "fusion_tags": [
+        "d-billing-a2-1",
+        "d-billing-a2-0"
+      ],
+      "adjacency_tags": [],
+      "dedup_input_tags": [],
+      "dedup_input_scores": [],
+      "rerank_top1_tag": "d-billing-a2-0",
+      "tie_at_top1": 0,
+      "tie_at_k_boundary": 0,
+      "tie_resolved_by": "fusion_order",
+      "rerank_order_tags": [
+        "d-billing-a2-0",
+        "d-billing-a2-1"
+      ],
+      "pool_tag_meta": {
+        "d-billing-a2-7": {
+          "subject": "project:billing",
+          "relation": "settlement_cycle"
+        },
+        "d-billing-a2-5": {
+          "subject": "project:billing",
+          "relation": "settlement_cycle"
+        },
+        "d-billing-a2-4": {
+          "subject": "project:billing",
+          "relation": "tax_region"
+        },
+        "d-billing-a2-3": {
+          "subject": "project:billing",
+          "relation": "tax_region"
+        },
+        "d-billing-a2-0": {
+          "subject": "project:billing",
+          "relation": "invoice_currency"
+        },
+        "gold-billing-a2": {
+          "subject": "project:billing",
+          "relation": "invoice_currency"
+        },
+        "d-billing-a2-2": {
+          "subject": "project:billing",
+          "relation": "tax_region"
+        },
+        "d-billing-a2-6": {
+          "subject": "project:billing",
+          "relation": "settlement_cycle"
+        },
+        "d-billing-a2-1": {
+          "subject": "project:billing",
+          "relation": "invoice_currency"
+        }
+      },
+      "path_returns": {
+        "lexical": 2,
+        "vector": null,
+        "adjacency": null
+      },
+      "path_raw_lengths": {
+        "lexical": 2,
+        "vector": null,
+        "adjacency": null
+      },
+      "path_fused_lengths": {
+        "lexical": 2,
+        "vector": null,
+        "adjacency": null
+      },
+      "fusion_cap": 20,
+      "a5_strength": "strong",
+      "pool_vectors": 0,
+      "pool_vector_norms": [],
+      "seh": false,
+      "srs": 0.0,
+      "attribution": "NOT_IN_POOL"
+    },
+    {
+      "case_id": "billing-a3",
+      "has_gold": true,
+      "pool_size": 9,
+      "rank_after_fusion": 1,
+      "rank_after_rerank": 1,
+      "fusion_tags": [
+        "gold-billing-a3",
+        "d-billing-a3-4"
+      ],
+      "adjacency_tags": [],
+      "dedup_input_tags": [],
+      "dedup_input_scores": [],
+      "rerank_top1_tag": "gold-billing-a3",
+      "tie_at_top1": 0,
+      "tie_at_k_boundary": 0,
+      "tie_resolved_by": "fusion_order",
+      "rerank_order_tags": [
+        "gold-billing-a3",
+        "d-billing-a3-4"
+      ],
+      "pool_tag_meta": {
+        "gold-billing-a3": {
+          "subject": "project:billing",
+          "relation": "invoice_currency"
+        },
+        "d-billing-a3-2": {
+          "subject": "project:billing",
+          "relation": "tax_region"
+        },
+        "d-billing-a3-5": {
+          "subject": "project:billing",
+          "relation": "settlement_cycle"
+        },
+        "d-billing-a3-6": {
+          "subject": "project:billing",
+          "relation": "settlement_cycle"
+        },
+        "d-billing-a3-0": {
+          "subject": "project:billing",
+          "relation": "invoice_currency"
+        },
+        "d-billing-a3-7": {
+          "subject": "project:billing",
+          "relation": "settlement_cycle"
+        },
+        "d-billing-a3-1": {
+          "subject": "project:billing",
+          "relation": "invoice_currency"
+        },
+        "d-billing-a3-4": {
+          "subject": "project:billing",
+          "relation": "tax_region"
+        },
+        "d-billing-a3-3": {
+          "subject": "project:billing",
+          "relation": "tax_region"
+        }
+      },
+      "path_returns": {
+        "lexical": 2,
+        "vector": null,
+        "adjacency": null
+      },
+      "path_raw_lengths": {
+        "lexical": 2,
+        "vector": null,
+        "adjacency": null
+      },
+      "path_fused_lengths": {
+        "lexical": 2,
+        "vector": null,
+        "adjacency": null
+      },
+      "fusion_cap": 20,
+      "a5_strength": "strong",
+      "pool_vectors": 0,
+      "pool_vector_norms": [],
+      "seh": true,
+      "srs": 1.0,
+      "attribution": null
+    },
+    {
+      "case_id": "billing-a4",
+      "has_gold": true,
+      "pool_size": 9,
+      "rank_after_fusion": 1,
+      "rank_after_rerank": 1,
+      "fusion_tags": [
+        "gold-billing-a4",
+        "d-billing-a4-0",
+        "d-billing-a4-6",
+        "d-billing-a4-2"
+      ],
+      "adjacency_tags": [],
+      "dedup_input_tags": [],
+      "dedup_input_scores": [],
+      "rerank_top1_tag": "gold-billing-a4",
+      "tie_at_top1": 0,
+      "tie_at_k_boundary": 0,
+      "tie_resolved_by": "fusion_order",
+      "rerank_order_tags": [
+        "gold-billing-a4",
+        "d-billing-a4-0",
+        "d-billing-a4-6",
+        "d-billing-a4-2"
+      ],
+      "pool_tag_meta": {
+        "d-billing-a4-1": {
+          "subject": "project:billing",
+          "relation": "invoice_currency"
+        },
+        "d-billing-a4-0": {
+          "subject": "project:billing",
+          "relation": "invoice_currency"
+        },
+        "d-billing-a4-5": {
+          "subject": "project:billing",
+          "relation": "settlement_cycle"
+        },
+        "d-billing-a4-7": {
+          "subject": "project:billing",
+          "relation": "settlement_cycle"
+        },
+        "gold-billing-a4": {
+          "subject": "project:billing",
+          "relation": "tax_region"
+        },
+        "d-billing-a4-6": {
+          "subject": "project:billing",
+          "relation": "settlement_cycle"
+        },
+        "d-billing-a4-2": {
+          "subject": "project:billing",
+          "relation": "invoice_currency"
+        },
+        "d-billing-a4-4": {
+          "subject": "project:billing",
+          "relation": "tax_region"
+        },
+        "d-billing-a4-3": {
+          "subject": "project:billing",
+          "relation": "tax_region"
+        }
+      },
+      "path_returns": {
+        "lexical": 4,
+        "vector": null,
+        "adjacency": null
+      },
+      "path_raw_lengths": {
+        "lexical": 4,
+        "vector": null,
+        "adjacency": null
+      },
+      "path_fused_lengths": {
+        "lexical": 4,
+        "vector": null,
+        "adjacency": null
+      },
+      "fusion_cap": 20,
+      "a5_strength": "strong",
+      "pool_vectors": 0,
+      "pool_vector_norms": [],
+      "seh": true,
+      "srs": 1.0,
+      "attribution": null
+    },
+    {
+      "case_id": "billing-a5",
+      "has_gold": true,
+      "pool_size": 9,
+      "rank_after_fusion": 1,
+      "rank_after_rerank": 1,
+      "fusion_tags": [
+        "gold-billing-a5"
+      ],
+      "adjacency_tags": [],
+      "dedup_input_tags": [],
+      "dedup_input_scores": [],
+      "rerank_top1_tag": "gold-billing-a5",
+      "tie_at_top1": 0,
+      "tie_at_k_boundary": 0,
+      "tie_resolved_by": "fusion_order",
+      "rerank_order_tags": [
+        "gold-billing-a5"
+      ],
+      "pool_tag_meta": {
+        "d-billing-a5-1": {
+          "subject": "project:billing",
+          "relation": "invoice_currency"
+        },
+        "d-billing-a5-5": {
+          "subject": "project:billing",
+          "relation": "settlement_cycle"
+        },
+        "d-billing-a5-0": {
+          "subject": "project:billing",
+          "relation": "invoice_currency"
+        },
+        "d-billing-a5-4": {
+          "subject": "project:billing",
+          "relation": "tax_region"
+        },
+        "d-billing-a5-2": {
+          "subject": "project:billing",
+          "relation": "invoice_currency"
+        },
+        "d-billing-a5-6": {
+          "subject": "project:billing",
+          "relation": "settlement_cycle"
+        },
+        "gold-billing-a5": {
+          "subject": "project:billing",
+          "relation": "tax_region"
+        },
+        "d-billing-a5-7": {
+          "subject": "project:billing",
+          "relation": "settlement_cycle"
+        },
+        "d-billing-a5-3": {
+          "subject": "project:billing",
+          "relation": "tax_region"
+        }
+      },
+      "path_returns": {
+        "lexical": 1,
+        "vector": null,
+        "adjacency": null
+      },
+      "path_raw_lengths": {
+        "lexical": 1,
+        "vector": null,
+        "adjacency": null
+      },
+      "path_fused_lengths": {
+        "lexical": 1,
+        "vector": null,
+        "adjacency": null
+      },
+      "fusion_cap": 20,
+      "a5_strength": "weak",
+      "pool_vectors": 0,
+      "pool_vector_norms": [],
+      "seh": true,
+      "srs": 1.0,
+      "attribution": null
+    },
+    {
+      "case_id": "billing-a6",
+      "has_gold": true,
+      "pool_size": 9,
+      "rank_after_fusion": 1,
+      "rank_after_rerank": 1,
+      "fusion_tags": [
+        "gold-billing-a6",
+        "d-billing-a6-3"
+      ],
+      "adjacency_tags": [],
+      "dedup_input_tags": [],
+      "dedup_input_scores": [],
+      "rerank_top1_tag": "gold-billing-a6",
+      "tie_at_top1": 0,
+      "tie_at_k_boundary": 0,
+      "tie_resolved_by": "fusion_order",
+      "rerank_order_tags": [
+        "gold-billing-a6",
+        "d-billing-a6-3"
+      ],
+      "pool_tag_meta": {
+        "d-billing-a6-3": {
+          "subject": "project:billing",
+          "relation": "tax_region"
+        },
+        "d-billing-a6-5": {
+          "subject": "project:billing",
+          "relation": "settlement_cycle"
+        },
+        "d-billing-a6-4": {
+          "subject": "project:billing",
+          "relation": "tax_region"
+        },
+        "d-billing-a6-2": {
+          "subject": "project:billing",
+          "relation": "invoice_currency"
+        },
+        "gold-billing-a6": {
+          "subject": "project:billing",
+          "relation": "tax_region"
+        },
+        "d-billing-a6-0": {
+          "subject": "project:billing",
+          "relation": "invoice_currency"
+        },
+        "d-billing-a6-7": {
+          "subject": "project:billing",
+          "relation": "settlement_cycle"
+        },
+        "d-billing-a6-1": {
+          "subject": "project:billing",
+          "relation": "invoice_currency"
+        },
+        "d-billing-a6-6": {
+          "subject": "project:billing",
+          "relation": "settlement_cycle"
+        }
+      },
+      "path_returns": {
+        "lexical": 2,
+        "vector": null,
+        "adjacency": null
+      },
+      "path_raw_lengths": {
+        "lexical": 2,
+        "vector": null,
+        "adjacency": null
+      },
+      "path_fused_lengths": {
+        "lexical": 2,
+        "vector": null,
+        "adjacency": null
+      },
+      "fusion_cap": 20,
+      "a5_strength": "strong",
+      "pool_vectors": 0,
+      "pool_vector_norms": [],
+      "seh": true,
+      "srs": 1.0,
+      "attribution": null
+    },
+    {
+      "case_id": "billing-a7",
+      "has_gold": true,
+      "pool_size": 9,
+      "rank_after_fusion": 1,
+      "rank_after_rerank": 1,
+      "fusion_tags": [
+        "gold-billing-a7",
+        "d-billing-a7-7"
+      ],
+      "adjacency_tags": [],
+      "dedup_input_tags": [],
+      "dedup_input_scores": [],
+      "rerank_top1_tag": "gold-billing-a7",
+      "tie_at_top1": 0,
+      "tie_at_k_boundary": 0,
+      "tie_resolved_by": "fusion_order",
+      "rerank_order_tags": [
+        "gold-billing-a7",
+        "d-billing-a7-7"
+      ],
+      "pool_tag_meta": {
+        "d-billing-a7-7": {
+          "subject": "project:billing",
+          "relation": "settlement_cycle"
+        },
+        "d-billing-a7-6": {
+          "subject": "project:billing",
+          "relation": "settlement_cycle"
+        },
+        "d-billing-a7-2": {
+          "subject": "project:billing",
+          "relation": "invoice_currency"
+        },
+        "d-billing-a7-1": {
+          "subject": "project:billing",
+          "relation": "invoice_currency"
+        },
+        "d-billing-a7-5": {
+          "subject": "project:billing",
+          "relation": "tax_region"
+        },
+        "d-billing-a7-3": {
+          "subject": "project:billing",
+          "relation": "tax_region"
+        },
+        "d-billing-a7-0": {
+          "subject": "project:billing",
+          "relation": "invoice_currency"
+        },
+        "gold-billing-a7": {
+          "subject": "project:billing",
+          "relation": "settlement_cycle"
+        },
+        "d-billing-a7-4": {
+          "subject": "project:billing",
+          "relation": "tax_region"
+        }
+      },
+      "path_returns": {
+        "lexical": 2,
+        "vector": null,
+        "adjacency": null
+      },
+      "path_raw_lengths": {
+        "lexical": 2,
+        "vector": null,
+        "adjacency": null
+      },
+      "path_fused_lengths": {
+        "lexical": 2,
+        "vector": null,
+        "adjacency": null
+      },
+      "fusion_cap": 20,
+      "a5_strength": "strong",
+      "pool_vectors": 0,
+      "pool_vector_norms": [],
+      "seh": true,
+      "srs": 1.0,
+      "attribution": null
+    },
+    {
+      "case_id": "billing-a8",
+      "has_gold": true,
+      "pool_size": 9,
+      "rank_after_fusion": 1,
+      "rank_after_rerank": 1,
+      "fusion_tags": [
+        "gold-billing-a8"
+      ],
+      "adjacency_tags": [],
+      "dedup_input_tags": [],
+      "dedup_input_scores": [],
+      "rerank_top1_tag": "gold-billing-a8",
+      "tie_at_top1": 0,
+      "tie_at_k_boundary": 0,
+      "tie_resolved_by": "fusion_order",
+      "rerank_order_tags": [
+        "gold-billing-a8"
+      ],
+      "pool_tag_meta": {
+        "d-billing-a8-7": {
+          "subject": "project:billing",
+          "relation": "settlement_cycle"
+        },
+        "d-billing-a8-3": {
+          "subject": "project:billing",
+          "relation": "tax_region"
+        },
+        "d-billing-a8-0": {
+          "subject": "project:billing",
+          "relation": "invoice_currency"
+        },
+        "gold-billing-a8": {
+          "subject": "project:billing",
+          "relation": "settlement_cycle"
+        },
+        "d-billing-a8-4": {
+          "subject": "project:billing",
+          "relation": "tax_region"
+        },
+        "d-billing-a8-5": {
+          "subject": "project:billing",
+          "relation": "tax_region"
+        },
+        "d-billing-a8-2": {
+          "subject": "project:billing",
+          "relation": "invoice_currency"
+        },
+        "d-billing-a8-1": {
+          "subject": "project:billing",
+          "relation": "invoice_currency"
+        },
+        "d-billing-a8-6": {
+          "subject": "project:billing",
+          "relation": "settlement_cycle"
+        }
+      },
+      "path_returns": {
+        "lexical": 1,
+        "vector": null,
+        "adjacency": null
+      },
+      "path_raw_lengths": {
+        "lexical": 1,
+        "vector": null,
+        "adjacency": null
+      },
+      "path_fused_lengths": {
+        "lexical": 1,
+        "vector": null,
+        "adjacency": null
+      },
+      "fusion_cap": 20,
+      "a5_strength": "weak",
+      "pool_vectors": 0,
+      "pool_vector_norms": [],
+      "seh": true,
+      "srs": 1.0,
+      "attribution": null
+    },
+    {
+      "case_id": "billing-a9",
+      "has_gold": true,
+      "pool_size": 9,
+      "rank_after_fusion": null,
+      "rank_after_rerank": null,
+      "fusion_tags": [],
+      "adjacency_tags": [],
+      "dedup_input_tags": [],
+      "dedup_input_scores": [],
+      "rerank_top1_tag": null,
+      "tie_at_top1": 0,
+      "tie_at_k_boundary": 0,
+      "tie_resolved_by": "fusion_order",
+      "rerank_order_tags": [],
+      "pool_tag_meta": {
+        "d-billing-a9-6": {
+          "subject": "project:billing",
+          "relation": "settlement_cycle"
+        },
+        "d-billing-a9-1": {
+          "subject": "project:billing",
+          "relation": "invoice_currency"
+        },
+        "d-billing-a9-2": {
+          "subject": "project:billing",
+          "relation": "invoice_currency"
+        },
+        "d-billing-a9-4": {
+          "subject": "project:billing",
+          "relation": "tax_region"
+        },
+        "d-billing-a9-3": {
+          "subject": "project:billing",
+          "relation": "tax_region"
+        },
+        "d-billing-a9-7": {
+          "subject": "project:billing",
+          "relation": "settlement_cycle"
+        },
+        "d-billing-a9-0": {
+          "subject": "project:billing",
+          "relation": "invoice_currency"
+        },
+        "d-billing-a9-5": {
+          "subject": "project:billing",
+          "relation": "tax_region"
+        },
+        "gold-billing-a9": {
+          "subject": "project:billing",
+          "relation": "settlement_cycle"
+        }
+      },
+      "path_returns": {
+        "lexical": 0,
+        "vector": null,
+        "adjacency": null
+      },
+      "path_raw_lengths": {
+        "lexical": 0,
+        "vector": null,
+        "adjacency": null
+      },
+      "path_fused_lengths": {
+        "lexical": 0,
+        "vector": null,
+        "adjacency": null
+      },
+      "fusion_cap": 20,
+      "a5_strength": "weak",
+      "pool_vectors": 0,
+      "pool_vector_norms": [],
+      "seh": false,
+      "srs": 0.0,
+      "attribution": "NOT_IN_POOL"
+    },
+    {
+      "case_id": "billing-c1",
+      "has_gold": true,
+      "pool_size": 9,
+      "rank_after_fusion": 2,
+      "rank_after_rerank": 1,
+      "fusion_tags": [
+        "d-billing-c1-1",
+        "gold-billing-c1"
+      ],
+      "adjacency_tags": [],
+      "dedup_input_tags": [],
+      "dedup_input_scores": [],
+      "rerank_top1_tag": "gold-billing-c1",
+      "tie_at_top1": 0,
+      "tie_at_k_boundary": 0,
+      "tie_resolved_by": "fusion_order",
+      "rerank_order_tags": [
+        "gold-billing-c1",
+        "d-billing-c1-1"
+      ],
+      "pool_tag_meta": {
+        "d-billing-c1-4": {
+          "subject": "project:billing",
+          "relation": "tax_region"
+        },
+        "d-billing-c1-3": {
+          "subject": "project:billing",
+          "relation": "tax_region"
+        },
+        "gold-billing-c1": {
+          "subject": "project:billing",
+          "relation": "invoice_currency"
+        },
+        "d-billing-c1-0": {
+          "subject": "project:billing",
+          "relation": "invoice_currency"
+        },
+        "d-billing-c1-5": {
+          "subject": "project:billing",
+          "relation": "settlement_cycle"
+        },
+        "d-billing-c1-1": {
+          "subject": "project:billing",
+          "relation": "invoice_currency"
+        },
+        "d-billing-c1-2": {
+          "subject": "project:billing",
+          "relation": "tax_region"
+        },
+        "d-billing-c1-7": {
+          "subject": "project:billing",
+          "relation": "settlement_cycle"
+        },
+        "d-billing-c1-6": {
+          "subject": "project:billing",
+          "relation": "settlement_cycle"
+        }
+      },
+      "path_returns": {
+        "lexical": 2,
+        "vector": null,
+        "adjacency": null
+      },
+      "path_raw_lengths": {
+        "lexical": 2,
+        "vector": null,
+        "adjacency": null
+      },
+      "path_fused_lengths": {
+        "lexical": 2,
+        "vector": null,
+        "adjacency": null
+      },
+      "fusion_cap": 20,
+      "a5_strength": "strong",
+      "pool_vectors": 0,
+      "pool_vector_norms": [],
+      "seh": true,
+      "srs": 1.0,
+      "attribution": null
+    },
+    {
+      "case_id": "billing-c2",
+      "has_gold": true,
+      "pool_size": 9,
+      "rank_after_fusion": 1,
+      "rank_after_rerank": 1,
+      "fusion_tags": [
+        "gold-billing-c2"
+      ],
+      "adjacency_tags": [],
+      "dedup_input_tags": [],
+      "dedup_input_scores": [],
+      "rerank_top1_tag": "gold-billing-c2",
+      "tie_at_top1": 0,
+      "tie_at_k_boundary": 0,
+      "tie_resolved_by": "fusion_order",
+      "rerank_order_tags": [
+        "gold-billing-c2"
+      ],
+      "pool_tag_meta": {
+        "d-billing-c2-3": {
+          "subject": "project:billing",
+          "relation": "tax_region"
+        },
+        "d-billing-c2-5": {
+          "subject": "project:billing",
+          "relation": "settlement_cycle"
+        },
+        "d-billing-c2-4": {
+          "subject": "project:billing",
+          "relation": "tax_region"
+        },
+        "d-billing-c2-1": {
+          "subject": "project:billing",
+          "relation": "invoice_currency"
+        },
+        "d-billing-c2-7": {
+          "subject": "project:billing",
+          "relation": "settlement_cycle"
+        },
+        "d-billing-c2-0": {
+          "subject": "project:billing",
+          "relation": "invoice_currency"
+        },
+        "gold-billing-c2": {
+          "subject": "project:billing",
+          "relation": "tax_region"
+        },
+        "d-billing-c2-6": {
+          "subject": "project:billing",
+          "relation": "settlement_cycle"
+        },
+        "d-billing-c2-2": {
+          "subject": "project:billing",
+          "relation": "invoice_currency"
+        }
+      },
+      "path_returns": {
+        "lexical": 1,
+        "vector": null,
+        "adjacency": null
+      },
+      "path_raw_lengths": {
+        "lexical": 1,
+        "vector": null,
+        "adjacency": null
+      },
+      "path_fused_lengths": {
+        "lexical": 1,
+        "vector": null,
+        "adjacency": null
+      },
+      "fusion_cap": 20,
+      "a5_strength": "weak",
+      "pool_vectors": 0,
+      "pool_vector_norms": [],
+      "seh": true,
+      "srs": 1.0,
+      "attribution": null
+    },
+    {
+      "case_id": "billing-c3",
+      "has_gold": true,
+      "pool_size": 9,
+      "rank_after_fusion": null,
+      "rank_after_rerank": null,
+      "fusion_tags": [
+        "d-billing-c3-7"
+      ],
+      "adjacency_tags": [],
+      "dedup_input_tags": [],
+      "dedup_input_scores": [],
+      "rerank_top1_tag": "d-billing-c3-7",
+      "tie_at_top1": 0,
+      "tie_at_k_boundary": 0,
+      "tie_resolved_by": "fusion_order",
+      "rerank_order_tags": [
+        "d-billing-c3-7"
+      ],
+      "pool_tag_meta": {
+        "d-billing-c3-2": {
+          "subject": "project:billing",
+          "relation": "invoice_currency"
+        },
+        "d-billing-c3-0": {
+          "subject": "project:billing",
+          "relation": "invoice_currency"
+        },
+        "d-billing-c3-5": {
+          "subject": "project:billing",
+          "relation": "tax_region"
+        },
+        "d-billing-c3-4": {
+          "subject": "project:billing",
+          "relation": "tax_region"
+        },
+        "d-billing-c3-3": {
+          "subject": "project:billing",
+          "relation": "tax_region"
+        },
+        "d-billing-c3-6": {
+          "subject": "project:billing",
+          "relation": "settlement_cycle"
+        },
+        "d-billing-c3-7": {
+          "subject": "project:billing",
+          "relation": "settlement_cycle"
+        },
+        "gold-billing-c3": {
+          "subject": "project:billing",
+          "relation": "settlement_cycle"
+        },
+        "d-billing-c3-1": {
+          "subject": "project:billing",
+          "relation": "invoice_currency"
+        }
+      },
+      "path_returns": {
+        "lexical": 1,
+        "vector": null,
+        "adjacency": null
+      },
+      "path_raw_lengths": {
+        "lexical": 1,
+        "vector": null,
+        "adjacency": null
+      },
+      "path_fused_lengths": {
+        "lexical": 1,
+        "vector": null,
+        "adjacency": null
+      },
+      "fusion_cap": 20,
+      "a5_strength": "weak",
+      "pool_vectors": 0,
+      "pool_vector_norms": [],
+      "seh": false,
+      "srs": 0.0,
+      "attribution": "NOT_IN_POOL"
+    }
+  ],
+  "split": "independent",
+  "run_count": 1
+}

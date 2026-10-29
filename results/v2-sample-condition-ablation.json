@@ -45,16 +45,18 @@
   ],
   "never_recalled_with": 0,
   "never_recalled_without": 0,
-  "ties_with": {},
-  "ties_without": {
-    "ledger-q1": {
-      "tie_at_top1": 1,
-      "tie_at_k_boundary": 0,
-      "tie_resolved_by": "fusion_order"
+  "tie_report": {
+    "with_condition": {},
+    "without_condition": {
+      "ledger-q1": {
+        "tie_at_top1": 1,
+        "tie_at_k_boundary": 0,
+        "tie_resolved_by": "fusion_order"
+      }
     }
   },
-  "tie_at_top1_with": 0,
-  "tie_at_top1_without": 1,
+  "tie_at_top1_with_condition": 0,
+  "tie_at_top1_without_condition": 1,
   "dataset": "data\\retrieval-v2\\sample",
   "threshold": 0.3,
   "passed": true

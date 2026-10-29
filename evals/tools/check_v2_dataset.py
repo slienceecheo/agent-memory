@@ -850,6 +850,32 @@ def check_f19a_implicit_gold_complete(dataset: Dataset) -> Check:
     )
 
 
+def _ablation_for_subjects(dataset: Dataset) -> tuple[dict[str, object], str]:
+    """找到覆盖数据集全部 subject 的消融结果文件。
+
+    **为什么不能硬编码文件名**：`check_f19b` / `check_f20` 曾经写死读
+    `v2-sample-condition-ablation.json`（ledger 的样例）。铺第二个 subject 之后，
+    ledger 的门禁会去查 billing 的 implicit，反之亦然——**检查错对象**。
+
+    实测表现：billing 的 F19b 报"消融结果里没有这些 implicit 的排名"，
+    而 billing 自己的消融结果明明已生成在另一个文件名下。
+
+    做法：按 subject 集合匹配。文件名约定 `v2-<subject>-condition-ablation.json`，
+    而样例期用的是 `v2-sample-condition-ablation.json`。
+    """
+    candidates = sorted(ROOT.joinpath("results").glob("v2-*-condition-ablation.json"))
+
+    for path in candidates:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+        ranked_ids = set((payload.get("with_condition") or {}).keys())
+        dataset_ids = {q.query_id for q in dataset.queries}
+        # 全覆盖：该文件包含本数据集的每条查询
+        if dataset_ids and dataset_ids <= ranked_ids:
+            return payload, path.name
+
+    return {}, ""
+
+
 def check_f19b_implicit_gold_recalled(dataset: Dataset) -> Check:
     """F19b：每条 implicit 的 gold 必须**真的被召回**（rank 不为 None）。
 
@@ -866,13 +892,13 @@ def check_f19b_implicit_gold_recalled(dataset: Dataset) -> Check:
     一个 C 轴 case 召回失败时它红（与 implicit 无关），
     而 implicit 的失败被别处抵消时它绿（正是要防的情况）。
     """
-    payload = _load_run("v2-sample-condition-ablation.json")
-    if payload is None:
+    payload, source = _ablation_for_subjects(dataset)
+    if not payload:
         return Check(
             "F19b",
             "implicit 的 gold 真的被召回",
             False,
-            "缺少 v2-sample-condition-ablation.json；先跑 evals.tools.ablate_condition",
+            "没有覆盖本数据集的消融结果；先跑 evals.tools.ablate_condition --dataset <目录>",
         )
 
     implicit_ids = {
@@ -897,13 +923,13 @@ def check_f19b_implicit_gold_recalled(dataset: Dataset) -> Check:
         "F19b",
         "implicit 的 gold 真的被召回",
         not never_recalled,
-        f"{len(implicit_ids)} 条 implicit，三路全开时全部被召回"
+        f"{len(implicit_ids)} 条 implicit，三路全开时全部被召回（来源 {source}）"
         if not never_recalled
         else f"{len(never_recalled)} 条 implicit 从未被召回：{never_recalled[:3]}",
     )
 
 
-def check_f20_condition_contributes() -> Check:
+def check_f20_condition_contributes(dataset: Dataset) -> Check:
     """F20：条件消融后 A 轴 `SEH@1` 掉幅必须 ≥ 0.3。
 
     **为什么需要**：有人可以写出一批"explicit 占多数、condition 全都匹配"的
@@ -913,14 +939,16 @@ def check_f20_condition_contributes() -> Check:
     实现放在 `evals/tools/ablate_condition.py`（它要跑评测，较重），
     但本门禁**收进 `run_all()`**，读它的结果 JSON。
     否则 `run_all()` 只跑 F1–F19，F20 没人跑会成为隐患。
+
+    **按 subject 匹配结果文件**，理由同 `_ablation_for_subjects`。
     """
-    payload = _load_run("v2-sample-condition-ablation.json")
-    if payload is None:
+    payload, source = _ablation_for_subjects(dataset)
+    if not payload:
         return Check(
             "F20",
             "condition 对 A 轴有贡献",
             False,
-            "缺少 v2-sample-condition-ablation.json；先跑 evals.tools.ablate_condition",
+            "没有覆盖本数据集的消融结果；先跑 evals.tools.ablate_condition --dataset <目录>",
         )
 
     drop = payload.get("drop")
@@ -932,7 +960,76 @@ def check_f20_condition_contributes() -> Check:
         "condition 对 A 轴有贡献",
         bool(payload.get("passed")),
         f"A 轴 SEH@1 {with_cond} → {without_cond}，"
-        f"掉幅 {float(drop):+.4f}（阈值 ≥{threshold}）",  # type: ignore[arg-type]
+        f"掉幅 {float(drop):+.4f}（阈值 ≥{threshold}；来源 {source}）",  # type: ignore[arg-type]
+    )
+
+
+def check_f24_axis_a_not_saturated(dataset: Dataset, *, ceiling: float = 0.9999) -> Check:
+    """F24：A 轴的**随机基线** `SEH@1` 必须 < 1.0，且实测 `SEH@1` 不得满分。
+
+    **为什么需要**：协议 §7.1 只规定了 `SEH@5` 饱和（池小于 K 时恒为 1），
+    却没规定 `SEH@1 = 1.0000`。而后者更严重——它不是数学恒等，是**数据太简单**。
+
+    **实测两个 subject，结论相反**：
+
+    | subject | A 轴 `SEH@1` | 随机基线 | 判定 |
+    |---|---|---|---|
+    | `project:ledger` | 0.9000 | 0.3000 | 有区分空间 |
+    | `project:billing` | **1.0000** | 0.3333 | **满分，测不到区分** |
+
+    billing 的满分不是装置问题：逐条查过 gold 与第二名的加权总分差，
+    9 条全部为正（0.085–0.253），**0 条并列**。所以它反映真实能力，
+    而真实能力满分意味着这份数据没有难度。
+
+    **为什么不用"实测 `SEH@1` 是否满分"当主判据**：那需要读评测结果，
+    而合格性检查不该依赖系统分数（协议 §1.1）。所以本门禁分两段：
+
+    - 数据侧（不需要跑评测）：随机基线 < 1.0，确保指标本身有定义
+    - 结果侧（若已有结果文件）：实测 `SEH@1` 不得满分
+
+    第二段只在结果存在时执行，不强制要求先跑评测。
+    """
+    from evals.datasets.retrieval_v2 import Axis as _Axis
+
+    baseline = axis_baseline(dataset, _Axis.A)
+    if baseline.queries == 0:
+        return Check("F24", "A 轴未饱和", True, "没有 A 轴查询")
+
+    problems: list[str] = []
+    if baseline.seh_at_1 >= ceiling:
+        problems.append(
+            f"随机基线 SEH@1={baseline.seh_at_1:.4f} 已饱和"
+            f"（竞争集均值 {baseline.mean_pool_size:.2f}）"
+        )
+
+    # 结果侧：只在已有结果文件时检查，不强制跑评测
+    for path in sorted((ROOT / "results").glob("v2-*-lexical-vector-adjacency.json")):
+        payload = json.loads(path.read_text(encoding="utf-8"))
+        cases = payload.get("per_case") or []
+        if not cases:
+            continue
+        case_ids = {c["case_id"] for c in cases}
+        dataset_a = {q.query_id for q in dataset.queries if q.axis is _Axis.A}
+        if not dataset_a <= case_ids:
+            continue
+        ranks = {c["case_id"]: c["rank_after_rerank"] for c in cases}
+        hit = sum(1 for qid in dataset_a if ranks.get(qid) == 1)
+        ratio = hit / len(dataset_a)
+        if ratio >= ceiling:
+            problems.append(
+                f"实测 SEH@1={hit}/{len(dataset_a)}={ratio:.4f}（来源 {path.name}）——"
+                "满分意味着这份数据测不到区分能力"
+            )
+        break
+
+    return Check(
+        "F24",
+        "A 轴未饱和（SEH@1 不得满分）",
+        not problems,
+        f"随机基线 {baseline.seh_at_1:.4f}，"
+        f"竞争集均值 {baseline.mean_pool_size:.2f}"
+        if not problems
+        else "；".join(problems),
     )
 
 
@@ -963,6 +1060,7 @@ ALL_CHECKS = (
     check_f21a_relation_count,
     check_f21b_relation_count_mix,
     check_f23_axis_a_query_floor,
+    check_f24_axis_a_not_saturated,
 )
 
 
