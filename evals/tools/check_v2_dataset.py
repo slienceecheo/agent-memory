@@ -537,19 +537,47 @@ def check_l6c_paths_return_nonempty(dataset: Dataset) -> Check:
 
 
 def check_f17_every_branch_queried(dataset: Dataset) -> Check:
-    """F17：每个 condition 分支都必须至少被一条查询指向。
+    """F17：**已停用**，判定移交给 F17a / F17b。
 
-    **L5 检查的是"池里有几条候选"，不是"有几条被查询指向过"。**
-    按旧口径（每 subject 4 条 A 轴查询）构造数据时，一个有 4 个 relation 的
-    subject 只有 4 条查询 → 每 relation 1 条。其余分支会进池（L5 绿），
-    但永远不会成为任何查询的 gold。
+    **为什么不再保留一个"并集"入口**：分轴之后，F17 与 F17b 会同时变红，
+    同一个原因在门禁表里出现两次。读者无法判断它们是两个问题还是一个。
 
-    这是 C4 缺陷 3 的精确重演：**池里有 3 条 ≠ 有查询在考这 3 条。**
+    本项目已经因为"一条名字覆盖两件事"出过多次问题（L7/L8、F19）；
+    反向的"两件事共用一个名字"同样有害——它让失败项计数虚高，
+    而"通过 20/27"里的 27 有 1 个是重复的。
 
-    判定：对每个 `(subject, relation)`，其每个 condition 分支都必须至少是
-    一条查询的 `gold_memory_id`。
+    因此 F17 保留函数与编号（历史结果、报告引用它），
+    但**不进入 `ALL_CHECKS`**。它与 F17a/F17b 的一致性由测试保证。
     """
-    pointed = {q.gold_memory_id for q in dataset.queries}
+    a = check_f17a_axis_a_covers_every_branch(dataset)
+    b = check_f17b_every_relation_has_axis_c(dataset)
+    return Check(
+        "F17",
+        "每个 condition 分支都被查询指向（F17a ∧ F17b）",
+        a.passed and b.passed,
+        f"F17a: {a.detail}；F17b: {b.detail}",
+    )
+
+
+def check_f17a_axis_a_covers_every_branch(dataset: Dataset) -> Check:
+    """F17a：多分支 relation 的**每个分支**都必须是某条 **A 轴**查询的 gold。
+
+    **为什么要按轴拆**：原来的 F17 用 `{q.gold_memory_id for q in dataset.queries}`，
+    不分轴。于是：
+
+    - 一条 C 轴查询若碰巧指向多分支 relation 的某个分支，F17 会认为"该分支被覆盖"
+    - 但 C 轴测的是"同 subject 跨 relation 选择"，不是"同 relation 分支区分"
+
+    后果：**F17 通过不代表 A 轴覆盖了那个分支**。而 A 轴的难度完全来自
+    "在同 relation 的 3–5 条分支里挑对"。
+
+    判定：对每个多分支 `(subject, relation)`，其每个 `memory_id`
+    都是某条 `axis == A` 查询的 gold。单值 relation 跳过（它做不了 A 轴 gold：
+    竞争集只有 1 条，L5 必红）。
+    """
+    pointed_a = {
+        q.gold_memory_id for q in dataset.queries if q.axis is Axis.A
+    }
 
     groups: dict[tuple[str, str], list[str]] = {}
     for memory in dataset.memories:
@@ -558,22 +586,171 @@ def check_f17_every_branch_queried(dataset: Dataset) -> Check:
         groups.setdefault((memory.subject, memory.relation), []).append(memory.memory_id)
 
     untested: list[str] = []
-    for (subject, relation), memory_ids in groups.items():
-        # 单值 relation（只有一个分支）不适用"每分支一条"：
-        # 它天然没有条件维度，编造分支会让 condition_match 假性有效（§3.4）。
-        if len(memory_ids) < 2:
-            continue
+    multi = {k: v for k, v in groups.items() if len(v) >= 2}
+    for (subject, relation), memory_ids in multi.items():
         for memory_id in memory_ids:
-            if memory_id not in pointed:
+            if memory_id not in pointed_a:
                 untested.append(f"{subject}/{relation}:{memory_id}")
 
     return Check(
-        "F17",
-        "每个 condition 分支都被查询指向",
+        "F17a",
+        "多分支各分支都是 A 轴 gold",
         not untested,
-        f"{len(groups)} 个 (subject,relation) 组，全部分支都有查询"
+        f"{len(multi)} 个多分支 relation，全部分支都被 A 轴指向"
         if not untested
-        else f"{len(untested)} 个分支从未成为 gold：{untested[:5]}",
+        else f"{len(untested)} 个分支从未成为 A 轴 gold：{untested[:5]}",
+    )
+
+
+def check_f17b_every_relation_has_axis_c(dataset: Dataset) -> Check:
+    """F17b：每个 **relation**（含单值）都必须是某条 **C 轴**查询的 gold。
+
+    **粒度与 F17a 不同，因为两轴测的东西不同**：
+
+    | 轴 | 要求 | 理由 |
+    |---|---|---|
+    | A（F17a） | 多分支的**每个分支** | 要在同 relation 的兄弟里挑对 |
+    | C（F17b） | 每个 **relation 一条** | 同一 relation 的多个分支在 C 轴上占同一个
+      "属性位置"，选多次不增加信息 |
+
+    **实测反例**（`data/retrieval-v2/sample`）：5 个 relation 中只有
+    `package_manager` 与 `test_command` 两个单值 relation 有 C 轴查询，
+    三个多分支 relation（`code_style` / `deploy_target` / `oncall_owner`）
+    一条 C 轴都没有覆盖。这正是本条要抓的。
+    """
+    pointed_c = {
+        q.gold_memory_id for q in dataset.queries if q.axis is Axis.C
+    }
+
+    relations: dict[str, dict[str, list[str]]] = {}
+    for memory in dataset.memories:
+        if memory.status.value != "ACTIVE":
+            continue
+        relations.setdefault(memory.subject, {}).setdefault(memory.relation, []).append(
+            memory.memory_id
+        )
+
+    uncovered: list[str] = []
+    total = 0
+    for subject, by_relation in relations.items():
+        for relation, memory_ids in by_relation.items():
+            total += 1
+            if not (set(memory_ids) & pointed_c):
+                uncovered.append(f"{subject}/{relation}")
+
+    return Check(
+        "F17b",
+        "每个 relation 都有 C 轴查询",
+        not uncovered,
+        f"{total - len(uncovered)}/{total} 个 relation 被 C 轴覆盖"
+        if not uncovered
+        else f"{len(uncovered)}/{total} 个 relation 没有 C 轴 gold：{uncovered[:5]}",
+    )
+
+
+def check_f21a_relation_count(dataset: Dataset, *, low: int = 2, high: int = 3) -> Check:
+    """F21a：每个 subject 的 relation 数 ∈ [2, 3]。
+
+    **为什么需要**：协议 §8 写了"每 subject relation 数 1–3"，
+    但 F1–F20 里没有任何一条检查它。
+
+    **实测反例**：`project:ledger` 有 **5** 个 relation，22 项门禁全绿。
+    这就是"规则写进协议、没写进门禁"的形态——规则成了建议。
+
+    **下界是 2 不是 1**：只有 1 个 relation 的 subject 无法产生
+    跨 relation 的 C 轴竞争（C 轴竞争集 = 同 subject 全部记忆，
+    只有 1 个 relation 时，C 轴查询与 A 轴查询的竞争集几乎重合）。
+    """
+    per_subject: dict[str, set[str]] = {}
+    for memory in dataset.memories:
+        if memory.status.value != "ACTIVE":
+            continue
+        per_subject.setdefault(memory.subject, set()).add(memory.relation)
+
+    counts = {s: len(rels) for s, rels in per_subject.items()}
+    bad = {s: n for s, n in counts.items() if not low <= n <= high}
+    return Check(
+        "F21a",
+        f"每 subject relation 数 ∈ [{low}, {high}]",
+        not bad,
+        f"{len(counts) - len(bad)}/{len(counts)} 个 subject 合格"
+        if not bad
+        else f"超范围：{bad}",
+    )
+
+
+def check_f21b_relation_count_mix(dataset: Dataset, *, minimum: int = 5) -> Check:
+    """F21b：relation 数 = 2 与 = 3 的 subject 各至少 `minimum` 个。
+
+    **为什么需要**：若只写 `relation ∈ [2,3]`，所有 subject 都取 3 也能全绿。
+    于是"relation 数"这个变量从区间退化成常量 3，而门禁全程绿——
+    与"分支数 3–5 但全取 3"是同一个问题：**区间内的变量从未被变动过**。
+
+    **只有 1 个 subject 时必然失败**，这是构造性失败（同 F6），
+    不是 schema 问题。
+    """
+    per_subject: dict[str, set[str]] = {}
+    for memory in dataset.memories:
+        if memory.status.value != "ACTIVE":
+            continue
+        per_subject.setdefault(memory.subject, set()).add(memory.relation)
+
+    counts: dict[int, int] = {}
+    for relations in per_subject.values():
+        n = len(relations)
+        counts[n] = counts.get(n, 0) + 1
+
+    two = counts.get(2, 0)
+    three = counts.get(3, 0)
+    passed = two >= minimum and three >= minimum
+    return Check(
+        "F21b",
+        f"relation=2 与 =3 的 subject 各 ≥ {minimum}",
+        passed,
+        f"relation 数分布 {dict(sorted(counts.items()))}；"
+        f"要求 =2 至少 {minimum}、=3 至少 {minimum}"
+        + ("" if passed else "（subject 总数不足时必失败，属构造性）"),
+    )
+
+
+def check_f23_axis_a_query_floor(dataset: Dataset, *, minimum: int = 6) -> Check:
+    """F23：每个 subject 的 **A 轴查询数 ≥ 6**。
+
+    **为什么是 6 不是 5**：`implicit ≥ 5` 且 `implicit ≤ A` 只能推出
+    `A ≥ 5`。但 A=5 时 implicit 必须占满 5 条，于是 `explicit = 0`，
+    而 F13 要求每 subject 同时有 explicit 与 implicit —— **A=5 本来就非法**。
+
+    穷举（implicit 下限 = max(⌈A/2⌉, 5)）：
+
+    | A | 最少 implicit | explicit | F13 |
+    |---|---|---|---|
+    | 5 | 5 | 0 | 红 |
+    | **6** | **5** | **1** | **绿** |
+
+    所以最小合法值是 **6**。
+
+    **防的是什么**：一个全单值 relation 的 subject 会产生 0 条 A 轴查询
+    （单值做 A 轴 gold 时竞争集只有 1 条，L5 必红），协议允许这种形状，
+    于是它可以在 A 轴上什么都不测。本条挡住它。
+    """
+    per_subject: dict[str, int] = {}
+    for query in dataset.queries:
+        if query.axis is not Axis.A:
+            continue
+        per_subject[query.subject] = per_subject.get(query.subject, 0) + 1
+
+    all_subjects = set(dataset.subjects())
+    missing = all_subjects - set(per_subject)
+    bad = {s: n for s, n in per_subject.items() if n < minimum}
+    problems = {**bad, **{s: 0 for s in missing}}
+
+    return Check(
+        "F23",
+        f"每 subject A 轴查询 ≥ {minimum}",
+        not problems,
+        f"{len(all_subjects) - len(problems)}/{len(all_subjects)} 个 subject 合格"
+        if not problems
+        else f"不足：{problems}",
     )
 
 
@@ -777,11 +954,15 @@ ALL_CHECKS = (
     check_f13_cue_mix,
     check_f15_axis_a_needs_seh1,
     check_f16_baseline_formula,
-    check_f17_every_branch_queried,
+    check_f17a_axis_a_covers_every_branch,
+    check_f17b_every_relation_has_axis_c,
     check_f18_authority_is_justified,
     check_f19a_implicit_gold_complete,
     check_f19b_implicit_gold_recalled,
     check_f20_condition_contributes,
+    check_f21a_relation_count,
+    check_f21b_relation_count_mix,
+    check_f23_axis_a_query_floor,
 )
 
 

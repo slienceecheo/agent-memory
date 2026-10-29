@@ -97,7 +97,7 @@ def test_report_states_gate_pass_count() -> None:
     """门禁状态必须写明通过数，且说明 F18 的失败是正确的失败。"""
     text = REPORT.read_text(encoding="utf-8")
 
-    assert "19/22" in text
+    assert "20/26" in text
     assert "F18 的失败是正确的失败" in text
     assert "F19a" in text and "F19b" in text
 
@@ -119,7 +119,9 @@ def test_gate_count_matches_actual_runs() -> None:
         f"实际 {passed}/{len(results)}，报告写的不一致"
     )
     failed = {r.code for r in results if not r.passed}
-    assert failed == {"F6", "F13", "F18"}, f"未通过项变了：{failed}"
+    assert failed == {"F6", "F13", "F17b", "F18", "F21a", "F21b"}, (
+        f"未通过项变了：{failed}"
+    )
 
 
 def test_conclusion_section_has_no_stale_gate_numbers() -> None:

@@ -102,10 +102,16 @@
     "detail": "A: 公式 0.3000/1.0000 实测 0.2988/1.0000；C: 公式 0.0833/0.4167 实测 0.0825/0.4218"
   },
   {
-    "code": "F17",
-    "title": "每个 condition 分支都被查询指向",
+    "code": "F17a",
+    "title": "多分支各分支都是 A 轴 gold",
     "passed": true,
-    "detail": "5 个 (subject,relation) 组，全部分支都有查询"
+    "detail": "3 个多分支 relation，全部分支都被 A 轴指向"
+  },
+  {
+    "code": "F17b",
+    "title": "每个 relation 都有 C 轴查询",
+    "passed": false,
+    "detail": "3/5 个 relation 没有 C 轴 gold：['project:ledger/oncall_owner', 'project:ledger/deploy_target', 'project:ledger/code_style']"
   },
   {
     "code": "F18",
@@ -130,5 +136,23 @@
     "title": "condition 对 A 轴有贡献",
     "passed": true,
     "detail": "A 轴 SEH@1 0.9 → 0.3，掉幅 +0.6000（阈值 ≥0.3）"
+  },
+  {
+    "code": "F21a",
+    "title": "每 subject relation 数 ∈ [2, 3]",
+    "passed": false,
+    "detail": "超范围：{'project:ledger': 5}"
+  },
+  {
+    "code": "F21b",
+    "title": "relation=2 与 =3 的 subject 各 ≥ 5",
+    "passed": false,
+    "detail": "relation 数分布 {5: 1}；要求 =2 至少 5、=3 至少 5（subject 总数不足时必失败，属构造性）"
+  },
+  {
+    "code": "F23",
+    "title": "每 subject A 轴查询 ≥ 6",
+    "passed": true,
+    "detail": "1/1 个 subject 合格"
   }
 ]

@@ -434,6 +434,25 @@ def evaluate_case(
 
             gold_id = id_map[pool.gold_id].id
 
+            # tag -> (subject, relation)。
+            #
+            # **为什么必须暴露**：`rerank_order_tags` 只给出顺序，而
+            # A 轴的竞争集是"同 subject 同 relation 的全部记忆"。
+            # 没有这个映射，就只能从整池名次推断竞争集名次的范围，
+            # 无法给出确切值——而那正是"分母是整池还是竞争集"这一争论的核心。
+            #
+            # 实测反例：`ledger-q4` 整池 rank=6，竞争集只有 4 条。
+            # 名次超过容量，说明两个口径不同；要判定它在竞争集里排第几，
+            # 必须知道排在它前面的 5 条里哪些是同 relation 的。
+            #
+            # **只记 subject 与 relation，不记 condition**：
+            # 竞争集判定只用这两项，而 20 个 subject × 每池 12 条 × 3 字段
+            # 会让结果文件多出上万个小对象。condition 用不上就不存。
+            tag_meta: dict[str, tuple[str, str]] = {
+                entry.id: (str(entry.subject), str(entry.relation))
+                for entry in pool.items
+            }
+
             # 第 1 组：只加观测，不改召回逻辑。
             # vector / adjacency 尚未接进本入口（见 _UNWIRED），因此它们的
             # 返回值记为 None，而不是 0——"没接上"与"跑了但空"是两件事。
@@ -562,6 +581,24 @@ def evaluate_case(
         "dedup_input_tags": dedup_input_tags,
         "dedup_input_scores": dedup_input_scores,
         "rerank_top1_tag": tag_by_id.get(order[0], order[0]) if order else None,
+        # 完整 rerank 顺序（tag 形式）。
+        #
+        # **为什么必须有**：只有 gold 的名次时，无法回答"gold 在竞争集内排第几"。
+        # 竞争集是 A 轴的全部同 relation 分支，而整池还含其他 relation 的干扰项。
+        # 缺这个字段就只能推断出范围（1..rank），不能给出确切值。
+        #
+        # 实测证据：`ledger-q4` 整池 rank=6，而竞争集只有 4 条——
+        # 名次超过了竞争集容量，所以整池名次与竞争集名次必然不同口径。
+        "rerank_order_tags": [tag_by_id.get(item_id, item_id) for item_id in order],
+        # 池内每个 tag 的 (subject, relation)。
+        # 与 `rerank_order_tags` 配合，可精确算出"竞争集内名次"。
+        #
+        # 不含 condition：竞争集判定只看 subject + relation，
+        # 而多存一个字段会让 20 个 subject 的结果文件多出上万个小对象。
+        "pool_tag_meta": {
+            tag: {"subject": s, "relation": r}
+            for tag, (s, r) in tag_meta.items()
+        },
         "path_returns": path_returns,
         "path_raw_lengths": path_raw_lengths,
         "path_fused_lengths": path_fused_lengths,
