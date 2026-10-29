@@ -432,7 +432,10 @@ def evaluate_case(
                 # stored.id 是 uuid4，跨运行不可比。A5 只能比 tag。
                 tag_by_id[stored.id] = entry.id
 
-            gold_id = id_map[pool.gold_id].id
+            # tag -> store id 的反向映射。
+            # 融合与重排都在 tag 域进行（tag 稳定，store id 是 uuid4），
+            # 需要回 store 取条目时用这个。
+            id_by_tag: dict[str, str] = {tag: sid for sid, tag in tag_by_id.items()}
 
             # tag -> (subject, relation)。
             #
@@ -502,11 +505,33 @@ def evaluate_case(
                 adjacency_tags = [tag_by_id.get(i.id, i.id) for i in adjacency_hits]
                 _record("adjacency", [i.id for i in adjacency_hits])
 
-            fused = rrf(ranked_lists, k=60) if ranked_lists else []
+            # **融合前把 id 换成稳定 tag**，因为 `rrf` 的并列判据是 `item_id`（字典序），
+            # 而 store 的 id 是 uuid4——每次运行都不同。
+            #
+            # **两个地方都受影响**，且都不明显：
+
+            # 1. `rrf` 内部对同分项按 id 排序 → 融合顺序跨运行不同
+            #    （实测 `ledger-q1`：fusion 前 4 名在 5 次运行里有 2 种排列）
+            # 2. `rerank` 同样按 id 破并列 → 重排后名次也跟着变
+            #    （实测 rank = 1,2,2,2,1；条件消融的 A 轴 `SEH@1`
+            #     在 0.3000 / 0.4000 之间跳，`drop` 在 0.50 / 0.60 之间跳）
+            #
+            # 两处合起来让"同一份数据、同一份代码"给出不同分数。
+            # 这不是数据的性质，是装置的不确定性——而它会被写成"条件贡献"
+            # 或"路径贡献"的差异。
+            #
+            # 用 tag 替换后，同一数据集任意运行给出同一顺序。
+            tag_lists = {
+                source: [tag_by_id.get(i, i) for i in ids]
+                for source, ids in ranked_lists.items()
+            }
+            fused = rrf(tag_lists, k=60) if tag_lists else []
+            # 融合后一律用 **tag** 作键，不再碰 store 的 uuid4。
             fused_order = [entry.item_id for entry in fused]
             recalled_count = len(fused_order)
+            gold_tag = f"gold-{row['id']}"
             rank_fusion = (
-                fused_order.index(gold_id) + 1 if gold_id in fused_order else None
+                fused_order.index(gold_tag) + 1 if gold_tag in fused_order else None
             )
 
             score_by_id = {entry.item_id: entry.score for entry in fused}
@@ -525,24 +550,24 @@ def evaluate_case(
                 # - 不含 condition 会让 `ruff/None` 与 `ruff/backend` 变成同文本，
                 #   而这两条必须并存（BRANCH）
                 texts = [
-                    (item_id, _dedup_text(store.get(item_id)), score_by_id[item_id])
-                    for item_id in fused_order
+                    (tag, _dedup_text(store.get(id_by_tag[tag])), score_by_id[tag])
+                    for tag in fused_order
                 ]
                 kept, _ = dedup(texts, judge=judge, top_k=k)
-                dedup_input_tags = [tag_by_id.get(e[0], e[0]) for e in texts]
+                dedup_input_tags = [e[0] for e in texts]
                 dedup_input_scores = [float(e[2]) for e in texts]
                 fused_after_dedup = [e[0] for e in kept]
             else:
                 fused_after_dedup = fused_order
 
             candidates = []
-            for item_id in fused_after_dedup:
-                item = store.get(item_id)
+            for tag in fused_after_dedup:
+                item = store.get(id_by_tag[tag])
                 candidates.append(
                     _RerankCandidate(
-                        item_id=item_id,
+                        item_id=tag,
                         features=FeatureScores(
-                            base=rrf_norm(score_by_id[item_id], max_score=max_score),
+                            base=rrf_norm(score_by_id[tag], max_score=max_score),
                             condition=condition_match(
                                 str(query_condition) if query_condition else None,
                                 item.condition,
@@ -554,12 +579,24 @@ def evaluate_case(
                 )
 
             ranked: list[Ranked] = rerank(candidates, weights=weights)
+
+            # 并列时用**融合顺序**决定先后。
+            #
+            # `rerank` 的并列判据是 `item_id`，现在是 tag 的字典序——
+            # 那会让 `d-<case>-0` 恒排在 `gold-<case>` 之前（"d" < "g"），
+            # 于是每个并列都以 gold 输给干扰项告终：只是把随机换成固定偏向。
+            # 融合顺序由 RRF 分数决定，确定且有语义，才是正确的次级判据。
+            fused_position = {tag: i for i, tag in enumerate(fused_order)}
+            ranked = sorted(
+                ranked,
+                key=lambda r: (-r.score, fused_position.get(r.item_id, len(fused_order))),
+            )
         finally:
             store.close()
 
     order = [item.item_id for item in ranked]
 
-    rank_rerank = order.index(gold_id) + 1 if gold_id in order else None
+    rank_rerank = order.index(gold_tag) + 1 if gold_tag in order else None
 
     attribution = attribute_failure(
         gold_in_pool=True,
@@ -756,6 +793,36 @@ def _bump_run_count(out: Path) -> int:
     return counts[key]
 
 
+def _previous_provenance(out: Path) -> dict[str, object] | None:
+    """读取被覆盖文件原有的 provenance，用于区分两种 `run_count=2`。
+
+    **`run_count` 一个字段承载两个含义**：
+
+    | 情形 | 是否作废旧结论 |
+    |---|---|
+    | 同一代码状态跑两次（比如验证确定性） | 否 |
+    | 不同代码状态写进同一文件 | **是** |
+
+    两者都表现为 `run_count=2`。加上 `supersedes` 才能分开：
+
+    - 有 `supersedes` → 新版覆盖了旧版，旧结论作废
+    - 无 `supersedes` → 同一状态跑了两次，结论不变
+
+    判据是 `code_version` 与 `code_diff_hash` 是否相同。
+    """
+    if not out.exists():
+        return None
+    try:
+        old = json.loads(out.read_text(encoding="utf-8"))
+    except (json.JSONDecodeError, OSError):
+        return None
+    return {
+        "code_version": old.get("code_version"),
+        "code_diff_hash": old.get("code_diff_hash"),
+        "run_count": old.get("run_count"),
+    }
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="evals.run_retrieval")
     parser.add_argument("--split", default="independent", choices=["dev", "test", "independent"])
@@ -866,8 +933,16 @@ def main(argv: list[str] | None = None) -> int:
         OUT_DIR / f"retrieval-{args.split}-{args.weights}{suffix}{paths_tag}.json"
     )
     _assert_writable(out, result, overwrite=args.overwrite)
+    previous = _previous_provenance(out)
     run_count = _bump_run_count(out)
     result["run_count"] = run_count
+    # 只有当**代码状态不同**时才记 supersedes。
+    # 同一状态重跑两次不该标作废——那会让"验证确定性"看起来像"改了结论"。
+    if previous is not None and (
+        previous.get("code_version") != result.get("code_version")
+        or previous.get("code_diff_hash") != result.get("code_diff_hash")
+    ):
+        result["supersedes"] = previous
     out.write_text(json.dumps(result, ensure_ascii=False, indent=2), encoding="utf-8")
 
     returns = " ".join(

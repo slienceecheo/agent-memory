@@ -252,7 +252,9 @@ def test_dedup_receives_text_and_real_scores() -> None:
     assert "texts = [(item_id, item_id, 1.0) for item_id in order]" not in text, (
         "又回到传 id 与常数分了"
     )
-    assert "score_by_id[item_id]" in text, "去重分数应取自融合分"
+    assert "score_by_id[item_id]" in text or "score_by_id[tag]" in text, (
+        "去重分数应取自融合分"
+    )
     # 文本不再从 `source_text` 读：那是候选值/新声明的话，不是本条记忆的话。
     # 用 `_dedup_text`（subject + relation + value + condition）才既含定位字段
     # 又含条件分支，见 `tests/retrieval/test_dedup_text.py`。
