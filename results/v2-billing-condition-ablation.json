@@ -80,5 +80,8 @@
   "tie_at_top1_without_condition": 1,
   "dataset": "data\\retrieval-v2\\billing",
   "threshold": 0.3,
-  "passed": true
+  "passed": true,
+  "code_version": "1f97ff7-dirty",
+  "code_diff_hash": "20331fdad5510ed3c51a3437d759ecbd9f4b96aab0f07bf247877a3015b581b2",
+  "run_count": 5
 }

@@ -188,6 +188,60 @@ def ablate(dataset_dir: Path, *, embedder: Any) -> dict[str, Any]:
     }
 
 
+def _bump_ablation_run_count(out: Path | None, result: dict[str, Any]) -> int:
+    """记录同一份消融结果被跑了几次，并保留被覆盖版本的指纹。
+
+    **与 `run_retrieval._bump_run_count` 同一套语义**：
+    `run_count=2` 有两种含义（同一状态跑两次 / 两个状态写进同一文件），
+    只有 `supersedes` 能分开它们。
+
+    消融结果此前**完全没有**元数据——连 `run_count` 都没有。
+    于是"0.3000 是哪版代码测的"无法验证，而三条结论引用了它。
+    """
+    if out is None:
+        return 1
+
+    run_count = 1
+    previous: dict[str, Any] | None = None
+    if out.exists():
+        try:
+            old = json.loads(out.read_text(encoding="utf-8"))
+        except (json.JSONDecodeError, OSError):
+            old = None
+        if isinstance(old, dict):
+            run_count = int(old.get("run_count") or 0) + 1
+            # **每次都记"上一次被覆盖的那个版本"**，而不是继承更早的记录。
+            #
+            # 两种语义的差别：
+            #   继承  -> A→B→B 记成 "supersedes A"（B 覆盖 B 这件事看不到）
+            #   重记  -> 每次都指向"我刚覆盖掉的那一份"
+            #
+            # 对本项目更关键的是：补指纹之前的旧文件**完全没有元数据**，
+            # 若把 None 一路继承下去，"这一版根本没有记录"这个事实会被后来的
+            # 有价值记录顶掉。而它恰恰是缺口本身。
+            had_fingerprint = (
+                old.get("code_version") is not None
+                or old.get("code_diff_hash") is not None
+            )
+            previous = {
+                "code_version": old.get("code_version"),
+                "code_diff_hash": old.get("code_diff_hash"),
+                "run_count": old.get("run_count"),
+            }
+            if not had_fingerprint:
+                previous["note"] = "被覆盖的版本没有代码指纹（补指纹前产出）"
+
+    result["run_count"] = run_count
+    if previous is not None:
+        same = (
+            previous.get("code_version") == result.get("code_version")
+            and previous.get("code_diff_hash") == result.get("code_diff_hash")
+        )
+        if not same:
+            result["supersedes"] = previous
+    return run_count
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="evals.tools.ablate_condition")
     parser.add_argument("--dataset", type=Path, default=None)
@@ -214,6 +268,18 @@ def main(argv: list[str] | None = None) -> int:
     result["dataset"] = str(dataset_dir)
     result["threshold"] = args.threshold
     result["passed"] = result["drop"] >= args.threshold
+    # **代码指纹必须与 run_retrieval 用同一个函数。**
+    #
+    # 不给消融结果记指纹是一个真实的归因缺口：
+    # 四条结论里有三条引用消融数字（0.3000 / 0.6000 / 0.2222 / 0.7778），
+    # 而没有指纹就无法判断"重跑得到不同数字"是因为代码变了、数据变了还是随机性。
+    #
+    # 之前 `v2-*-condition-ablation.json` 的 `code_version` 是 None，
+    # 而结果文件一直有——两个工具不一致，缺口恰好落在最关键的数据上。
+    from evals.run_retrieval import code_fingerprint
+
+    result.update(code_fingerprint())
+    result["run_count"] = _bump_ablation_run_count(args.out, result)
 
     print(f"数据集：{dataset_dir}")
     print(
