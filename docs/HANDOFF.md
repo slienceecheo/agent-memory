@@ -9,12 +9,45 @@
 ```
 v2 数据集   2 个 subject：project:ledger（12 记忆）、project:billing（9 记忆）
 结果文件    15 份统一指纹（11 评测 + 2 消融 + 2 门禁），由测试强制
+            指纹 = 47e4785-dirty / 36e9c165
 门禁        ledger 21/27、billing 24/27
 结论        docs/reports/v2-what-it-measures.md（四条，每条带复算命令）
-冻结        tag dataset-v2-frozen（b3031b8）= 数据最终版，带 5 处已登记缺陷
+冻结        tag dataset-v2-frozen（5a55620）= 数据最终版，带 5 处已登记缺陷
 协议        tag dataset-v2-protocol-r2（cb9c77f）= 当前有效
             旧 tag dataset-v2-protocol（e6a795a）保留，6 次修订见协议 §0.1
 ```
+
+### 0.1 为什么结果指纹（`47e4785-dirty`）与 frozen tag（`5a55620`）不同
+
+**复算时一定会撞上这个问题，所以先写在这里。**
+
+15 份结果文件是在 `47e4785` 的**工作区**上跑的（因此带 `-dirty`），
+而 `dataset-v2-frozen` 指向其后的 `5a55620`。两者相差 3 个 commit。
+
+区间内改了什么（**如实列出，不要以为"只有文档"**）：
+
+| 文件 | 有改动吗 | 影响 |
+|---|---|---|
+| `evals/run_retrieval.py`（评测入口） | **无** | 评测数字有效 |
+| `evals/datasets/*`、`src/**` | **无** | 同上 |
+| **`evals/tools/check_v2_dataset.py`** | **有**（加 gates 指纹） | **只影响输出格式，判定不变**（已实测重跑一致） |
+| 文档 | 有 | 无影响 |
+
+**复算方式**（二选一）：
+
+```bash
+git checkout 47e4785          # 直接用结果文件对应的 commit
+# 或确认区间内没碰评测路径：
+git diff 47e4785..dataset-v2-frozen -- evals src
+#   只应有 evals/tools/check_v2_dataset.py 一处
+```
+
+**根因**：`code_version` 混了两件事——commit 与工作区是否干净。
+只要跑的时候工作区不干净（这一路几乎每次都是，因为改完就跑、跑完才提交），
+它就一定对不上 tag。
+
+→ **v3 待办**：结果文件加 `git_commit`（干净 hash）与 `git_tag`，
+把"哪个 commit"和"哪个 tag"分开记。
 
 > **`frozen` 不等于合格。** 它表示"这是 v2 的最终版，5 处数据缺陷已登记、已锁定"。
 > 5 处是 F13 / F17b / F18 / F21a / F24，见 `docs/reports/v2-what-it-measures.md` §0.1。
@@ -37,7 +70,7 @@ v2 数据集   2 个 subject：project:ledger（12 记忆）、project:billing�
 | **F24**（A 轴不得满分） | **正确的失败** | **billing A 轴 `SEH@1 = 1.0000`** |
 
 ```
-pytest              -> 1225 passed, 1 skipped
+pytest              -> 1231 passed, 1 skipped
 ruff / mypy         -> clean
 locked_defect       -> 25 条收集（23 个标记，parametrize 展开 2 条）
 evidence_lock       -> 6 条（读 git 归档，只有历史被改写才红）

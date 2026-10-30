@@ -80,17 +80,23 @@ def test_gate_status_matches_actual_run() -> None:
 
 
 def test_no_duplicate_runtime_block() -> None:
-    """运行态数字只写一处。
+    """运行态计数只写一处。
 
-    "```...pytest -> ...```" 这种块只能出现一次——
-    历史上有两处各写一份，结果对不上。
+    **判据是"含 `pytest -> ... passed` 这类计数行"，不是"含 pytest"。**
+    历史上有两处各写一份完整运行态，结果对不上。
+
+    正则必须支持带语言标记的围栏（` ```bash `），否则 ` ```bash ` 会与
+    下一个 ` ``` ` 错配。而只认 `pytest` 会把 marker 说明里的
+    `pytest -m locked_defect -q` 也当成计数块——那不是运行态。
     """
     text = _text()
-    blocks = re.findall(r"```\n(.*?)```", text, re.S)
-    pytest_blocks = [b for b in blocks if "pytest" in b and "passed" in b]
+    blocks = re.findall(r"```[a-z]*\n(.*?)```", text, re.S)
+    counting = [
+        b for b in blocks if re.search(r"^pytest\s+->\s+\d+ passed", b, re.M)
+    ]
 
-    assert len(pytest_blocks) == 1, (
-        f"有 {len(pytest_blocks)} 处写了 pytest 计数，只应有一处"
+    assert len(counting) == 1, (
+        f"有 {len(counting)} 处写了运行态计数，只应有一处"
     )
 
 
