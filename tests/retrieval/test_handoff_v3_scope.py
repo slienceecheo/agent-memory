@@ -81,6 +81,91 @@ def test_v3_data_discipline_is_marked_provisional() -> None:
     assert "不知道 v3 自己的" in section or "不指" in section
 
 
+def test_v3_options_have_a_stated_lean() -> None:
+    """三个装置选项不能只并列——必须写出倾向。
+
+    否则下一次会话会花一轮重新评估，而那轮正是最容易凭直觉判断的。
+    """
+    text = _handoff()
+    section = text.split("### v3 的装置选项")[1].split("### v3 的数据纪律")[0]
+
+    assert "倾向 c" in section
+    # 三条理由
+    assert "理由三条" in section
+    # 必须说明 a 与 b 的差别比看起来小
+    assert "差别比看起来小" in section
+
+
+def test_v3_lean_states_the_condition_that_would_overturn_it() -> None:
+    """倾向必须写明"什么条件下会被推翻"，否则它就成了决定。"""
+    text = _handoff()
+    section = text.split("### v3 的装置选项")[1].split("### v3 的数据纪律")[0]
+
+    assert "这不是决定" in section
+    assert "廉价解法" in section or "可能更优" in section
+
+
+def test_v3_lean_reason_is_query_side_not_data_side() -> None:
+    """理由必须落在"查询侧"，不能落在"槽位表覆盖不了"。
+
+    实测：19 个条件值**全部能归入 7 个父槽位**。
+    所以"覆盖不了"是错的，真正的成本在查询侧映射。
+    """
+    text = _handoff()
+    section = text.split("### v3 的装置选项")[1].split("### v3 的数据纪律")[0]
+
+    assert "查询侧" in section
+    # 必须点明 implicit 查询不含条件词
+    assert "implicit" in section
+    assert "0/10" in section
+    # 必须承认槽位是可分的
+    assert "7 个槽位" in section or "region" in section
+
+
+def test_methodology_section_exists_with_costs() -> None:
+    """方法论一节必须给出探针成本，不能只说"要跑探针"。"""
+    text = _handoff()
+
+    assert "听起来合理" in text
+    # 四个判断
+    assert "两轴只剩池大小不同" in text
+    assert "value 太短" in text
+    assert "不要造只差两字" in text
+    assert "c2 是层级错位" in text
+    # 成本
+    assert "1 分钟" in text
+
+
+def test_methodology_gives_a_criterion_not_an_exhortation() -> None:
+    """必须给出可操作的判据，不是"要谨慎"这种空话。"""
+    text = _handoff()
+    marker = "### 对"
+    start = text.find(marker)
+    assert start != -1, "找不到方法论一节"
+    end = text.find("### 表述的模板", start)
+    assert end != -1
+    section = text[start:end]
+
+    assert "不需要数据就能讲通" in section
+    # 必须解释为什么这类判断危险
+    assert "叙述的连贯性" in section or "叙述连贯" in section
+
+
+def test_condition_slots_are_actually_groupable() -> None:
+    """数据必须支持"19 个值可归入 7 个父槽位"。"""
+    import sys
+
+    sys.path.insert(0, str(ROOT))
+    from evals.datasets.retrieval_v2 import load_dataset
+
+    values: set[str] = set()
+    for name in ("sample", "billing"):
+        ds = load_dataset(ROOT / "data" / "retrieval-v2" / name)
+        values |= {m.condition for m in ds.memories if m.condition}
+
+    assert len(values) == 19, f"条件值数量变了：{len(values)}"
+
+
 def test_report_upgraded_defect13_impact() -> None:
     """C4 报告的缺陷 13 必须升级为"同 key 全部丢弃"。"""
     if not REPORT.exists():
