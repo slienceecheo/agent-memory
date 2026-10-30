@@ -99,10 +99,25 @@ def test_gate_verdicts_still_reproduce() -> None:
     """gates 文件在改动之前生成，但当前代码重跑必须给出同一判定。
 
     这是"那次改动只影响格式"的直接验证。
+
+    **为什么不调网络**：`run_all()` 不导入 embedding，F19b/F20 读的是
+    已有的消融结果 JSON。所以这个测试在任何环境下都只读文件。
+
+    **但仍然要求 gates 结果与消融结果存在**：缺它们时 `run_all()` 会
+    返回 F19b/F20 失败而不是跳过，那会把"环境不全"报成"判定不一致"。
     """
     import sys
 
     sys.path.insert(0, str(ROOT))
+
+    # 前置：F19b/F20 依赖的结果文件必须在
+    for needed in (
+        "v2-sample-condition-ablation.json",
+        "v2-billing-condition-ablation.json",
+    ):
+        if not (RESULTS / needed).exists():
+            pytest.skip(f"{needed} 缺失——缺它会误报判定不一致")
+
     from evals.datasets.retrieval_v2 import load_dataset
     from evals.tools.check_v2_dataset import run_all
 
@@ -120,8 +135,11 @@ def test_gate_verdicts_still_reproduce() -> None:
             for r in run_all(load_dataset(ROOT / "data" / "retrieval-v2" / name))
         }
 
-        diff = {k: (stored_checks.get(k), fresh.get(k)) for k in stored_checks
-                if stored_checks[k] != fresh.get(k)}
+        diff = {
+            k: (stored_checks.get(k), fresh.get(k))
+            for k in stored_checks
+            if stored_checks[k] != fresh.get(k)
+        }
         assert not diff, f"{name} 的判定变了：{diff}"
 
 
