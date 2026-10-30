@@ -32,9 +32,9 @@ v2 数据集   2 个 subject：project:ledger（12 记忆）、project:billing�
 | **F24**（A 轴不得满分） | **正确的失败** | **billing A 轴 `SEH@1 = 1.0000`** |
 
 ```
-pytest              -> 1186 passed, 1 skipped
+pytest              -> 1200 passed, 1 skipped
 ruff / mypy         -> clean
-locked_defect       -> 21 条收集（19 个标记，1 处 parametrize 展开为 3）
+locked_defect       -> 25 条收集（23 个标记，parametrize 展开 2 条）
 evidence_lock       -> 6 条（读 git 归档，只有历史被改写才红）
 integrity_check     -> 1 条（工作区归档被覆盖时红，动作是还原）
 ```
@@ -308,21 +308,21 @@ if result["seh_at_k"] >= 1.0:
 **C4 里"这些不是实现缺陷，是数据表达能力的上限"这句话错了一半**——
 前两条限制是数据问题，1.000 本身是实现缺陷。
 
-## 19 个 `locked_defect` 标记不许删（收集为 21 条）
+## 23 个 `locked_defect` 标记不许删（收集为 25 条）
 
-C4 的十九条缺陷现在由 **19 个 `@pytest.mark.locked_defect` 标记**锁着，
-收集时展开为 **21 条测试**（`test_authority_and_status_have_no_variance_in_pool`
+C4 的 19 条 + v2 的 2 条缺陷现在由 **23 个 `@pytest.mark.locked_defect` 标记**锁着，
+收集时展开为 **25 条测试**（`test_authority_and_status_have_no_variance_in_pool`
 的 `parametrize` 有 3 个 split，占 3 条而只算 1 个标记）。
 
 ```bash
-uv run --no-sync pytest -m locked_defect -q                        # 21 passed
+uv run --no-sync pytest -m locked_defect -q                        # 25 passed
 uv run --no-sync pytest -m locked_defect --collect-only -q         # 看清单
 uv run --no-sync pytest -m evidence_lock -q                        # 6 条，读 git 归档
 uv run --no-sync pytest -m integrity_check -q                      # 1 条，检测归档被覆盖
 ```
 
 **它们锁定的是"现状是坏的"，不是期望行为。** 造完 v2、跑出真实分数之后，
-这 19 个标记**不应该被删**——它们记录的是一次真实的测量失败，
+这 23 个标记**不应该被删**——它们记录的是一次真实的测量失败，
 比任何"我们做得很好"的叙述都有价值。
 
 - 改成正向断言的时机是**修复提交**，不是新数据上线时

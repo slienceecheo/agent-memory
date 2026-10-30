@@ -24,6 +24,8 @@ import pytest
 
 ROOT = Path(__file__).resolve().parents[2]
 REPORT = ROOT / "docs" / "reports" / "c4-retrieval.md"
+# v2 的缺陷（20、21）记在 v2 报告里，不在 C4 报告里。
+V2_REPORT = ROOT / "docs" / "reports" / "v2-what-it-measures.md"
 TESTS = ROOT / "tests" / "retrieval"
 
 # 缺陷编号 -> 覆盖它的测试函数名
@@ -60,6 +62,17 @@ DEFECT_TESTS: dict[int, tuple[str, ...]] = {
     ),
     18: ("test_sample_authority_is_unjustified",),
     19: ("test_q4_loses_to_unrelated_entries_on_authority",),
+    # 以下两条是 v2 上测出的新缺陷，记在 v2 报告里而非 C4 报告。
+    # 它们**可修复**：改 adapter 不传 query_condition、调 authority 权重。
+    # 而"词面在 A 轴无增量"这类观测结论**不进本表**——没有"修好"这个状态。
+    20: (
+        "test_query_condition_is_a_verbatim_copy_of_gold",
+        "test_condition_match_degenerates_to_string_equality",
+    ),
+    21: (
+        "test_authority_penalty_equals_condition_bonus",
+        "test_only_one_case_triggers_the_authority_critical_point",
+    ),
 }
 
 # 已修复的缺陷编号 -> 翻面后的正向断言。
@@ -85,18 +98,33 @@ REPAIRED: dict[int, tuple[str, ...]] = {
 
 
 def _defect_numbers_in_report() -> set[int]:
-    """报告「缺陷总表」里的编号。
+    """两份报告「缺陷总表」里的编号。
 
-    定位锚点是 `### 0.4 缺陷总表`，不是旧版的 `#### 这一节的结论`——
-    后者在报告重构成 0.2/0.3/0.4 时被移走了。锚点写死会在重构时静默失效
-    （`IndexError` 而不是「找不到表」），所以这里显式检查。
+    **为什么要两份**：缺陷 1–19 记在 C4 报告，缺陷 20–21 是 v2 才测出来的，
+    记在 v2 报告。只读 C4 会让 20/21 变成"孤儿缺陷"。
+
+    定位锚点写死是危险的（重构时静默失效），所以显式检查锚点存在。
     """
-    text = REPORT.read_text(encoding="utf-8")
-    anchor = "### 0.4 缺陷总表"
-    if anchor not in text:
-        pytest.fail(f"报告里找不到「{anchor}」这一节，无法核对缺陷表")
-    section = text.split(anchor)[1].split("#### ")[0]
-    return {int(match) for match in re.findall(r"^\| (\d+) \|", section, re.MULTILINE)}
+    numbers: set[int] = set()
+
+    c4_anchor = "### 0.4 缺陷总表"
+    c4_text = REPORT.read_text(encoding="utf-8")
+    if c4_anchor not in c4_text:
+        pytest.fail(f"C4 报告里找不到「{c4_anchor}」，无法核对缺陷表")
+    c4_section = c4_text.split(c4_anchor)[1].split("#### ")[0]
+    numbers |= {int(m) for m in re.findall(r"^\| (\d+) \|", c4_section, re.MULTILINE)}
+
+    v2_anchor = "## 8. 缺陷 20 与 21"
+    v2_text = V2_REPORT.read_text(encoding="utf-8")
+    if v2_anchor in v2_text:
+        v2_section = v2_text.split(v2_anchor)[1].split("\n## ")[0]
+        # 这里的编号是加粗的（`| **20** |`），与 C4 表的 `| 20 |` 格式不同
+        numbers |= {
+            int(m)
+            for m in re.findall(r"^\|\s*\**\s*(\d+)\s*\**\s*\|", v2_section, re.MULTILINE)
+        }
+
+    return numbers
 
 
 def _marked_test_names() -> set[str]:
@@ -116,12 +144,24 @@ def _marked_test_names() -> set[str]:
 
 
 def test_report_lists_all_defects() -> None:
-    """报告缺陷表的编号必须与映射表一致。
+    """两份报告合起来必须列出映射表里的**所有**编号。
+
+    原先断言 `== set(range(1, 20))`——那是只有 C4 一份报告时的写法。
+    缺陷 20/21 是 v2 测出来的，记在 v2 报告里，所以现在的判据是
+    "两份并集 == 映射表"，而不是"恰好 1..19"。
 
     函数名不带数字：原先叫 `test_report_lists_eight_defects`，
     加到 13 条时只改断言不改名字，就成了缺陷 6（报告与实现不一致）的同一形态。
     """
-    assert _defect_numbers_in_report() == set(range(1, 20))
+    in_reports = _defect_numbers_in_report()
+    mapped = set(DEFECT_TESTS) | set(REPAIRED)
+
+    assert in_reports == mapped, (
+        f"报告里缺 {sorted(mapped - in_reports)}；"
+        f"报告里多出 {sorted(in_reports - mapped)}"
+    )
+    # C4 报告本身仍必须覆盖 1..19（v2 的两条在另一份）
+    assert set(range(1, 20)) <= in_reports
 
 
 def test_every_defect_has_a_locked_test() -> None:

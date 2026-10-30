@@ -121,9 +121,12 @@ def test_locked_defect_count_matches_marker() -> None:
     `test_authority_and_status_have_no_variance_in_pool` 有 3 个 `parametrize` split，
     占 3 条测试但只算 1 个标记。
 
-    历史上 HANDOFF 只写一个数，于是"18 条"既不像标记数也不像收集数——
-    实际历史是 10 → 17 → 19 个标记，从没出现过 18。
+    **标记数必须用 AST 数装饰器，不能数字符串。**
+    本文件里有一行 `"@pytest.mark"` 形态的字符串（就是这个测试在数标记），
+    字符串法会把自己数进去，得到 20 而不是 19——**自指陷阱**。
     """
+    import ast
+
     result = subprocess.run(
         [sys.executable, "-m", "pytest", "-m", "locked_defect", "--collect-only", "-q"],
         cwd=ROOT,
@@ -136,16 +139,24 @@ def test_locked_defect_count_matches_marker() -> None:
         pytest.skip("无法收集 locked_defect 测试")
     collected = int(match.group(1))
 
-    # 标记数：直接数源码
+    # 用 AST 数真实装饰器，避免把本文件里的字符串算进去
     markers = 0
     for path in (ROOT / "tests").rglob("*.py"):
-        markers += path.read_text(encoding="utf-8").count(
-            "@pytest.mark.locked_defect"
-        )
+        tree = ast.parse(path.read_text(encoding="utf-8"))
+        for node in ast.walk(tree):
+            if not isinstance(
+                node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)
+            ):
+                continue
+            for dec in node.decorator_list:
+                if "locked_defect" in ast.unparse(dec):
+                    markers += 1
 
     text = _text()
     assert f"{markers} 个" in text, f"HANDOFF 未写标记数 {markers} 个"
     assert f"{collected} 条" in text, f"HANDOFF 未写收集数 {collected} 条"
+    # 标记数必须小于收集数（有 parametrize 展开）
+    assert markers < collected, f"标记 {markers} 不小于收集 {collected}，数据可疑"
 
 
 def test_locked_defect_section_separates_observation_from_defect() -> None:
