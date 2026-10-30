@@ -8,12 +8,17 @@
 
 ```
 v2 数据集   2 个 subject：project:ledger（12 记忆）、project:billing（9 记忆）
-结果文件    13 份统一指纹（11 评测 + 2 消融），由测试强制
+结果文件    15 份统一指纹（11 评测 + 2 消融 + 2 门禁），由测试强制
 门禁        ledger 21/27、billing 24/27
 结论        docs/reports/v2-what-it-measures.md（四条，每条带复算命令）
+冻结        tag dataset-v2-frozen（b3031b8）= 数据最终版，带 5 处已登记缺陷
 协议        tag dataset-v2-protocol-r2（cb9c77f）= 当前有效
             旧 tag dataset-v2-protocol（e6a795a）保留，6 次修订见协议 §0.1
 ```
+
+> **`frozen` 不等于合格。** 它表示"这是 v2 的最终版，5 处数据缺陷已登记、已锁定"。
+> 5 处是 F13 / F17b / F18 / F21a / F24，见 `docs/reports/v2-what-it-measures.md` §0.1。
+> 它们**不修**——修就是改已有数据，而分数已经看过（协议 §1.2）。
 
 > ⚠️ **`billing` 的 A 轴 `SEH@1 = 1.0000` 是保留的实验设计失败（F24），不是成绩。**
 > 它看起来像满分，实际含义是"这份数据测不到区分能力"。
@@ -32,7 +37,7 @@ v2 数据集   2 个 subject：project:ledger（12 记忆）、project:billing�
 | **F24**（A 轴不得满分） | **正确的失败** | **billing A 轴 `SEH@1 = 1.0000`** |
 
 ```
-pytest              -> 1200 passed, 1 skipped
+pytest              -> 1223 passed, 1 skipped
 ruff / mypy         -> clean
 locked_defect       -> 25 条收集（23 个标记，parametrize 展开 2 条）
 evidence_lock       -> 6 条（读 git 归档，只有历史被改写才红）
