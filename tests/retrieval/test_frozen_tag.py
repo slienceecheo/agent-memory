@@ -79,6 +79,41 @@ def test_frozen_message_lists_all_five_data_defects() -> None:
         assert code in message, f"tag message 未列出 {code}"
 
 
+def test_frozen_message_title_matches_body_count() -> None:
+    """**标题的数字必须与正文对得上。**
+
+    实测矛盾：标题写"带 5 处已登记的数据缺陷"，而正文列了 7 条未通过。
+    读者会数出 7 而标题说 5。
+
+    而 tag message 是**这个项目里最难修改的一处文字**——
+    它指向一个 commit，commit 内容不能改，只能重打 tag。
+    所以这类矛盾会永久留在 git 里。
+
+    这条测试要求：标题同时写明「7 条未通过」与「5 条数据缺陷」，
+    且正文里 7 = 2 + 1 + 4 的分解存在。
+    """
+    message = _tag_message()
+    # 只取标题区（第一段，到第一个 ## 之前）
+    header = message.split("## ")[0]
+
+    assert "7 条未通过" in header, "标题未写总失败数 7"
+    assert "5 条" in header, "标题未写数据缺陷数 5"
+    assert "2 条" in header, "标题未写构造性数 2"
+
+    # 正文的分母必须加得起来
+    assert "7 = 2 + 1 + 4" in message, "正文缺少 7 = 2 + 1 + 4 的分解"
+
+
+def test_frozen_message_defines_what_counts_as_data_defect() -> None:
+    """必须写明"数据缺陷"包含哪几类——否则 5 与 7 的差无法解释。"""
+    message = _tag_message()
+
+    assert "真实不足" in message and "正确的失败" in message
+    assert "构造性" in message
+    # 明确排除
+    assert "不在此列" in message or "不是数据缺陷" in message
+
+
 def test_frozen_message_separates_constructive_from_data_defects() -> None:
     """F6 / F21b 是构造性的，不得混进"数据缺陷"。"""
     message = _tag_message()
