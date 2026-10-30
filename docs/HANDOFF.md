@@ -37,7 +37,7 @@ v2 数据集   2 个 subject：project:ledger（12 记忆）、project:billing�
 | **F24**（A 轴不得满分） | **正确的失败** | **billing A 轴 `SEH@1 = 1.0000`** |
 
 ```
-pytest              -> 1223 passed, 1 skipped
+pytest              -> 1225 passed, 1 skipped
 ruff / mypy         -> clean
 locked_defect       -> 25 条收集（23 个标记，parametrize 展开 2 条）
 evidence_lock       -> 6 条（读 git 归档，只有历史被改写才红）
