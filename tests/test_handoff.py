@@ -98,6 +98,7 @@ def test_handoff_mentions_recommended_option() -> None:
     """
     text = _text()
 
-    assert re.search(r"当前步骤[（(]推荐[）)]|### 当前步骤", text), "交接文件未标注当前步骤"
+    assert re.search(r"## 0\. 当前状态", text), "交接文件未在 §0 写当前状态"
+    assert re.search(r"\*\*下一步\*\*", text), "§0 未标注下一步"
     assert "retrieval-dataset-v2" in text, "交接文件未指向 v2 协议"
     assert "作废" in text, "作废的选项必须写明，否则新会话会重提它"

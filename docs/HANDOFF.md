@@ -1,8 +1,45 @@
 # 交接说明
 
-> 更新日期：2026-10-27
-> 当前进度：C1–C4 已归档；C4 读数被推翻；**三路召回已接线并归档**；
-> 下一步是铺 v2 数据集
+> 更新日期：2026-10-30
+
+## 0. 当前状态（先读这一节）
+
+**可变的东西只写在这里。历史演进见后面的「已完成」与各报告。**
+
+```
+v2 数据集   2 个 subject：project:ledger（12 记忆）、project:billing（9 记忆）
+结果文件    13 份统一指纹（11 评测 + 2 消融），由测试强制
+门禁        ledger 21/27、billing 24/27
+结论        4 条，见 docs/reports/v2-what-it-measures.md
+```
+
+**未通过的门禁，分三类**：
+
+| 门禁 | 性质 | 处理 |
+|---|---|---|
+| F6（第三方 subject ≥5） | 构造性 | 需要第二作者，尚未开始 |
+| F21b（relation=2/3 各 ≥5） | 构造性 | 同上 |
+| **F13**（implicit 逐 subject ≥50%） | 真实不足 | ledger 40%，铺开时补 |
+| **F17b**（每 relation 有 C 轴查询） | **正确的失败** | ledger C 轴只覆盖 2/5 |
+| **F18**（来源自解释） | **正确的失败** | ledger 2 条降级无依据（缺陷 18） |
+| **F21a**（relation ∈ [2,3]） | **正确的失败** | ledger 有 5 个 relation |
+| **F24**（A 轴不得满分） | **正确的失败** | **billing A 轴 `SEH@1 = 1.0000`** |
+
+```
+pytest              -> 1180 passed, 1 skipped
+ruff / mypy         -> clean
+locked_defect       -> 21 条（锁住 19 条缺陷的现状）
+evidence_lock       -> 6 条（读 git 归档，只有历史被改写才红）
+integrity_check     -> 1 条（工作区归档被覆盖时红，动作是还原）
+```
+
+**下一步**：v2 作为报告集的工作已完成。若要继续，需要 v3：
+
+1. 修 A 轴难度（现在 `condition` 权重 0.25 让同 relation 内几乎自动满分）
+2. 测条件推断（需要新的 condition 类型 + 文本抽取器）
+
+**这两条都不是 v2 的延续**——v2 的 `condition` 是领域实体（`华东`、`大客户`），
+无法从文本推断。
 
 ## 项目是什么
 
@@ -12,7 +49,19 @@
 
 ## ⚠️ 读任何检索数字之前
 
-**C4 的 `SEH@5 = 1.000` 不可用。** 它不是检索能力，是三个测量缺陷叠出来的：
+### v2 的四条结论各有其限定
+
+见 `docs/reports/v2-what-it-measures.md`。**三条最容易误读的**：
+
+| 数字 | 不能读成 | 原因 |
+|---|---|---|
+| A 轴 `SEH@1 = 0.9000` | 条件区分能力 | `query_condition` 是 `gold.condition` 的副本（10/10） |
+| "词面路径无增量" | 词面路径无效 | billing 的词面单独 7/9，只是被向量天花板遮住 |
+| authority 临界点 `0.250` | 大量样本支撑 | **算术精确，经验 n=1** |
+
+### C4 的 `SEH@5 = 1.000` 不可用
+
+它不是检索能力，是三个测量缺陷叠出来的：
 
 - `query` 与 gold 的存库原文逐字相同（查询就是答案）
 - 干扰项没有原文，物理上无法竞争
@@ -47,17 +96,8 @@
 | **C4** 检索层 | 三路召回 + RRF + 四特征重排 | **指标满分但不证明能力**；事后查明 1.000 是测量缺陷（见第 0.1 节） |
 | **三路召回接线** | 三条路径真进评测入口 + 三份文本规则分离 + 代码指纹 | **接线完成，但数字仍不可用于能力结论**；C4 缺陷从 8 条查到 16 条 |
 
-## 当前状态
-
-```
-openspec list          -> 无活动变更
-openspec list --specs  -> 5 个能力，46 条要求
-pytest                 -> 1001 passed, 2 skipped
-ruff / mypy            -> clean
-locked_defect          -> 18 条（锁住 16 条缺陷的现状）
-evidence_lock          -> 6 条（读 git 归档，只有历史被改写才红）
-integrity_check        -> 1 条（工作区归档被覆盖时红，动作是还原）
-```
+> 运行态数字与未通过门禁见 **§0 当前状态**，不在此处重复——
+> 历史上这两个地方各写过一份，结果数字对不上。
 
 ### 五个能力
 
@@ -95,38 +135,47 @@ integrity_check        -> 1 条（工作区归档被覆盖时红，动作是还�
 - 补上 L1–L8 反泄漏条款（原计划完全没有）
 - 补上冻结 / 版本化 / `SEH@5=1.000` 门禁
 
-### 当前步骤：`retrieval-dataset-v2`
+### `retrieval-dataset-v2`：协议已冻结，已造 2 个 subject
 
-协议已提交：`docs/requirements/retrieval-dataset-v2.md`（**待冻结，尚未造数据**）。
+协议：`docs/requirements/retrieval-dataset-v2.md`
+tag：`dataset-v2-protocol`（`e6a795a`）+ `dataset-v2-protocol-r2`（`cb9c77f`）
 
-三步，顺序不可颠倒：
+**协议在 tag 之后修订过 6 次**（F1–F11 → 27 项门禁），详见协议 §0.1。
+其中 2 次的依据来自样例结果（F19/F20 标 `provisional`），
+数据文件自 `597cf6a` 起未修改。
 
-1. **审协议 §2.1、L1–L8、F1–F7** → 通过后打 tag `dataset-v2-protocol`
-2. **造数据 + 过 F1–F7 门禁** → 全绿后打 tag `dataset-v2-frozen`
-3. **先跑三个基线，再跑一次系统** → `results/retrieval-v2-*.json`（`run_count`=1）→ 写报告
+三步流程的实际状态：
 
-协议里三条硬约束：
+1. ~~审协议 → 打 tag~~ **已完成**（两个 tag）
+2. ~~造数据 + 过门禁~~ **部分完成**：2 个 subject，ledger 21/27、billing 24/27
+3. ~~先跑基线再跑系统~~ **已完成**，且看到分数多轮（**§1.1 的"不许看"已过期**）
+
+> **§1.1 那条纪律现在不适用**：它写于"造数据期间"，
+> 而现在是"已有 2 个 subject、已看分数、据此改过多处门禁"。
+> 当前的纪律是：**改数据前先问"这个改动是否为了让它通过"**。
+> `billing` 的 `SEH@1 = 1.0000` 没有被改——它留作 F24 的证据。
+
+协议里三条硬约束（仍然有效）：
 
 - **v2 只覆盖 A 轴与 C 轴。B 轴（同一事实的历史版本）不支持**，因为现有召回
   在历史不可见时 `SEH` 恒饱和——**那是 B 轴真正的难点，不是造数据能解决的**
-- **主指标改成 `SEH@1` + MRR**，`SEH@5` 降为次指标——3–5 个兄弟分支配 K=5
+- **主指标是 `SEH@1` + MRR**，`SEH@5` 降为次指标——3–5 个兄弟分支配 K=5
   **数学上必然饱和**
 - **`SEH@5 = 1.000` 判为实验设计失败**，由代码门禁拦截，不出口径数字
+  （新增 **F24**：`SEH@1` 满分同样是失败信号）
 
-造数据时守三条（审查特别强调）：
+## 待办（按优先级）
 
-- 我写 15 个 subject、第二个人写 5 个，**互不看**
-- query 必须是问句，且有测试断言 `query != gold.memory_text` **比例 100%**
-- 造完先跑**零召回基线**与**随机基线**，确认 `SEH@5` 不饱和（< 1.0）再跑系统
+| # | 事项 | 状态 |
+|---|---|---|
+| 1 | **v3：修 A 轴难度** | 未开始。`condition` 权重 0.25 让同 relation 内几乎自动满分 |
+| 2 | **v3：测条件推断** | 未开始。需新 condition 类型（同义表达）+ 文本抽取器 |
+| 3 | **第二作者 5 个 subject** | 材料已就绪（`docs/requirements/v2-independent-author-brief.md`），尚未发出 |
+| 4 | 补 C 轴样本量 | n=2 / n=3，无统计意义 |
+| 5 | **B 轴单独开变更** | 需改 `memory-retrieval` 的 ACTIVE 过滤，并设计不饱和的指标 |
 
-## 三个待办（已重排）
-
-1. **审并冻结 v2 协议，然后造数据**（见上）
-2. **修 C4 的六处测量缺陷**（测试与工具层，不改 `src/` 召回算法）：
-   召回后门禁、方差检查查真实池、干扰项禁止文件顺序前缀、`query != gold.text` 断言、
-   评测入口真跑三路召回、`dedup` 传文本与真实分数
-3. **B 轴单独开变更**：需要改 `memory-retrieval` 的 ACTIVE 过滤（MODIFIED requirement），
-   并设计一个在"历史不可见"时不饱和的指标
+**不该做的**：铺第三个 v2 subject。
+A 轴易满分是已知的，第三个只会重复它——那是流程价值，不是结论价值。
 
 ## 读哪些文件
 
@@ -136,7 +185,9 @@ integrity_check        -> 1 条（工作区归档被覆盖时红，动作是还�
 |---|---|
 | `docs/reports/c3-resolver.md` | 第 0 节：自写 100% vs 独立 50% 的落差，以及 15 条错误的根因 |
 | `docs/reports/c4-retrieval.md` | **第 0.1 节（必读）**：查询=答案、排名未发生、方差查错对象 |
-| `docs/requirements/retrieval-dataset-v2.md` | 待冻结的 v2 协议：反泄漏条款、三条轴、冻结与版本化 |
+| `docs/requirements/retrieval-dataset-v2.md` | **已冻结**的 v2 协议：§0.1 变更记录、反泄漏条款、三条轴、1–27 项门禁 |
+| `docs/reports/v2-what-it-measures.md` | **v2 的四条结论与各自的限定**（每条带复算命令） |
+| `docs/reports/v2-axis-a-what-it-measures.md` | A 轴测的到底是什么：条件直通、固定加成、两轴不可比 |
 | `docs/reports/c4-pool-limitation.md` | 同主题池为什么造不出来，以及需要什么 |
 
 **按需**
@@ -251,19 +302,19 @@ if result["seh_at_k"] >= 1.0:
 **C4 里"这些不是实现缺陷，是数据表达能力的上限"这句话错了一半**——
 前两条限制是数据问题，1.000 本身是实现缺陷。
 
-## 18 条 `locked_defect` 测试不许删
+## 21 条 `locked_defect` 测试不许删
 
-C4 的十六条缺陷现在由 18 条标了 `@pytest.mark.locked_defect` 的测试锁着：
+C4 的十九条缺陷现在由 21 条标了 `@pytest.mark.locked_defect` 的测试锁着：
 
 ```bash
-uv run --no-sync pytest -m locked_defect -q                        # 18 passed
+uv run --no-sync pytest -m locked_defect -q                        # 21 passed
 uv run --no-sync pytest -m locked_defect --collect-only -q         # 看清单
 uv run --no-sync pytest -m evidence_lock -q                        # 6 条，读 git 归档
 uv run --no-sync pytest -m integrity_check -q                      # 1 条，检测归档被覆盖
 ```
 
 **它们锁定的是"现状是坏的"，不是期望行为。** 造完 v2、跑出真实分数之后，
-这 18 条**不应该被删**——它们记录的是一次真实的测量失败，
+这 21 条**不应该被删**——它们记录的是一次真实的测量失败，
 比任何"我们做得很好"的叙述都有价值。
 
 - 改成正向断言的时机是**修复提交**，不是新数据上线时

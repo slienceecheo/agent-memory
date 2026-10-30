@@ -1,0 +1,140 @@
+"""`docs/HANDOFF.md` 的状态必须与实际一致。
+
+**为什么需要**：HANDOFF 曾滞后两轮，出现两处真矛盾：
+
+| 位置 | 写的 | 实际 |
+|---|---|---|
+| 运行态 | `1001 passed` | 1172 |
+| 协议状态 | "待冻结，尚未造数据" | 已冻结 + 2 个 subject |
+
+而"待冻结"与"已冻结两次"并存是最容易被误读的——下一个人会以为还在造数据阶段。
+
+**设计原则**：运行态数字只写在一处（§0），别处不重复。
+这份文档 300+ 行，两处各写一份必然对不上。
+"""
+
+from __future__ import annotations
+
+import re
+import subprocess
+import sys
+from pathlib import Path
+
+import pytest
+
+ROOT = Path(__file__).resolve().parents[2]
+HANDOFF = ROOT / "docs" / "HANDOFF.md"
+
+
+def _text() -> str:
+    if not HANDOFF.exists():
+        pytest.skip("HANDOFF 缺失")
+    return HANDOFF.read_text(encoding="utf-8")
+
+
+def test_current_state_is_section_zero() -> None:
+    """"当前状态"必须在第 0 节——读者先看到状态，再看历史。"""
+    text = _text()
+
+    assert "## 0. 当前状态" in text
+    # 位置在"项目是什么"之前
+    assert text.index("## 0. 当前状态") < text.index("## 项目是什么")
+
+
+def test_no_stale_test_counts() -> None:
+    """不得出现旧的 pytest 计数。
+
+    历史值：1001 / 1056 / 1098 / 1120 / 1149 / 1155 / 1165。
+    当前值从 §0 读，别处不许重复。
+    """
+    text = _text()
+
+    for stale in ("1001 passed", "1056 passed", "1098 passed"):
+        assert stale not in text, f"HANDOFF 里还有旧计数 {stale!r}"
+
+
+def test_protocol_is_marked_frozen_not_pending() -> None:
+    """协议必须标为已冻结，不得再有"待冻结"。"""
+    text = _text()
+
+    assert "待冻结" not in text, "协议已冻结（两个 tag），不该再写待冻结"
+    assert "已冻结" in text or "已冻结" in text
+
+
+def test_gate_status_matches_actual_run() -> None:
+    """§0 写的门禁通过数必须与实际一致。"""
+    text = _text()
+
+    sys.path.insert(0, str(ROOT))
+    from evals.datasets.retrieval_v2 import load_dataset
+    from evals.tools.check_v2_dataset import run_all
+
+    for name, label in (("sample", "ledger"), ("billing", "billing")):
+        dataset_dir = ROOT / "data" / "retrieval-v2" / name
+        if not dataset_dir.exists():
+            pytest.skip(f"{name} 缺失")
+        results = run_all(load_dataset(dataset_dir))
+        passed = sum(1 for r in results if r.passed)
+        expected = f"{label} {passed}/{len(results)}"
+        assert expected in text, f"HANDOFF 未写 {expected}"
+
+
+def test_no_duplicate_runtime_block() -> None:
+    """运行态数字只写一处。
+
+    "```...pytest -> ...```" 这种块只能出现一次——
+    历史上有两处各写一份，结果对不上。
+    """
+    text = _text()
+    blocks = re.findall(r"```\n(.*?)```", text, re.S)
+    pytest_blocks = [b for b in blocks if "pytest" in b and "passed" in b]
+
+    assert len(pytest_blocks) == 1, (
+        f"有 {len(pytest_blocks)} 处写了 pytest 计数，只应有一处"
+    )
+
+
+def test_every_failing_gate_is_classified() -> None:
+    """§0 的未通过门禁表必须覆盖实际的未通过项。"""
+    text = _text()
+
+    sys.path.insert(0, str(ROOT))
+    from evals.datasets.retrieval_v2 import load_dataset
+    from evals.tools.check_v2_dataset import run_all
+
+    failed: set[str] = set()
+    for name in ("sample", "billing"):
+        dataset_dir = ROOT / "data" / "retrieval-v2" / name
+        if not dataset_dir.exists():
+            continue
+        failed |= {r.code for r in run_all(load_dataset(dataset_dir)) if not r.passed}
+
+    # 样例上的 F19b/F20 依赖消融结果；F24 依赖结果文件——都已在结果目录里
+    for code in failed:
+        assert code in text, f"未通过项 {code} 没在 HANDOFF 里出现"
+
+
+def test_locked_defect_count_matches_marker() -> None:
+    """`locked_defect` 条数必须与实际标记数一致。"""
+    result = subprocess.run(
+        [sys.executable, "-m", "pytest", "-m", "locked_defect", "--collect-only", "-q"],
+        cwd=ROOT,
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+    )
+    match = re.search(r"(\d+)/\d+ tests? collected", result.stdout)
+    if not match:
+        pytest.skip("无法收集 locked_defect 测试")
+    count = int(match.group(1))
+
+    text = _text()
+    assert f"{count} 条" in text, f"HANDOFF 未写 locked_defect = {count} 条"
+
+
+def test_next_steps_point_at_v3_not_more_v2_subjects() -> None:
+    """下一步必须指向 v3，且明确说"不该铺第三个 subject"。"""
+    text = _text()
+
+    assert "v3" in text
+    assert "不该" in text and "第三个" in text
