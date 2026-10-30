@@ -149,7 +149,23 @@ def rerank(
     *,
     weights: RerankWeights,
 ) -> list[Ranked]:
-    """按权重加权求和并排序。并列时按 item_id 排序以保证可复现。"""
+    """按权重加权求和并排序。
+
+    **并列时保持输入顺序**（Python 的 `sorted` 是稳定排序）。
+    调用方负责传入有语义的顺序。
+
+    本函数**不提供并列裁决策略**。理由：早先的实现用 `item_id` 破并列，
+    而 `item_id` 在不同调用方那里含义不同（在 `run_retrieval` 里是稳定 tag，
+    在别处可能是 uuid）。而调用方拿到结果后会按自己的判据重排
+    （见 `evals/run_retrieval.py` 的 `fused_position`），
+    所以内部这个二级键**永远会被覆盖**。
+
+    留着一个会被覆盖的判据是有害的：读代码的人会以为它在起作用。
+    实测例子：`billing-c2` 上 tag 字典序与融合顺序恰好一致，
+    于是无法从结果判断谁在裁决——这种不可归因的状态本身就是隐患。
+
+    需要确定性的并列裁决时，由调用方传入已排好的顺序。
+    """
     scored: list[Ranked] = []
     for candidate in candidates:
         features = candidate.features
@@ -164,7 +180,8 @@ def rerank(
             Ranked(item_id=candidate.item_id, score=total, features=features)
         )
 
-    scored.sort(key=lambda item: (-item.score, item.item_id))
+    # 只按分数排；并列保持输入顺序（stable sort）。
+    scored.sort(key=lambda item: -item.score)
     return scored
 
 

@@ -18,8 +18,8 @@
     "adjacency": null
   },
   "embedding_network_calls": 0,
-  "code_version": "bfce310-dirty",
-  "code_diff_hash": "c753acb716ea92bac8d856e736a30f04b04040c6453e1dc8f2449d7aa0aad6c5",
+  "code_version": "8c60b2b-dirty",
+  "code_diff_hash": "c42c70207bdec1617e6e06344299295bae28556bbe9ea761a95248e9404d1716",
   "seh_at_k": 1.0,
   "srs": 0.9444444444444445,
   "attribution": {
@@ -1302,5 +1302,10 @@
     }
   ],
   "split": "independent",
-  "run_count": 1
+  "run_count": 2,
+  "supersedes": {
+    "code_version": "bfce310-dirty",
+    "code_diff_hash": "c753acb716ea92bac8d856e736a30f04b04040c6453e1dc8f2449d7aa0aad6c5",
+    "run_count": 1
+  }
 }

@@ -182,7 +182,19 @@ def test_feature_value_out_of_range_raises() -> None:
         rerank(candidates, weights=weights)
 
 
-def test_ties_are_deterministic() -> None:
+def test_ties_keep_input_order() -> None:
+    """同分时保持**输入顺序**，不是按 id 重排。
+
+    **这条测试的意图变过**：它原本断言"同分按 `item_id` 排序以保证可复现"。
+    但那个二级键在实际调用路径里**永远会被覆盖**（调用方按融合顺序重排），
+    所以它是一条会被覆盖的判据——留着会让读代码的人误以为它在生效。
+
+    现在的语义是：`rerank` 只按分数排，并列时交给调用方。
+    这条测试锁的是"保持输入顺序"这个稳定排序的性质。
+
+    输入 `b, a`（同分）→ 输出仍是 `b, a`。
+    若改回按 id 排，会变成 `a, b`，这条测试就会红。
+    """
     candidates = [
         _Candidate("b", base=0.5, condition=0.5, authority=0.5, status=0.5),
         _Candidate("a", base=0.5, condition=0.5, authority=0.5, status=0.5),
@@ -191,4 +203,23 @@ def test_ties_are_deterministic() -> None:
 
     ranked = rerank(candidates, weights=weights)
 
-    assert [item.item_id for item in ranked] == ["a", "b"]
+    assert [item.item_id for item in ranked] == ["b", "a"]
+
+
+def test_ties_are_deterministic_given_the_same_input() -> None:
+    """同一输入两次调用给出同一顺序——这是"可复现"的真正含义。
+
+    与上一条的区别：上一条锁"保持输入顺序"，这条锁"跨调用稳定"。
+    两者都要，因为"保持输入顺序"如果实现成随机洗牌，也会满足上一条的单次断言。
+    """
+    candidates = [
+        _Candidate("x", base=0.5, condition=0.5, authority=0.5, status=0.5),
+        _Candidate("y", base=0.5, condition=0.5, authority=0.5, status=0.5),
+        _Candidate("z", base=0.5, condition=0.5, authority=0.5, status=0.5),
+    ]
+    weights = RerankWeights(base=0.25, condition=0.25, authority=0.25, status=0.25)
+
+    first = [item.item_id for item in rerank(candidates, weights=weights)]
+    second = [item.item_id for item in rerank(candidates, weights=weights)]
+
+    assert first == second == ["x", "y", "z"]
