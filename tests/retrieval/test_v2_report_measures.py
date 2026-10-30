@@ -168,3 +168,49 @@ def test_report_does_not_claim_cross_domain_generality() -> None:
 
     assert "不足以支撑跨领域的一般性" in text
     assert "两个 subject" in text
+
+
+def test_no_section_is_repeated_verbatim() -> None:
+    """报告的任一表格不得原样出现两次。
+
+    **实测问题**：`### 2.3 这两条证据的机制不同` 曾与 §2.2 尾段完全相同——
+    同一个表格、同一句话说了两遍。它会让读者以为"机制不同"是两件独立的事，
+    而实际是同一句话说了两遍。
+
+    判据：取每个 markdown 表格（连续 `|` 行），统计出现次数。
+    """
+    import re
+
+    text = _report()
+    blocks = re.findall(r"((?:^\|.*\|\s*$\n?)+)", text, re.M)
+    seen: dict[str, int] = {}
+    for block in blocks:
+        key = block.strip()
+        if len(key) < 40:  # 太短的表（如两行）不判重
+            continue
+        seen[key] = seen.get(key, 0) + 1
+
+    duplicated = {k[:60]: n for k, n in seen.items() if n > 1}
+    assert not duplicated, f"有表格重复出现：{duplicated}"
+
+
+def test_no_heading_is_repeated() -> None:
+    """标题不得重复——重复标题通常意味着整段被复制。
+
+    **例外**：`### 复算` 是每节末尾的固定小节，重复是结构性的。
+    剔除它之后，任何重复标题都值得查。
+    """
+    import re
+    from collections import Counter
+
+    STRUCTURAL = {"### 复算"}
+
+    text = _report()
+    headings = [
+        h.strip()
+        for h in re.findall(r"^###+ .*$", text, re.M)
+        if h.strip() and h.strip() not in STRUCTURAL
+    ]
+    dupes = {h: n for h, n in Counter(headings).items() if n > 1}
+
+    assert not dupes, f"重复标题：{dupes}"

@@ -10,8 +10,14 @@
 v2 数据集   2 个 subject：project:ledger（12 记忆）、project:billing（9 记忆）
 结果文件    13 份统一指纹（11 评测 + 2 消融），由测试强制
 门禁        ledger 21/27、billing 24/27
-结论        4 条，见 docs/reports/v2-what-it-measures.md
+结论        docs/reports/v2-what-it-measures.md（四条，每条带复算命令）
+协议        tag dataset-v2-protocol-r2（cb9c77f）= 当前有效
+            旧 tag dataset-v2-protocol（e6a795a）保留，6 次修订见协议 §0.1
 ```
+
+> ⚠️ **`billing` 的 A 轴 `SEH@1 = 1.0000` 是保留的实验设计失败（F24），不是成绩。**
+> 它看起来像满分，实际含义是"这份数据测不到区分能力"。
+> 保留它是为了让"干净的高分可能是设计失败"这个形态可见。
 
 **未通过的门禁，分三类**：
 
@@ -26,9 +32,9 @@ v2 数据集   2 个 subject：project:ledger（12 记忆）、project:billing�
 | **F24**（A 轴不得满分） | **正确的失败** | **billing A 轴 `SEH@1 = 1.0000`** |
 
 ```
-pytest              -> 1180 passed, 1 skipped
+pytest              -> 1186 passed, 1 skipped
 ruff / mypy         -> clean
-locked_defect       -> 21 条（锁住 19 条缺陷的现状）
+locked_defect       -> 21 条收集（19 个标记，1 处 parametrize 展开为 3）
 evidence_lock       -> 6 条（读 git 归档，只有历史被改写才红）
 integrity_check     -> 1 条（工作区归档被覆盖时红，动作是还原）
 ```
@@ -302,9 +308,11 @@ if result["seh_at_k"] >= 1.0:
 **C4 里"这些不是实现缺陷，是数据表达能力的上限"这句话错了一半**——
 前两条限制是数据问题，1.000 本身是实现缺陷。
 
-## 21 条 `locked_defect` 测试不许删
+## 19 个 `locked_defect` 标记不许删（收集为 21 条）
 
-C4 的十九条缺陷现在由 21 条标了 `@pytest.mark.locked_defect` 的测试锁着：
+C4 的十九条缺陷现在由 **19 个 `@pytest.mark.locked_defect` 标记**锁着，
+收集时展开为 **21 条测试**（`test_authority_and_status_have_no_variance_in_pool`
+的 `parametrize` 有 3 个 split，占 3 条而只算 1 个标记）。
 
 ```bash
 uv run --no-sync pytest -m locked_defect -q                        # 21 passed
@@ -314,11 +322,29 @@ uv run --no-sync pytest -m integrity_check -q                      # 1 条，检
 ```
 
 **它们锁定的是"现状是坏的"，不是期望行为。** 造完 v2、跑出真实分数之后，
-这 21 条**不应该被删**——它们记录的是一次真实的测量失败，
+这 19 个标记**不应该被删**——它们记录的是一次真实的测量失败，
 比任何"我们做得很好"的叙述都有价值。
 
 - 改成正向断言的时机是**修复提交**，不是新数据上线时
 - 冻结 tag 只冻结数据与协议，**不冻结代码状态**：缺陷还在，测试就该红
+
+### 只有"可修复的违规"能进 `locked_defect`
+
+**观测结论不是缺陷。** 这条界限必须守住，否则清单会混入永远无法结案的条目。
+
+| 类型 | 例子 | 能否进 |
+|---|---|---|
+| 装置/数据违反应有性质 | 缺陷 1：`query == gold` 原文 | ✅ 修法是换数据 |
+| 装置/数据违反应有性质 | 缺陷 19：`authority` 权重错配 | ✅ 修法是调权重 |
+| **观测结论** | **"词面在 A 轴无增量"** | ❌ 没有"修好"这个状态 |
+| **观测结论** | **"authority 临界点 = 0.25"** | ❌ 同上 |
+
+判据：**问"这个条目怎样才能变绿"**。若答案是"改数据让它有增量"，
+那不是修缺陷，是换实验。
+
+`tests/retrieval/test_locked_defect_manifest.py` 的 `DEFECT_TESTS`
+维护"缺陷编号 → 测试"映射，孤儿测试会红。所以把结论登记成缺陷
+会在那里暴露——**但前提是有人真的去登记**。
 
 ### 三个 marker 的语义各不相同
 

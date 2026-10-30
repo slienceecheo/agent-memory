@@ -115,7 +115,15 @@ def test_every_failing_gate_is_classified() -> None:
 
 
 def test_locked_defect_count_matches_marker() -> None:
-    """`locked_defect` 条数必须与实际标记数一致。"""
+    """`locked_defect` 的标记数与收集数必须区分开写。
+
+    **这两个数字不相等，而且原因具体**：
+    `test_authority_and_status_have_no_variance_in_pool` 有 3 个 `parametrize` split，
+    占 3 条测试但只算 1 个标记。
+
+    历史上 HANDOFF 只写一个数，于是"18 条"既不像标记数也不像收集数——
+    实际历史是 10 → 17 → 19 个标记，从没出现过 18。
+    """
     result = subprocess.run(
         [sys.executable, "-m", "pytest", "-m", "locked_defect", "--collect-only", "-q"],
         cwd=ROOT,
@@ -123,13 +131,73 @@ def test_locked_defect_count_matches_marker() -> None:
         text=True,
         encoding="utf-8",
     )
-    match = re.search(r"(\d+)/\d+ tests? collected", result.stdout)
+    match = re.search(r"(\d+)/(\d+) tests? collected", result.stdout)
     if not match:
         pytest.skip("无法收集 locked_defect 测试")
-    count = int(match.group(1))
+    collected = int(match.group(1))
+
+    # 标记数：直接数源码
+    markers = 0
+    for path in (ROOT / "tests").rglob("*.py"):
+        markers += path.read_text(encoding="utf-8").count(
+            "@pytest.mark.locked_defect"
+        )
 
     text = _text()
-    assert f"{count} 条" in text, f"HANDOFF 未写 locked_defect = {count} 条"
+    assert f"{markers} 个" in text, f"HANDOFF 未写标记数 {markers} 个"
+    assert f"{collected} 条" in text, f"HANDOFF 未写收集数 {collected} 条"
+
+
+def test_locked_defect_section_separates_observation_from_defect() -> None:
+    """必须写明"观测结论不是缺陷"——否则清单会混入永远无法结案的条目。
+
+    判据是"这个条目怎样才能变绿"：
+      - 缺陷：改数据/改代码就能绿
+      - 结论：没有"修好"这个状态
+    """
+    text = _text()
+
+    assert "只有" in text and "可修复" in text
+    assert "观测结论不是缺陷" in text
+    assert "词面在 A 轴无增量" in text
+    assert "怎样才能变绿" in text
+
+
+def test_section_zero_answers_where_the_conclusions_are() -> None:
+    """§0 必须能独立回答"结论在哪"——读者读完 §0 不该再去找。"""
+    text = _text()
+    section = text[: text.index("## 项目是什么")] if "## 项目是什么" in text else text
+
+    assert "v2-what-it-measures.md" in section
+    assert "四条" in section
+
+
+def test_section_zero_lists_both_protocol_tags() -> None:
+    """§0 必须写清哪个 tag 是当前有效版本。
+
+    下一个人要复算必须知道协议版本；而两个 tag 并存会让人选错。
+    """
+    text = _text()
+    section = text[: text.index("## 项目是什么")] if "## 项目是什么" in text else text
+
+    assert "dataset-v2-protocol-r2" in section
+    assert "cb9c77f" in section
+    assert "当前有效" in section
+    assert "e6a795a" in section
+
+
+def test_section_zero_flags_billing_saturation_as_kept_failure() -> None:
+    """§0 必须写明 `billing` 的 1.0000 是保留的失败，不是成绩。
+
+    这是最容易被误读的数字——它看起来像满分。
+    只写在后面的纪律节里，读 §0 的人不会知道。
+    """
+    text = _text()
+    section = text[: text.index("## 项目是什么")] if "## 项目是什么" in text else text
+
+    assert "1.0000" in section
+    assert "实验设计失败" in section
+    assert "不是成绩" in section
 
 
 def test_next_steps_point_at_v3_not_more_v2_subjects() -> None:
