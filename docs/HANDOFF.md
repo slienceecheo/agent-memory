@@ -52,6 +52,27 @@ git diff 47e4785..dataset-v2-frozen -- evals src
 → **v3 待办**：结果文件加 `git_commit`（干净 hash）与 `git_tag`，
 把"哪个 commit"和"哪个 tag"分开记。
 
+### 0.2 `results/` 里的 gates 是 tag 时的产物，文案可滞后但判定不可变
+
+F24 的 detail 在 tag **之后**改进过：现在分两段写
+`[数据侧通过] ... [结果侧失败] ...`，而 `results/v2-*-gates.json` 里仍是旧文案。
+
+**为什么允许这个不一致**：两个要求互相冲突——
+
+| 要求 | 后果 |
+|---|---|
+| 结果文件必须对应 tag | 不能重跑 gates |
+| detail 要能看出两段 | 必须重跑 gates 才会更新 |
+
+选择**保 tag、保数字、允许文案滞后**，因为：
+
+- 判定完全相同（21/27、24/27，失败项相同）——**重跑验证过**
+- 文案滞后不影响任何结论
+- 而重跑会让指纹脱离 tag，那是更严重的不一致
+
+**若某天 gates 文件里的 F24 由红变绿（或反过来），那是真问题**，
+不是文案滞后。`test_gates_result_f24_detail_may_lag_but_verdict_must_match` 守这条线。
+
 > **`frozen` 不等于合格。** 它表示"这是 v2 的最终版，5 处数据缺陷已登记、已锁定"。
 > 5 处是 F13 / F17b / F18 / F21a / F24，见 `docs/reports/v2-what-it-measures.md` §0.1。
 > 它们**不修**——修就是改已有数据，而分数已经看过（协议 §1.2）。
@@ -73,7 +94,7 @@ git diff 47e4785..dataset-v2-frozen -- evals src
 | **F24**（A 轴不得满分） | **正确的失败** | **billing A 轴 `SEH@1 = 1.0000`** |
 
 ```
-pytest              -> 1236 passed, 1 skipped
+pytest              -> 1241 passed, 1 skipped
 ruff / mypy         -> clean
 locked_defect       -> 25 条收集（23 个标记，parametrize 展开 2 条）
 evidence_lock       -> 6 条（读 git 归档，只有历史被改写才红）

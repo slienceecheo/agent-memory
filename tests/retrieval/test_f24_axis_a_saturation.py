@@ -86,7 +86,59 @@ def test_f24_data_side_check_works_without_results(tmp_path: Path) -> None:
     result = check_f24_axis_a_not_saturated(dataset, ceiling=0.0)
 
     assert not result.passed
-    assert "随机基线" in result.detail
+    assert "数据侧失败" in result.detail
+
+
+def test_f24_detail_shows_both_stages() -> None:
+    """**detail 必须分别写出数据侧与结果侧的结论。**
+
+    否则读者无法判断"如果没跑评测，这条会是什么"。
+
+    实测：`billing` 现在红，只因为结果文件存在。
+    删掉 `v2-billing-lexical-vector-adjacency.json`，F24 会变绿（只跑数据侧）。
+    **这个依赖必须可见。**
+    """
+    if not SAMPLE.exists():
+        pytest.skip("样例数据集缺失")
+
+    ledger = check_f24_axis_a_not_saturated(load_dataset(SAMPLE))
+    assert "[数据侧通过]" in ledger.detail
+    assert "[结果侧" in ledger.detail
+
+    if BILLING.exists():
+        billing = check_f24_axis_a_not_saturated(load_dataset(BILLING))
+        # 数据侧通过、结果侧失败——两段结论不同，必须都看得见
+        assert "[数据侧通过]" in billing.detail
+        assert "[结果侧失败]" in billing.detail
+        assert not billing.passed
+
+
+def test_f24_marks_result_side_as_not_run_when_no_file(tmp_path: Path) -> None:
+    """没有结果文件时，结果侧必须写「未跑」而不是「通过」。
+
+    「通过」与「未跑」的区别就是"测了得 0"与"没测"的区别——
+    与本项目 `path_returns` 用 null 而非 0 是同一条原则。
+
+    **做法**：把 `results/` 临时指向一个不含 F24 结果文件的目录。
+    这里不能真删仓库文件，所以用 `monkeypatch` 把 ROOT 换掉。
+    """
+    if not SAMPLE.exists():
+        pytest.skip("样例数据集缺失")
+
+    import evals.tools.check_v2_dataset as mod
+
+    empty = tmp_path / "results"
+    empty.mkdir()
+    dataset = load_dataset(SAMPLE)
+
+    with pytest.MonkeyPatch.context() as mp:
+        mp.setattr(mod, "ROOT", tmp_path)
+        result = mod.check_f24_axis_a_not_saturated(dataset)
+
+    assert "[数据侧通过]" in result.detail
+    assert "[结果侧未跑]" in result.detail
+    # 未跑不等于失败——数据侧通过时整条仍应通过
+    assert result.passed
 
 
 def test_billing_axis_a_has_no_ties() -> None:

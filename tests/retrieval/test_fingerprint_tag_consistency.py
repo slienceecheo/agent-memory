@@ -172,6 +172,65 @@ def test_handoff_states_which_files_changed_in_that_range() -> None:
     )
 
 
+def test_gates_result_f24_detail_may_lag_but_verdict_must_match() -> None:
+    """`results/` 里的 gates 是 **frozen tag 时的产物**，允许 detail 文案滞后。
+
+    **为什么允许**：tag 之后代码改进了 F24 的 detail（分成数据侧/结果侧两段），
+    而重跑 gates 会让结果指纹脱离 tag（`47e4785-dirty` → 新 commit）。
+    两者无法同时满足，所以选择**保 tag、保数字、允许文案滞后**。
+
+    **但判定必须一致**——这是这条测试守的底线：
+    若哪天 gates 文件里的 F24 由红变绿（或反过来），说明真有问题。
+    """
+    path = RESULTS / "v2-billing-gates.json"
+    if not path.exists():
+        pytest.skip("gates 结果缺失")
+
+    stored = json.loads(path.read_text(encoding="utf-8"))
+    stored_f24 = next(c for c in stored["checks"] if c["code"] == "F24")
+
+    import sys
+
+    sys.path.insert(0, str(ROOT))
+    from evals.datasets.retrieval_v2 import load_dataset
+    from evals.tools.check_v2_dataset import check_f24_axis_a_not_saturated
+
+    fresh = check_f24_axis_a_not_saturated(
+        load_dataset(ROOT / "data" / "retrieval-v2" / "billing")
+    )
+
+    assert stored_f24["passed"] == fresh.passed, (
+        "F24 的判定变了——那不只是文案滞后"
+    )
+    assert stored_f24["passed"] is False, "billing 的 F24 应当仍是失败"
+
+
+def test_f24_detail_now_separates_both_stages() -> None:
+    """当前代码的 F24 detail 必须分两段写（这是 tag 之后的改进）。"""
+    import sys
+
+    sys.path.insert(0, str(ROOT))
+    from evals.datasets.retrieval_v2 import load_dataset
+    from evals.tools.check_v2_dataset import check_f24_axis_a_not_saturated
+
+    for name in ("sample", "billing"):
+        result = check_f24_axis_a_not_saturated(
+            load_dataset(ROOT / "data" / "retrieval-v2" / name)
+        )
+        assert "[数据侧" in result.detail, f"{name} 未标数据侧"
+        assert "[结果侧" in result.detail, f"{name} 未标结果侧"
+
+
+def test_handoff_explains_why_gates_detail_lags() -> None:
+    """§0.1 必须说明：gates 是 tag 时产物，detail 文案可滞后，判定不可变。"""
+    text = (ROOT / "docs" / "HANDOFF.md").read_text(encoding="utf-8")
+    section = text[: text.index("## 项目是什么")] if "## 项目是什么" in text else text
+
+    assert "gates" in section.lower()
+    assert "滞后" in section or "文案" in section
+    assert "判定" in section
+
+
 def test_code_version_semantics_is_documented() -> None:
     """必须写明 `code_version` 的 `-dirty` 语义。
 

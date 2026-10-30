@@ -995,14 +995,24 @@ def check_f24_axis_a_not_saturated(dataset: Dataset, *, ceiling: float = 0.9999)
     if baseline.queries == 0:
         return Check("F24", "A 轴未饱和", True, "没有 A 轴查询")
 
-    problems: list[str] = []
+    # 两段的结论要**分别写出来**，不能合并成一句话。
+    #
+    # **为什么**：第二段只在结果文件存在时执行。若结果文件被删，
+    # 这条门禁会只跑数据侧并通过——那时 detail 若只说"通过"，
+    # 读者无法判断"这是真通过，还是没跑结果侧"。
+    #
+    # 实测的例子：`billing` 现在红，只因为
+    # `v2-billing-lexical-vector-adjacency.json` 存在。
+    # 删掉它，F24 会变绿。**这个依赖必须可见。**
+    data_side_problem: str | None = None
     if baseline.seh_at_1 >= ceiling:
-        problems.append(
+        data_side_problem = (
             f"随机基线 SEH@1={baseline.seh_at_1:.4f} 已饱和"
             f"（竞争集均值 {baseline.mean_pool_size:.2f}）"
         )
 
-    # 结果侧：只在已有结果文件时检查，不强制跑评测
+    result_side_problem: str | None = None
+    result_side_note = "未跑（无结果文件）"
     for path in sorted((ROOT / "results").glob("v2-*-lexical-vector-adjacency.json")):
         payload = json.loads(path.read_text(encoding="utf-8"))
         cases = payload.get("per_case") or []
@@ -1015,22 +1025,28 @@ def check_f24_axis_a_not_saturated(dataset: Dataset, *, ceiling: float = 0.9999)
         ranks = {c["case_id"]: c["rank_after_rerank"] for c in cases}
         hit = sum(1 for qid in dataset_a if ranks.get(qid) == 1)
         ratio = hit / len(dataset_a)
+        result_side_note = f"实测 {hit}/{len(dataset_a)}={ratio:.4f}（{path.name}）"
         if ratio >= ceiling:
-            problems.append(
-                f"实测 SEH@1={hit}/{len(dataset_a)}={ratio:.4f}（来源 {path.name}）——"
-                "满分意味着这份数据测不到区分能力"
-            )
+            result_side_problem = result_side_note + "——满分意味着测不到区分能力"
         break
 
-    return Check(
-        "F24",
-        "A 轴未饱和（SEH@1 不得满分）",
-        not problems,
-        f"随机基线 {baseline.seh_at_1:.4f}，"
-        f"竞争集均值 {baseline.mean_pool_size:.2f}"
-        if not problems
-        else "；".join(problems),
+    passed = data_side_problem is None and result_side_problem is None
+    data_mark = "通过" if data_side_problem is None else "失败"
+    result_mark = (
+        "未跑" if result_side_note.startswith("未跑")
+        else ("通过" if result_side_problem is None else "失败")
     )
+    detail = (
+        f"[数据侧{data_mark}] 随机基线 {baseline.seh_at_1:.4f}、"
+        f"竞争集均值 {baseline.mean_pool_size:.2f}；"
+        f"[结果侧{result_mark}] {result_side_note}"
+    )
+    if data_side_problem:
+        detail += f"；饱和：{data_side_problem}"
+    if result_side_problem:
+        detail += "；满分意味着测不到区分能力"
+
+    return Check("F24", "A 轴未饱和（SEH@1 不得满分）", passed, detail)
 
 
 ALL_CHECKS = (
