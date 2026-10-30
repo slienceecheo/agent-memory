@@ -37,6 +37,21 @@ ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_THRESHOLD = 0.30
 
 
+def _axis_seh(
+    ranks: dict[str, int | None], axis_of: dict[str, str], axis: str, k: int
+) -> float:
+    """某条轴上 gold 排进前 k 的比例。
+
+    **按轴分开算的理由**：A 轴与 C 轴的有效特征数不同（见 `ablate` 的注释），
+    分数不可直接比较。合并成一个数会掩盖这一点。
+    """
+    ids = [cid for cid in ranks if axis_of[cid] == axis]
+    if not ids:
+        return 0.0
+    hit = sum(1 for cid in ids if ranks[cid] is not None and ranks[cid] <= k)
+    return hit / len(ids)
+
+
 def _axis_seh1(ranks: dict[str, int | None], axis_of: dict[str, str], axis: str) -> float:
     ids = [cid for cid in ranks if axis_of[cid] == axis]
     if not ids:
@@ -110,6 +125,13 @@ def ablate(dataset_dir: Path, *, embedder: Any) -> dict[str, Any]:
     changed = [
         cid for cid in with_cond if with_cond[cid] != without_cond.get(cid)
     ]
+    # C 轴也要报，而且**必须同时报 SEH@1 与 SEH@5**。
+    #
+    # 实测 `project:billing` 的 C 轴：c1 rank=2、c2 rank=2、c3 rank=3
+    #   SEH@1 = 0/3（一条都没排第 1）
+    #   SEH@5 = 3/3（全部排进前 5）
+    # 只报前者会读成"C 轴完全失败"，只报后者会读成"C 轴完美"。
+    # 两者并存才说明真实形态：**能召回，但排不准**。
     return {
         "with_condition": with_cond,
         "without_condition": without_cond,
@@ -117,6 +139,22 @@ def ablate(dataset_dir: Path, *, embedder: Any) -> dict[str, Any]:
         "axis_a_seh1_without": _axis_seh1(without_cond, axis_of, "A"),
         "drop": _axis_seh1(with_cond, axis_of, "A")
         - _axis_seh1(without_cond, axis_of, "A"),
+        # C 轴：condition 字段为空，`condition_match` 恒 0.5，
+        # 所以 C 轴的消融**理论上不该改变任何名次**。
+        # 实测若确实不变，那是一条独立结论：C 轴不依赖 condition。
+        "axis_c_seh1_with": _axis_seh1(with_cond, axis_of, "C"),
+        "axis_c_seh1_without": _axis_seh1(without_cond, axis_of, "C"),
+        "axis_c_seh5_with": _axis_seh(with_cond, axis_of, "C", 5),
+        "axis_c_seh5_without": _axis_seh(without_cond, axis_of, "C", 5),
+        "axis_c_n": sum(1 for cid in with_cond if axis_of.get(cid) == "C"),
+        "axis_c_ranks_with": {
+            cid: with_cond[cid] for cid in with_cond if axis_of.get(cid) == "C"
+        },
+        "axis_c_ranks_without": {
+            cid: without_cond.get(cid)
+            for cid in with_cond
+            if axis_of.get(cid) == "C"
+        },
         "implicit_with": _cue_seh1(with_cond, cue_of, axis_of, "implicit"),
         "implicit_without": _cue_seh1(without_cond, cue_of, axis_of, "implicit"),
         "explicit_with": _cue_seh1(with_cond, cue_of, axis_of, "explicit"),
@@ -189,6 +227,13 @@ def main(argv: list[str] | None = None) -> int:
     print(
         f"  explicit    {result['explicit_with']:.4f} → {result['explicit_without']:.4f}"
     )
+    print(
+        f"  C 轴 n={result['axis_c_n']}  "
+        f"SEH@1 {result['axis_c_seh1_with']:.4f} → {result['axis_c_seh1_without']:.4f}  "
+        f"SEH@5 {result['axis_c_seh5_with']:.4f} → {result['axis_c_seh5_without']:.4f}"
+    )
+    print(f"    C 轴逐条 rank（with）：{result['axis_c_ranks_with']}")
+    print(f"    C 轴逐条 rank（without）：{result['axis_c_ranks_without']}")
     print(
         f"  never_recalled  有 condition={result['never_recalled_with']} "
         f"消融后={result['never_recalled_without']}"

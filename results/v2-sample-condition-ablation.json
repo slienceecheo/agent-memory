@@ -30,6 +30,19 @@
   "axis_a_seh1_with": 0.9,
   "axis_a_seh1_without": 0.3,
   "drop": 0.6000000000000001,
+  "axis_c_seh1_with": 1.0,
+  "axis_c_seh1_without": 1.0,
+  "axis_c_seh5_with": 1.0,
+  "axis_c_seh5_without": 1.0,
+  "axis_c_n": 2,
+  "axis_c_ranks_with": {
+    "ledger-q11": 1,
+    "ledger-q12": 1
+  },
+  "axis_c_ranks_without": {
+    "ledger-q11": 1,
+    "ledger-q12": 1
+  },
   "implicit_with": 0.75,
   "implicit_without": 0.0,
   "explicit_with": 1.0,

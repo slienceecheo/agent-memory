@@ -30,6 +30,21 @@
   "axis_a_seh1_with": 1.0,
   "axis_a_seh1_without": 0.2222222222222222,
   "drop": 0.7777777777777778,
+  "axis_c_seh1_with": 0.0,
+  "axis_c_seh1_without": 0.0,
+  "axis_c_seh5_with": 1.0,
+  "axis_c_seh5_without": 1.0,
+  "axis_c_n": 3,
+  "axis_c_ranks_with": {
+    "billing-c1": 2,
+    "billing-c2": 2,
+    "billing-c3": 3
+  },
+  "axis_c_ranks_without": {
+    "billing-c1": 2,
+    "billing-c2": 2,
+    "billing-c3": 3
+  },
   "implicit_with": 1.0,
   "implicit_without": 0.0,
   "explicit_with": 1.0,
