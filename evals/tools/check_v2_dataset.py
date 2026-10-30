@@ -1103,17 +1103,31 @@ def main(argv: list[str] | None = None) -> int:
         )
 
     if args.json:
+        # **门禁结果也是数字，也必须能复算。**
+        #
+        # 原先这里只写一个 list，没有 `code_fingerprint`。后果：
+        # "21/27 是在哪个代码版本上跑的"无法验证——与消融文件曾经的问题同型。
+        #
+        # 结构从 `[...]` 改为 `{"checks": [...], **fingerprint}`：
+        # 保留 list 语义（`checks`），同时带来源。
+        from evals.run_retrieval import code_fingerprint
+
         args.json.parent.mkdir(parents=True, exist_ok=True)
+        payload = {
+            "checks": [
+                {
+                    "code": r.code,
+                    "title": r.title,
+                    "passed": r.passed,
+                    "detail": r.detail,
+                }
+                for r in results
+            ],
+            "dataset": str(args.directory),
+            **code_fingerprint(),
+        }
         args.json.write_text(
-            json.dumps(
-                [
-                    {"code": r.code, "title": r.title, "passed": r.passed, "detail": r.detail}
-                    for r in results
-                ],
-                ensure_ascii=False,
-                indent=2,
-            )
-            + "\n",
+            json.dumps(payload, ensure_ascii=False, indent=2) + "\n",
             encoding="utf-8",
         )
         print(f"-> {args.json}")

@@ -29,16 +29,28 @@ def dataset():
     return load_dataset(SAMPLE)
 
 
+def _checks(payload: object) -> list[dict[str, object]]:
+    """门禁结果既接受新结构（dict + checks），也接受旧结构（裸 list）。
+
+    **为什么结构变了**：门禁结果也是数字，必须有 `code_fingerprint`。
+    原先只写一个 list，"21/27 是在哪个代码版本上跑的"无法验证。
+    现在写成 `{"checks": [...], "code_version": ..., "code_diff_hash": ...}`。
+    """
+    if isinstance(payload, dict):
+        return list(payload["checks"])  # type: ignore[arg-type]
+    return list(payload)  # type: ignore[arg-type]
+
+
 def test_report_exists() -> None:
     assert REPORT.exists()
 
 
 def test_gates_result_exists_and_matches_report() -> None:
-    """报告里写的"12/16"必须能从 JSON 复算。"""
+    """报告里写的通过数必须能从 JSON 复算。"""
     if not GATES.exists():
         pytest.skip("门禁结果缺失")
 
-    results = json.loads(GATES.read_text(encoding="utf-8"))
+    results = _checks(json.loads(GATES.read_text(encoding="utf-8")))
     passed = sum(1 for r in results if r["passed"])
     text = REPORT.read_text(encoding="utf-8")
 
@@ -68,7 +80,10 @@ def test_previously_failing_gates_now_pass_and_are_named() -> None:
     if not GATES.exists():
         pytest.skip("门禁结果缺失")
 
-    results = {r["code"]: r["passed"] for r in json.loads(GATES.read_text(encoding="utf-8"))}
+    results = {
+        r["code"]: r["passed"]
+        for r in _checks(json.loads(GATES.read_text(encoding="utf-8")))
+    }
 
     assert results["L6a"] is True, "三路召回又没接上了？"
     assert results["L6b"] is True, "池里又不写向量了？"

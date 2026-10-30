@@ -89,6 +89,32 @@ def test_report_registers_defects_20_and_21() -> None:
     assert "为什么不登记的" in text
 
 
+def test_report_lists_data_defects_before_any_conclusion() -> None:
+    """§0.1 的数据缺陷清单必须在任何结论之前。
+
+    它是"frozen ≠ 合格"的唯一说明处。放在结论之后等于让它晚到。
+    """
+    text = _report()
+    section = text[: text.index("## 1. 四条结论")]
+
+    assert "数据缺陷清单" in section
+    for code in ("F13", "F17b", "F18", "F21a", "F24"):
+        assert code in section, f"§0.1 未列出 {code}"
+    # 必须写明"不修"与理由
+    assert "不修" in section
+    assert "§1.2" in section or "1.2" in section
+
+
+def test_report_distinguishes_data_defects_from_constructive() -> None:
+    """F6 与 F21b 是构造性的，不得混进"数据缺陷"表。"""
+    text = _report()
+    section = text.split("### 0.1")[1].split("## 1.")[0]
+
+    assert "构造性" in section
+    # 它们被明确排除在表外
+    assert "不在此表" in section or "铺开就会消失" in section
+
+
 def test_defect_20_and_21_are_marked_locked() -> None:
     """两条新缺陷必须真的带 `locked_defect` 标记。"""
     import ast

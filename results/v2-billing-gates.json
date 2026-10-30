@@ -1,164 +1,169 @@
-[
-  {
-    "code": "L1",
-    "title": "query 不等于 gold 原文",
-    "passed": true,
-    "detail": "12/12 通过"
-  },
-  {
-    "code": "L2",
-    "title": "query 不含 gold 值",
-    "passed": true,
-    "detail": "12/12 通过"
-  },
-  {
-    "code": "L3",
-    "title": "query 与原话 bigram Jaccard ≤ 0.5",
-    "passed": true,
-    "detail": "最高 0.24（billing-a4）"
-  },
-  {
-    "code": "L4",
-    "title": "每条记忆都有原文",
-    "passed": true,
-    "detail": "9/9"
-  },
-  {
-    "code": "L5",
-    "title": "A 轴竞争集 ≥ 3",
-    "passed": true,
-    "detail": "9/9 通过"
-  },
-  {
-    "code": "L6a",
-    "title": "三路召回都被调用",
-    "passed": true,
-    "detail": "来自 a3-lexical-vector-adjacency.json：enabled=['adjacency', 'lexical', 'vector'], unwired=[]"
-  },
-  {
-    "code": "L6b",
-    "title": "池构造写入向量",
-    "passed": true,
-    "detail": "33 条 case 全部写入；范数 0.9996–1.0004（8 个不同值）"
-  },
-  {
-    "code": "L6c",
-    "title": "三路召回都返回非空",
-    "passed": true,
-    "detail": "来自 a3-lexical-vector-adjacency.json：{'lexical': 41, 'vector': 462, 'adjacency': 13}"
-  },
-  {
-    "code": "L8",
-    "title": "dedup 分数有方差",
-    "passed": true,
-    "detail": "33 条 case 的分数都有方差"
-  },
-  {
-    "code": "L9",
-    "title": "implicit 查询不含条件同义词",
-    "passed": true,
-    "detail": "6/6 通过"
-  },
-  {
-    "code": "F2",
-    "title": "竞争集 ≥ 2 的占比 ≥ 80%",
-    "passed": true,
-    "detail": "100.0%（12/12），最小竞争集 3"
-  },
-  {
-    "code": "F5",
-    "title": "多分支 relation 的分支数 ∈ [3, 5]",
-    "passed": true,
-    "detail": "3/3 个多分支 relation 合格"
-  },
-  {
-    "code": "F6",
-    "title": "第三方 subject ≥ 5",
-    "passed": false,
-    "detail": "0 个：[]"
-  },
-  {
-    "code": "F12",
-    "title": "forced subject 占比 ≤ 20%",
-    "passed": true,
-    "detail": "0.0%（0/1）"
-  },
-  {
-    "code": "F13",
-    "title": "implicit 整体 ≥40% 且逐 subject ≥50%",
-    "passed": true,
-    "detail": "整体 6/9 = 66.7%（需 ≥40%）；逐 subject project:billing=67%（需 ≥50%）"
-  },
-  {
-    "code": "F15",
-    "title": "A 轴饱和时必须报 SEH@1",
-    "passed": true,
-    "detail": "A 轴平均竞争集 3.00，随机 SEH@5=1.0000、SEH@1=0.3333 → A 轴主指标已定为 SEH@1（协议 §7.1）"
-  },
-  {
-    "code": "F16",
-    "title": "随机基线实测与公式偏差 < 0.02",
-    "passed": true,
-    "detail": "A: 公式 0.3333/1.0000 实测 0.3314/1.0000；C: 公式 0.1111/0.5556 实测 0.1155/0.5513"
-  },
-  {
-    "code": "F17a",
-    "title": "多分支各分支都是 A 轴 gold",
-    "passed": true,
-    "detail": "3 个多分支 relation，全部分支都被 A 轴指向"
-  },
-  {
-    "code": "F17b",
-    "title": "每个 relation 都有 C 轴查询",
-    "passed": true,
-    "detail": "3/3 个 relation 被 C 轴覆盖"
-  },
-  {
-    "code": "F18",
-    "title": "非 user_direct 的来源必须在原文里自解释",
-    "passed": true,
-    "detail": "没有非 user_direct 的记忆，或全部自解释"
-  },
-  {
-    "code": "F19a",
-    "title": "implicit 的 gold 数据完整",
-    "passed": true,
-    "detail": "6 条 implicit，gold 都在库且有原文"
-  },
-  {
-    "code": "F19b",
-    "title": "implicit 的 gold 真的被召回",
-    "passed": true,
-    "detail": "6 条 implicit，三路全开时全部被召回（来源 v2-billing-condition-ablation.json）"
-  },
-  {
-    "code": "F20",
-    "title": "condition 对 A 轴有贡献",
-    "passed": true,
-    "detail": "A 轴 SEH@1 1.0 → 0.2222222222222222，掉幅 +0.7778（阈值 ≥0.3；来源 v2-billing-condition-ablation.json）"
-  },
-  {
-    "code": "F21a",
-    "title": "每 subject relation 数 ∈ [2, 3]",
-    "passed": true,
-    "detail": "1/1 个 subject 合格"
-  },
-  {
-    "code": "F21b",
-    "title": "relation=2 与 =3 的 subject 各 ≥ 5",
-    "passed": false,
-    "detail": "relation 数分布 {3: 1}；要求 =2 至少 5、=3 至少 5（subject 总数不足时必失败，属构造性）"
-  },
-  {
-    "code": "F23",
-    "title": "每 subject A 轴查询 ≥ 6",
-    "passed": true,
-    "detail": "1/1 个 subject 合格"
-  },
-  {
-    "code": "F24",
-    "title": "A 轴未饱和（SEH@1 不得满分）",
-    "passed": false,
-    "detail": "实测 SEH@1=9/9=1.0000（来源 v2-billing-lexical-vector-adjacency.json）——满分意味着这份数据测不到区分能力"
-  }
-]
+{
+  "checks": [
+    {
+      "code": "L1",
+      "title": "query 不等于 gold 原文",
+      "passed": true,
+      "detail": "12/12 通过"
+    },
+    {
+      "code": "L2",
+      "title": "query 不含 gold 值",
+      "passed": true,
+      "detail": "12/12 通过"
+    },
+    {
+      "code": "L3",
+      "title": "query 与原话 bigram Jaccard ≤ 0.5",
+      "passed": true,
+      "detail": "最高 0.24（billing-a4）"
+    },
+    {
+      "code": "L4",
+      "title": "每条记忆都有原文",
+      "passed": true,
+      "detail": "9/9"
+    },
+    {
+      "code": "L5",
+      "title": "A 轴竞争集 ≥ 3",
+      "passed": true,
+      "detail": "9/9 通过"
+    },
+    {
+      "code": "L6a",
+      "title": "三路召回都被调用",
+      "passed": true,
+      "detail": "来自 a3-lexical-vector-adjacency.json：enabled=['adjacency', 'lexical', 'vector'], unwired=[]"
+    },
+    {
+      "code": "L6b",
+      "title": "池构造写入向量",
+      "passed": true,
+      "detail": "33 条 case 全部写入；范数 0.9996–1.0004（8 个不同值）"
+    },
+    {
+      "code": "L6c",
+      "title": "三路召回都返回非空",
+      "passed": true,
+      "detail": "来自 a3-lexical-vector-adjacency.json：{'lexical': 41, 'vector': 462, 'adjacency': 13}"
+    },
+    {
+      "code": "L8",
+      "title": "dedup 分数有方差",
+      "passed": true,
+      "detail": "33 条 case 的分数都有方差"
+    },
+    {
+      "code": "L9",
+      "title": "implicit 查询不含条件同义词",
+      "passed": true,
+      "detail": "6/6 通过"
+    },
+    {
+      "code": "F2",
+      "title": "竞争集 ≥ 2 的占比 ≥ 80%",
+      "passed": true,
+      "detail": "100.0%（12/12），最小竞争集 3"
+    },
+    {
+      "code": "F5",
+      "title": "多分支 relation 的分支数 ∈ [3, 5]",
+      "passed": true,
+      "detail": "3/3 个多分支 relation 合格"
+    },
+    {
+      "code": "F6",
+      "title": "第三方 subject ≥ 5",
+      "passed": false,
+      "detail": "0 个：[]"
+    },
+    {
+      "code": "F12",
+      "title": "forced subject 占比 ≤ 20%",
+      "passed": true,
+      "detail": "0.0%（0/1）"
+    },
+    {
+      "code": "F13",
+      "title": "implicit 整体 ≥40% 且逐 subject ≥50%",
+      "passed": true,
+      "detail": "整体 6/9 = 66.7%（需 ≥40%）；逐 subject project:billing=67%（需 ≥50%）"
+    },
+    {
+      "code": "F15",
+      "title": "A 轴饱和时必须报 SEH@1",
+      "passed": true,
+      "detail": "A 轴平均竞争集 3.00，随机 SEH@5=1.0000、SEH@1=0.3333 → A 轴主指标已定为 SEH@1（协议 §7.1）"
+    },
+    {
+      "code": "F16",
+      "title": "随机基线实测与公式偏差 < 0.02",
+      "passed": true,
+      "detail": "A: 公式 0.3333/1.0000 实测 0.3314/1.0000；C: 公式 0.1111/0.5556 实测 0.1155/0.5513"
+    },
+    {
+      "code": "F17a",
+      "title": "多分支各分支都是 A 轴 gold",
+      "passed": true,
+      "detail": "3 个多分支 relation，全部分支都被 A 轴指向"
+    },
+    {
+      "code": "F17b",
+      "title": "每个 relation 都有 C 轴查询",
+      "passed": true,
+      "detail": "3/3 个 relation 被 C 轴覆盖"
+    },
+    {
+      "code": "F18",
+      "title": "非 user_direct 的来源必须在原文里自解释",
+      "passed": true,
+      "detail": "没有非 user_direct 的记忆，或全部自解释"
+    },
+    {
+      "code": "F19a",
+      "title": "implicit 的 gold 数据完整",
+      "passed": true,
+      "detail": "6 条 implicit，gold 都在库且有原文"
+    },
+    {
+      "code": "F19b",
+      "title": "implicit 的 gold 真的被召回",
+      "passed": true,
+      "detail": "6 条 implicit，三路全开时全部被召回（来源 v2-billing-condition-ablation.json）"
+    },
+    {
+      "code": "F20",
+      "title": "condition 对 A 轴有贡献",
+      "passed": true,
+      "detail": "A 轴 SEH@1 1.0 → 0.2222222222222222，掉幅 +0.7778（阈值 ≥0.3；来源 v2-billing-condition-ablation.json）"
+    },
+    {
+      "code": "F21a",
+      "title": "每 subject relation 数 ∈ [2, 3]",
+      "passed": true,
+      "detail": "1/1 个 subject 合格"
+    },
+    {
+      "code": "F21b",
+      "title": "relation=2 与 =3 的 subject 各 ≥ 5",
+      "passed": false,
+      "detail": "relation 数分布 {3: 1}；要求 =2 至少 5、=3 至少 5（subject 总数不足时必失败，属构造性）"
+    },
+    {
+      "code": "F23",
+      "title": "每 subject A 轴查询 ≥ 6",
+      "passed": true,
+      "detail": "1/1 个 subject 合格"
+    },
+    {
+      "code": "F24",
+      "title": "A 轴未饱和（SEH@1 不得满分）",
+      "passed": false,
+      "detail": "实测 SEH@1=9/9=1.0000（来源 v2-billing-lexical-vector-adjacency.json）——满分意味着这份数据测不到区分能力"
+    }
+  ],
+  "dataset": "data\\retrieval-v2\\billing",
+  "code_version": "47e4785-dirty",
+  "code_diff_hash": "36e9c1651705cdb990a8a9f4f4b0b2e24b9eba8207d24bd7c8612da23e9ccbf6"
+}
