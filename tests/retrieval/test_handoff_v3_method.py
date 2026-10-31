@@ -832,6 +832,29 @@ def test_section_0_8_records_that_the_arithmetic_was_wrong() -> None:
     assert "只验算不读文档" in section
 
 
+def test_section_0_8_states_the_critical_point_premises() -> None:
+    """0.170849 有两个前提，文档必须写明——它不是缺陷 19 的普适临界点。
+
+    **为什么这条必须有**：`spec` 从未规定 `base == condition`，
+    而调这两个的分配是 v3 改权重时最自然的动作。
+    不写前提，v3 一改就会有人以为"0.170849 失效了 = 缺陷没有了"。
+    """
+    section = _section_by_title("### 断言类型的选择")
+
+    assert "0.170849 有两个前提" in section
+    # 前提 (b) 是那个没有产品依据的——断言整行，避免"等分"在别处也出现
+    assert "**等分**剩余权重" in section
+    assert "| (b) `base` 与 `condition` **等分**剩余权重 | 各 50% |" in section
+    assert "没有" in section and "spec" in section
+    # 通式
+    assert "(1 − w_status) × k / (1 + k)" in section
+    # 前提变动表
+    assert "0.182239" in section
+    assert "0.188623" in section
+    # 判据不受影响
+    assert "缺陷 19 的判据不受影响" in section
+
+
 def test_section_0_8_arithmetic_numbers_are_recomputable() -> None:
     """文档里出现的每个算术数字都必须能从权重算出来。
 
@@ -865,10 +888,30 @@ def test_section_0_8_arithmetic_numbers_are_recomputable() -> None:
     assert adv_b < 0.25
 
     # 临界点：a = (0.75 - a)/2 * (d_base + d_cond) => a = 0.4425 / 2.59
+    #
+    # **这两个常量也是抄来的，必须说清**：
+    #   0.25 = status 权重（可从 PREREGISTERED_WEIGHTS 读，但本条只验文档里那个数字）
+    #   / 2  = base 与 condition 等分剩余权重
+    # 而后者**没有产品依据**——spec 从未规定 base == condition。
+    # 所以下面算的是"status=0.25 且等分时"的临界点，不是缺陷 19 的普适临界点。
+    # 通式与前提表写在 HANDOFF §0.8；前提一变，0.170849 就要重算。
     crit = 0.4425 / 2.59
     assert crit == pytest.approx(0.170849, abs=1e-5)
 
-    # 临界点两侧
+    # 通用式（不假设等分），验证文档里的通式：crit = (1-w_status)*k/(1+k)
+    def crit_general(w_status: float, base_share: float) -> float:
+        k = base_share * d_base + (1.0 - base_share) * d_cond
+        return (1.0 - w_status) * k / (1.0 + k)
+
+    assert crit_general(0.25, 0.5) == pytest.approx(crit, abs=1e-9)
+
+    # 文档里列的前提变动表，逐项复算
+    assert crit_general(0.20, 0.5) == pytest.approx(0.182239, abs=1e-5)
+    assert crit_general(0.30, 0.5) == pytest.approx(0.159459, abs=1e-5)
+    assert crit_general(0.35, 0.5) == pytest.approx(0.148069, abs=1e-5)
+    assert crit_general(0.25, 0.6) == pytest.approx(0.151914, abs=1e-5)
+    assert crit_general(0.25, 0.4) == pytest.approx(0.188623, abs=1e-5)
+
     def adv_at(a: float) -> float:
         rest = (1.0 - a - 0.25) / 2
         return rest * d_base + rest * d_cond

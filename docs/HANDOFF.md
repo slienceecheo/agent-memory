@@ -807,6 +807,39 @@ def test_authority_penalty_equals_condition_bonus() -> None:
 
 **临界点精确值**：不等式失败于 `a > (0.75−a)×0.295/1.0`，即 `a ≈ 0.1709`。
 
+> **0.170849 有两个前提，缺任一个就要重算**：
+>
+> | 前提 | 值 | 有产品依据吗 |
+> |---|---|---|
+> | (a) `status` 权重不变 | 0.25 | 是（`uniform` 里就是 0.25） |
+> | (b) `base` 与 `condition` **等分**剩余权重 | 各 50% | **没有**——`spec` 从未规定两者相等 |
+>
+> 通式（不假设等分）：
+>
+> ```
+> 设 k = base_share × d_base + (1 − base_share) × d_cond
+> crit = (1 − w_status) × k / (1 + k)
+> ```
+>
+> 当 `base_share = 0.5` 时化简为 `(1 − w_status) × S / (2 + S)`，`S = d_base + d_cond = 0.59`，
+> 即 `0.75 × 0.59 / 2.59 = 0.4425 / 2.59 = 0.170849`。
+>
+> 前提变动时临界点会移动（实测）：
+>
+> | 改动 | 新临界点 |
+> |---|---|
+> | `w_status = 0.20` | 0.182239 |
+> | `w_status = 0.30` | 0.159459 |
+> | `w_status = 0.35` | 0.148069 |
+> | `base_share = 0.6` | 0.151914 |
+> | `base_share = 0.4` | 0.188623 |
+>
+> **而缺陷 19 的判据不受影响**——它问的是"auth 罚分能否推翻 base+cond"，
+> 只要 `auth` 权重没降下来，缺陷就在。`0.170849` 只是它在当前权重下的取值。
+>
+> 而这个前提最可能被 v3 动到：`spec` 没规定 `base == condition`，
+> 调这两个的分配是改权重时最自然的动作。
+
 **所以数值断言早红，结构断言晚红。** 而"晚"在这里有代价：
 authority 从 0.25 降到 0.20 时，罚分已经不再"恰好"推翻优势，
 只是还大于优势——**缺陷被削弱但没被修**，结构断言看不见。
@@ -934,7 +967,7 @@ actionable = [d for d, reason in BLOCKED_BY.items() if reason is None]  # 12 条
 `needs-design` 只能是缺陷 23、三组之和必须等于 `DEFECT_TESTS` 的条数。
 
 ```
-pytest              -> 1381 passed, 1 skipped
+pytest              -> 1382 passed, 1 skipped
 ruff / mypy         -> clean
 locked_defect       -> 36 条收集（34 个标记，parametrize 展开 2 条）
 plan_check          -> 3 条（方案论证，不随修复变红）
