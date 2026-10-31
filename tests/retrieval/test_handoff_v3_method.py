@@ -856,19 +856,12 @@ def test_section_0_8_states_the_critical_point_premises() -> None:
 
 
 def test_section_0_8_uses_a_bound_not_a_point() -> None:
-    """这是本轮最后一条判据的应用：阈值必须是界，不是点估计。
-
-    0.170849 通过了"引用符号""可复算""与文档一致"三道检查，
-    但它只能回答"当前分配的临界点"，不能回答"该降到多少"——
-    后者需要所有分配下的下确界 0.061927。
-    """
+    """阈值必须是界，不是点估计。"""
     section = _section_by_title('### 但 `0.170849` 是个点')
 
     # 两个端点——断言整行，因为这两个数字在别处也出现
     assert "| **0.0** | **0.250000** | 全给 condition" in section
     assert "| **1.0** | **0.061927** | 全给 base" in section
-    assert "下确界" in section
-    assert "上确界" in section
     # 闭式
     assert "(1 − w_status) × d_base / (1 + d_base)" in section
     # 倍数
@@ -878,31 +871,72 @@ def test_section_0_8_uses_a_bound_not_a_point() -> None:
 
 
 def test_section_0_8_records_the_015_counterexample() -> None:
-    """必须写"降到 0.15 在 base_share=1 时仍不安全"，那是点估计的具体危害。"""
+    """降到 0.15 在 base_share=1 时仍不安全。"""
     section = _section_by_title('### 但 `0.170849` 是个点')
 
-    # 断言整行，避免命中别处的 0.15
     assert "base_share=1.0  crit=0.061927  **不安全（缺陷仍在）**" in section
-    assert "0.15 > 0.062" in section or "0.15 > 0.0619" in section
 
 
-def test_section_0_9_threshold_is_at_most_the_infimum() -> None:
-    """新判据：结论里的阈值必须是下确界。
+def test_section_0_8_records_that_the_bound_covers_only_one_variable() -> None:
+    """**第六次**：下确界只对 base_share 取，w_status 仍固定。
 
-    `0.170849` 是本轮唯一一个"三道检查全过但仍然错"的数——
-    不是数值错，是用途错。这条区分必须写下来。
+    这是本轮唯一一个"三道检查全过但仍然错"的升级版——
+    0.061927 可引用、可复算、可核对，却仍少辖一个可调参数。
     """
-    section = _section_by_title("### 由此补一条判据")
+    section = _section_by_title("### 但这个下确界只对")
 
-    assert "下确界" in section
-    assert "所有可能情形" in section
-    # 项目里已有的同类先例
-    assert "axis_baseline" in section
+    # 关键：w_status 也是可调的
+    assert "`uniform.status`" in section
+    assert "乘性" in section
+    # 精确临界值——断言整行，因为这个数字在文档里出现两次
+    assert "| **0.394444** | **0.050000** | **临界** |" in section
+    assert "w_status* = 1 − 0.05 / (d_base/(1+d_base)) = 1 − 0.05/0.082569 = 0.394444" in section
+    # 反例
+    assert "0.40 | 0.049541 | **否**" in section
+    # 结论是条件安全
+    assert "不是无条件安全" in section
 
-    # "不是数值错，是用途错"这段在下一节
-    second = _section_by_title("### 这一层不是")
-    assert "不是数值错" in second and "是用途错" in second
-    assert "2.76" in second
+
+def test_section_0_8_records_the_joint_infimum_is_zero() -> None:
+    """联合下确界是 0——不存在固定阈值，而"不存在"也是结论。"""
+    section = _section_by_title("### 联合下确界是 0")
+
+    assert "w_status=1.00 -> 0" in section
+    assert "不存在一个固定的" in section
+    # 这句话是重点
+    assert "而\"不存在\"本身是一个结论" in section
+
+
+def test_section_0_8_says_the_bound_is_conditional() -> None:
+    """必须改成"条件安全"，并写明前提是 status = 0.25。"""
+    section = _section_by_title("### 所以正确表述是")
+
+    assert "条件安全" in section
+    assert "在 `status` 权重保持 0.25 的前提下" in section
+    # v3 的约束
+    assert "必须联合声明三个权重的取值" in section
+
+
+def test_section_0_8_compares_the_two_variables() -> None:
+    """必须写明为什么 w_status 更难被发现：它在产品里有对应物。"""
+    section = _section_by_title("### 而这一点特别难发现")
+
+    # 断言整行，因为"有对应物"这个说法在别处也出现
+    no_product = "| `base_share` | **没有**"
+    assert no_product in section
+    assert "| 容易发现是假设 |" in section
+    assert "| `w_status` | **有**（`uniform.status = 0.25`）" in section
+    assert "最容易被认为" in section
+    assert "恰恰是\"有对应物\"的那个变量" in section
+
+
+def test_section_0_8_records_the_quantifier_scope() -> None:
+    """第六次的性质是"量词辖域"，不是"来源或类型"。"""
+    section = _section_by_title("### 这一层是第六次")
+
+    assert "| **6** | **论域** |" in section
+    assert "量词的辖域" in section
+    assert "无条件" in section and "有条件" in section
 
 
 def test_section_0_8_arithmetic_numbers_are_recomputable() -> None:
@@ -962,14 +996,37 @@ def test_section_0_8_arithmetic_numbers_are_recomputable() -> None:
     assert crit_general(0.25, 0.6) == pytest.approx(0.151914, abs=1e-5)
     assert crit_general(0.25, 0.4) == pytest.approx(0.188623, abs=1e-5)
 
-    # 端点：下确界与上确界
-    #
-    # **这是"点估计 vs 界"的修正**：0.170849 只是 base_share=0.5 的值，
-    # 而"authority 该降到多少"要的是所有分配下的下确界。
+    # 端点：对 base_share 的下确界与上确界
     infimum = crit_general(0.25, 1.0)
     supremum = crit_general(0.25, 0.0)
     assert infimum == pytest.approx(0.061927, abs=1e-5)
     assert supremum == pytest.approx(0.250000, abs=1e-5)
+
+    # **第六次修正**：下确界只对 base_share 取，w_status 仍是固定的。
+    # w_status 是乘性因子 (1 - w_status)，所以它可以把 crit 压到任意小。
+    for ws, expected in (
+        (0.20, 0.066055),
+        (0.30, 0.057798),
+        (0.35, 0.053670),
+        (0.40, 0.049541),
+        (0.50, 0.041284),
+    ):
+        assert crit_general(ws, 1.0) == pytest.approx(expected, abs=1e-5)
+
+    # 精确临界值：crit(ws*, 1.0) == 0.05
+    factor = d_base / (1.0 + d_base)
+    ws_star = 1.0 - 0.05 / factor
+    assert ws_star == pytest.approx(0.394444, abs=1e-5)
+    assert crit_general(ws_star, 1.0) == pytest.approx(0.05, abs=1e-9)
+
+    # 反例：status 提到 0.40 时，0.05 不再安全
+    assert not (crit_general(0.40, 1.0) > 0.05), (
+        "若 crit(0.40,1.0) > 0.05，则'0.05 只在 status<0.394 时安全'不成立"
+    )
+
+    # 联合下确界为 0：w_status 趋近 1 时 crit 趋近 0
+    assert crit_general(0.99, 1.0) < 0.001
+    assert crit_general(0.999, 1.0) < 0.0001
 
     # 单调性保证极值在端点，不必扫描内部
     shares = [i / 50 for i in range(51)]
