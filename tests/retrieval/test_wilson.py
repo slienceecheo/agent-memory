@@ -20,9 +20,9 @@
 from __future__ import annotations
 
 import pytest
+from evals.metrics.wilson import minimum_hits_to_beat, wilson_interval
 
 from memory.eval.bootstrap import proportion_ci
-from memory.eval.wilson import minimum_hits_to_beat, wilson_interval
 
 BASELINE_BILLING = 1 / 3  # billing A 轴竞争集均值 3.00
 

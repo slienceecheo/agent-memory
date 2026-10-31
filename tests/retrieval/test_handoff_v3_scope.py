@@ -203,11 +203,11 @@ def test_v3_acceptance_records_rejected_justifications() -> None:
 
 
 def test_v3_minimum_hits_table_matches_module() -> None:
-    """HANDOFF 里那张表必须与 `memory.eval.wilson` 的实现一致。"""
+    """HANDOFF 里那张表必须与 `evals.metrics.wilson` 的实现一致。"""
     import sys
 
     sys.path.insert(0, str(ROOT))
-    from memory.eval.wilson import minimum_hits_to_beat
+    from evals.metrics.wilson import minimum_hits_to_beat
 
     baseline = 1 / 3  # billing A 轴
     expected = {4: "4/4", 5: "4/5", 6: "5/6", 9: "6/9", 10: "7/10", 20: "11/20"}

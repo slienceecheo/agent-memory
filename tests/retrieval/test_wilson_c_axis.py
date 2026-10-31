@@ -16,8 +16,7 @@
 from __future__ import annotations
 
 import pytest
-
-from memory.eval.wilson import minimum_hits_to_beat, wilson_interval
+from evals.metrics.wilson import minimum_hits_to_beat, wilson_interval
 
 A_AXIS_BASELINE = 1 / 3       # 竞争集 3 条
 C_AXIS_BASELINE = 1 / 12      # 竞争集 12 条（ledger）

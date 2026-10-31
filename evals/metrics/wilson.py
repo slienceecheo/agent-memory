@@ -1,5 +1,28 @@
 """Wilson 区间：比例的正态近似修正，小样本下仍保留不确定性。
 
+**为什么在 `evals/` 而不是 `src/`**：
+
+`src/memory/eval/bootstrap.py` 在 `src/` 是因为
+`openspec/specs/evaluation-harness/spec.md` 明确要求了"配对 bootstrap 置信区间"
+（第 91 行）。而本模块**没有任何 spec 要求**——它是 v2 收尾时为了给 v3 定验收判据
+而写的评测工具，没有生产代码 import 它。
+
+分层原则：
+
+| 位置 | 放什么 | 依据 |
+|---|---|---|
+| `src/memory/eval/` | 系统能力 | **spec 要求** |
+| `evals/metrics/` | 评测装置 | 不产品化 |
+
+**"实现先行、spec 缺失"是一种隐患**：`src/` 里有一个没有对应 requirement 的模块，
+下一个人读代码时会问"它对应哪条要求"，然后发现没有。
+这与 C4 缺陷 7（"单元测试通过"被写成"已建成"）是同一种形态的弱版本。
+
+若 v3 决定把它产品化（比如让系统自己报区间），
+那时再从 `evals/` 提升到 `src/` 并补 spec 要求。
+
+---
+
 **为什么不用 bootstrap 百分位区间**（项目里已有 `proportion_ci`）：
 
 它在 `p≈0/1` 且 `n` 小时坍缩成零宽：
