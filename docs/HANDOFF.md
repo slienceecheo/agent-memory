@@ -703,6 +703,77 @@ grep "bootstrap|interval|proportion_ci|paired" evals/run_retrieval.py
 | **F21a**（relation ∈ [2,3]） | **正确的失败** | ledger 有 5 个 relation |
 | **F24**（A 轴不得满分） | **正确的失败** | **billing A 轴 `SEH@1 = 1.0000`** |
 
+### 0.8 `locked_defect` 按"什么会让它变红"分类
+
+**这不是标记的分类，是标记内测试的分类。** 36 条 `locked_defect` 按"改什么会红"实测：
+
+| 改什么 | 会红的条数 | 说明 |
+|---|---|---|
+| **改 `condition.py` 的匹配逻辑** | **6** | 缺陷 23 的真锁 |
+| **改 `condition_match` 的中性值** | **1** | 缺陷 11 的真锁 |
+| 改 `rerank.py` 的权重 | **0** | ← 见下 |
+| 改 `select_pool_distractors`（evals） | **6** | 池构造相关 |
+| 改数据 | **9** | 纯数据锁 |
+| 改什么都没反应 | **3** | 已移出为 `plan_check` |
+
+**所以"没有任何一条对 src 改动敏感"这个说法是错的**——`condition.py` 上就有 7 条会红。
+
+### 但 `rerank.py` 权重改动是 0 条——因为测试把权重抄进了自己
+
+缺陷 19（authority 罚分压过 base+cond）和缺陷 21（罚分恰好等于加成）
+都关于 `rerank` 权重。而改权重 0 条红，原因是：
+
+```python
+# tests/retrieval/test_defect18_authority.py
+def test_q4_loses_to_unrelated_entries_on_authority() -> None:
+    w = 0.25                        # <- 硬编码，不读 RerankWeights
+    auth_penalty = w * (1.0 - 0.0)
+    ...
+
+# tests/retrieval/test_defects_20_21.py
+def test_authority_penalty_equals_condition_bonus() -> None:
+    w = 0.25                        # <- 同一个写法
+    penalty = (1.0 - _AUTHORITY_SCORE[Authority.THIRD_PARTY]) * w
+```
+
+**它们验证的是"0.25 这个数会让 X 成立"，不是"产品用的权重会让 X 成立"。**
+
+所以：
+
+| 情形 | 这条测试 |
+|---|---|
+| 产品权重改成 0.30 | **仍绿**（它算的还是 0.25） |
+| 有人把 `w = 0.25` 改成 `0.30` | 会红（但那是改测试，不是改产品） |
+
+**这是"测试抄了产品常量"的形态，而不是"没测试覆盖权重"。** 它比后者更隐蔽：
+测试看起来在算权重，实际上把被测对象复制了一份进来。
+
+### 为什么这次改动 0 条红，而 `condition.py` 有 7 条
+
+差别在于**测试是否引用产品的符号**：
+
+| 测试 | 引用产品的什么 | 改产品会红吗 |
+|---|---|---|
+| 缺陷 23 的 7 条 | `parse_condition` / `_ALIASES` | ✅ 会 |
+| 缺陷 19/21 的 3 条 | 常量 `0.25`（抄来的） | ❌ 不会 |
+| 缺陷 1/9/10/13/16 的 9 条 | `data/` 下的文件 | ❌ 不会（改数据才会） |
+
+**所以"锁代码"的定义要精确成：测试必须引用产品的符号，而不是复制产品的数值。**
+
+### 这三步检查（可复用的清单）
+
+1. **这个标签覆盖的对象，在不同改动下行为是否相同？**
+   测四件事：改 `src/` / 改 `evals/` / 改数据 / 什么都不改。
+2. **如果不同，拆成几类？**
+   本轮：6 + 1 + 0 + 6 + 9 + 3。
+3. **每类能不能用一句话说清"什么情况下它会变红"？**
+   只有能说清的那几类才该带这个标记。
+4. **如果某类的答案是"什么都不会让它变红"**，它就不该叫"锁缺陷"——
+   它要么是 `plan_check`（方案评估），要么是 `evidence_lock`（历史证据）。
+
+> **不要写成原则，要写成清单。** "每当 N 条都是 X，先问它们是不是只有 X 这一种共同点"
+> 这句话读完不知道怎么执行；上面四问可以直接跑。
+
 ### 为什么还没修：`blocked_by` 字段
 
 "未修复的缺陷"不等于"能修的缺陷"。清单里 18 条未修复缺陷分三种处置：
@@ -730,7 +801,7 @@ actionable = [d for d, reason in BLOCKED_BY.items() if reason is None]  # 12 条
 `needs-design` 只能是缺陷 23、三组之和必须等于 `DEFECT_TESTS` 的条数。
 
 ```
-pytest              -> 1368 passed, 1 skipped
+pytest              -> 1375 passed, 1 skipped
 ruff / mypy         -> clean
 locked_defect       -> 36 条收集（34 个标记，parametrize 展开 2 条）
 plan_check          -> 3 条（方案论证，不随修复变红）

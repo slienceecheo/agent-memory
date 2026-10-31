@@ -778,6 +778,136 @@ def test_section_0_7_explains_why_not_removing_unfixable_defects() -> None:
     assert "还剩多少没修" in section
 
 
+def test_section_0_7_records_the_src_sensitivity_audit() -> None:
+    """必须记录"改什么会红"的实测分类，尤其是 rerank = 0 条。"""
+    section = _section_until_next_heading("0.8")
+
+    assert "改 `condition.py` 的匹配逻辑" in section
+    assert "| **6** | 缺陷 23 的真锁 |" in section
+    assert "改 `rerank.py` 的权重" in section
+    assert "| **0** | ← 见下 |" in section
+    # 结论：不是"没有一条对 src 敏感"
+    assert "这个说法是错的" in section
+
+
+def test_section_0_7_records_the_copied_constant_problem() -> None:
+    """必须写明 rerank 那 0 条的根因：测试把权重抄进了自己。"""
+    section = _section_by_title("### 但 `rerank.py` 权重改动是 0 条")
+
+    assert "硬编码" in section
+    assert "w = 0.25" in section
+    # 关键区分：测试抄了常量，不是没覆盖
+    assert "测试抄了产品常量" in section
+    assert "把被测对象复制了一份" in section
+
+
+def test_section_0_8_distinguishes_symbol_reference_from_value_copy() -> None:
+    """必须写明"引用产品符号"vs"复制产品数值"这个判据。"""
+    section = _section_by_title("### 为什么这次改动 0 条红")
+
+    assert "引用产品的符号" in section
+    assert "复制产品的数值" in section
+    # 三类对照
+    assert "缺陷 23 的 7 条" in section
+
+
+def test_section_0_7_has_the_four_step_checklist() -> None:
+    """四步检查清单必须写出来——原则换不成动作。"""
+    section = _section_by_title("### 这三步检查")
+
+    assert "可复用的清单" in section
+    assert "改 `src/` / 改 `evals/` / 改数据" in section
+    assert "什么情况下它会变红" in section
+    assert "不该叫" in section
+    # 明确不写原则
+    assert "不要写成原则" in section
+
+
+def test_rerank_defect_tests_hardcode_the_weight() -> None:
+    """缺陷 19/21 的测试把 `w = 0.25` 写死，不读 `PREREGISTERED_WEIGHTS`。
+
+    **这就是"改 rerank 权重 0 条红"的根因。**
+    若哪天有人把它们改成读产品常量，这条会红——那时要重测敏感度。
+    """
+    q4 = (ROOT / "tests" / "retrieval" / "test_defect18_authority.py").read_text(
+        encoding="utf-8"
+    )
+    p21 = (ROOT / "tests" / "retrieval" / "test_defects_20_21.py").read_text(
+        encoding="utf-8"
+    )
+
+    assert "    w = 0.25" in q4, "缺陷 19 的测试不再硬编码权重，需重测 src 敏感度"
+    assert "    w = 0.25" in p21, "缺陷 21 的测试不再硬编码权重，需重测 src 敏感度"
+
+    # 反过来：它们不该引用产品的权重表
+    assert "PREREGISTERED_WEIGHTS" not in q4
+    assert "PREREGISTERED_WEIGHTS" not in p21
+
+
+def test_thread_three_of_the_six_evals_sensitive_tests_are_locked_defect() -> None:
+    """改 `select_pool_distractors` 会让 6 条 `locked_defect` 变红。
+
+    这是"锁数据×评测代码"那一类，不是纯数据锁。
+    """
+    names = {
+        "test_adjacency_has_no_legal_target_on_dev",
+        "test_dedup_has_no_legal_merge_target_after_pool_build",
+        "test_pool_dedup_drops_distinct_values",
+        "test_same_relation_mixes_subjects",
+        "test_unrelated_mode_is_a_file_order_prefix",
+        "test_non_dev_selection_is_all_from_dev",
+    }
+    from tests.retrieval.test_locked_defect_manifest import DEFECT_TESTS
+
+    mapped = {n for names_ in DEFECT_TESTS.values() for n in names_}
+    missing = names - mapped
+    assert not missing, f"这些测试不在映射表里：{sorted(missing)}"
+
+
+def test_product_code_matches_head() -> None:
+    """变异脚本可能留下 CRLF 或其他字节差异。
+
+    **为什么需要这条**：一整轮的论证都建立在"产品代码没动"上。若 `condition.py`
+    被改了内容（哪怕只是行尾），"缺陷 23 仍然存在"这个断言就是假的。
+    而 blob hash 相同说明内容确实没变——但没有这一步检查，
+    `git status` 里的 M 会让"没动"变成一句无法验证的话。
+
+    实测事故：变异脚本用 `write_text` 把三个产品文件写成 CRLF，
+    内容与 HEAD 一致但字节不同，`git status` 显示 M，靠人工排查才还原。
+    """
+    import subprocess
+
+    watch = [
+        "src/memory/retrieval/condition.py",
+        "src/memory/retrieval/rerank.py",
+        "src/memory/retrieval/dedup.py",
+        "src/memory/retrieval/fusion.py",
+        "src/memory/retrieval/pool.py",
+        "src/memory/store/models.py",
+        "evals/run_retrieval.py",
+    ]
+
+    diffs = []
+    for rel in watch:
+        disk = subprocess.run(
+            # `--no-filters` 必须加：否则 `hash-object` 会按 `.gitattributes`
+            # 做 EOL 转换，CRLF 与 LF 算出同一个哈希，这条检查就形同虚设。
+            ["git", "hash-object", "--no-filters", rel],
+            cwd=ROOT, capture_output=True, text=True, encoding="utf-8",
+        ).stdout.strip()
+        head = subprocess.run(
+            ["git", "rev-parse", f"HEAD:{rel}"],
+            cwd=ROOT, capture_output=True, text=True, encoding="utf-8",
+        ).stdout.strip()
+        if disk != head:
+            diffs.append(rel)
+
+    assert not diffs, (
+        f"这些产品文件与 HEAD 的 blob 不同：{diffs}\n"
+        f"若只是行尾差异（CRLF），用 git cat-file -p 落盘还原。"
+    )
+
+
 def test_section_0_6_records_that_the_audit_itself_was_wrong() -> None:
     """**必须记录这次审计本身算错过一次。**
 
