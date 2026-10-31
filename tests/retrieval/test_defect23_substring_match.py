@@ -64,11 +64,20 @@ def test_defect23_true_positive_hits_are_real() -> None:
     ), "功能开发 不再多给 activity:coding，误命中可能已修"
 
 
-@pytest.mark.locked_defect
+@pytest.mark.plan_check
 def test_defect23_hits_are_overlapping_substrings() -> None:
     """判据本身：三对误命中的区间确实重叠（包含）。
 
-    若某天它变成不重叠，那就不再是"误命中"，分类要重写。
+    **依赖词表而非算法**：判定用测试内的 `_hit_intervals()`，它只读 `_ALIASES`。
+    所以：
+
+    | 改动 | 这条会红吗 |
+    |---|---|
+    | 改匹配算法（甲/乙/丙） | ❌ 不会 |
+    | 改词表（增删别名） | ✅ 会 |
+    | 换数据集 | ❌ 不会 |
+
+    它不是"锁缺陷"——修缺陷 23 时它不会红。它记录的是**当前词表上的区间结构**。
     """
     for text in ("holiday", "开发环境", "功能开发"):
         intervals = _hit_intervals(text)
@@ -165,7 +174,7 @@ def test_defect23_dataset_values_split_into_three_groups() -> None:
     assert len(group_c) == 12, f"本来就 raw 的值变成 {len(group_c)}"
 
 
-@pytest.mark.locked_defect
+@pytest.mark.plan_check
 def test_defect23_datasets_group_b_and_collisions_are_disjoint() -> None:
     """**关键区分**：3 对碰撞全是误命中；组 B 的 3 个值全是多命中或正确。
 
@@ -174,8 +183,8 @@ def test_defect23_datasets_group_b_and_collisions_are_disjoint() -> None:
     - 碰撞（`holiday`/`开发环境`/`功能开发`）在**词表键**上，都该修
     - 组 B（`工作日白天`/`本地开发`/`生产环境`）在**数据集值**上，都不该修
 
-    若把两者混成一类，选方案时会以为"修误命中"等于"让组 B 退化"。
-    实测：乙修掉全部误命中，而组 B 三个值一个都没变。
+    **依赖词表而非算法**：只用测试内的 `_hit_intervals()` 读 `_ALIASES`。
+    改匹配算法不会让这条变红；改词表才会。
     """
     collisions = [
         (short, long)
@@ -202,11 +211,23 @@ def test_defect23_datasets_group_b_and_collisions_are_disjoint() -> None:
                 assert not (s1 < e2 and s2 < e1), f"{text} 出现了重叠命中"
 
 
-@pytest.mark.locked_defect
+@pytest.mark.plan_check
 def test_defect23_longest_match_fixes_all_collisions_and_keeps_group_b() -> None:
     """乙方案：修掉全部误命中，同时组 B 三个值**一个都不变**。
 
-    这是"乙看起来最好"的实测依据。若哪天这个性质变了，方案评估要重做。
+    这是"乙看起来最好"的实测依据。
+
+    **为什么标 `plan_check` 而不是 `locked_defect`**：它用的是测试内的
+    `longest()`，不调用产品的匹配逻辑。`parse_condition` 只作为**比较基准**
+    出现在最后一段，而那三个值无论修不修都不变——所以：
+
+    | 改动 | 这条会红吗 |
+    |---|---|
+    | 修缺陷 23（实现乙） | ❌ 不会（组 B 不变；三对误命中的断言用的是本地实现） |
+    | 改词表 | ✅ 会 |
+    | 换数据集 | ❌ 不会 |
+
+    它测的是"如果实现乙，会得到什么结果"，不是"现状有问题"。
     """
     folded_table = {a.casefold(): slot for a, slot in _ALIASES.items()}
 

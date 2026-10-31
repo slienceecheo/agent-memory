@@ -605,15 +605,16 @@ Test: test_llm_cache.py::test_corrupt_row_is_treated_as_miss
 ### 0.7 缺陷与标记的计数关系
 
 ```
-23 条缺陷  ->  37 个 `locked_defect` 标记  ->  39 条收集
+23 条缺陷  ->  34 个 `locked_defect` 标记  ->  36 条收集（另有 3 条 `plan_check`）
 ```
 
 多出来的关系：
 
 | 环节 | 差值 | 原因 |
 |---|---|---|
-| 23 → 37 | +14 | 多条缺陷带多个标记，见下表；其中 5 条已修复（7/8/12/14/17）用正向断言，不标 `locked_defect` |
-| 37 → 39 | +2 | `test_authority_and_status_have_no_variance_in_pool` 的 `parametrize` 展开 3 条 |
+| 23 → 18 | −5 | 5 条已修复（7/8/12/14/17）用正向断言，不标 `locked_defect` |
+| 18 → 34 | +16 | 多条缺陷带多个标记，见下表 |
+| 34 → 36 | +2 | `test_authority_and_status_have_no_variance_in_pool` 的 `parametrize` 展开 3 条 |
 
 **带多个标记的缺陷（10 条）**：
 
@@ -628,26 +629,32 @@ Test: test_llm_cache.py::test_corrupt_row_is_treated_as_miss
 | 20 | 2 |
 | 21 | 2 |
 | 22 | 4 |
-| 23 | 10 |
+| 23 | 7 |
 
-> **缺陷 23 带 10 个标记**，因为"误命中"与"多命中"必须**分别锁**：
+> **缺陷 23 带 7 个 `locked_defect`**，另有 **3 个 `plan_check`**。
+> 为什么要分两种标记：前 7 条在修缺陷 23 时会红，后 3 条不会。
 >
-> | 锁什么 | 测试 |
-> |---|---|
-> | 三对误命中存在 | `..._true_positive_hits_are_real` |
-> | 误命中的判据（区间重叠） | `..._hits_are_overlapping_substrings` |
-> | **多命中不是错的**（区间不交、结果正确） | `..._multi_hits_are_not_overlapping_and_are_correct` |
-> | 假相似度 0.500 | `..._produces_a_false_positive_similarity` |
-> | 中英对照不等 | `..._chinese_english_pair_is_not_equal` |
-> | 41 值三组分类 | `..._dataset_values_split_into_three_groups` |
-> | 碰撞恰好 3 对 | `..._is_exactly_three_collisions` |
-> | spec 例子失败 | `..._spec_example_does_not_match` |
-> | 丙方案代价 3 个**正确**值 | `..._exact_matching_would_break_three_values` |
+> | 标记 | 条数 | 修缺陷 23 时会红吗 | 作用 |
+> |---|---|---|---|
+> | `locked_defect` | 7 | ✅ 会 | 锁现状 |
+> | `plan_check` | 3 | ❌ 不会 | 记录方案评估 |
 >
-> **"多命中不是错的"那一条最容易被漏掉**：只锁"误命中存在"和"丙会打断 3 个值"，
-> 读的人会以为那 3 个值本来就是错的。而它们语义正确，丙是在消灭正确行为。
+> **实测验证**（把 `parse_condition` 改成乙方案）：
+>
+> ```
+> locked_defect  3 failed   <- 现状被修，该翻面
+> plan_check     3 passed   <- 方案论证不随修复变化
+> ```
+>
+> **`plan_check` 的定义**（`pyproject.toml`）：
+>
+> > 用测试内的实现验证某个方案会得到什么结果。不调用产品的匹配/排序逻辑，
+> > 因此不会因修复而变红。它的价值是记录方案评估，不是锁缺陷现状。
+>
+> **为什么必须分开**：若这 3 条也标 `locked_defect`，修完缺陷 23 时会看到
+> "7 条红了、3 条还绿着"，然后困惑是不是没修干净。
 
-**所以"37 个标记"不等于"37 条缺陷"**，写的时候必须带上缺陷数。
+**所以"34 个标记"不等于"34 条缺陷"**，写的时候必须带上缺陷数。
 
 **`openspec/specs/evaluation-harness/spec.md` 第 184–188 行要求**：
 
@@ -696,10 +703,37 @@ grep "bootstrap|interval|proportion_ci|paired" evals/run_retrieval.py
 | **F21a**（relation ∈ [2,3]） | **正确的失败** | ledger 有 5 个 relation |
 | **F24**（A 轴不得满分） | **正确的失败** | **billing A 轴 `SEH@1 = 1.0000`** |
 
+### 为什么还没修：`blocked_by` 字段
+
+"未修复的缺陷"不等于"能修的缺陷"。清单里 18 条未修复缺陷分三种处置：
+
+| `blocked_by` | 条数 | 含义 | 下一步动作 |
+|---|---|---|---|
+| `None` | **12** | 待修 | 改代码 |
+| `"dataset-frozen"` | **5** | 数据集已冻结 | 换数据，需 v3 或 v2.1 |
+| `"needs-design"` | **1** | 修法有多个方案 | 先定方案 |
+
+**为什么不用"能不能修"的分类**：那会让"修不了"的缺陷从清单消失，
+而清单的价值正是"还剩多少没修"。
+
+**所以"还剩多少能修"是一个可查询的过滤条件**：
+
+```python
+actionable = [d for d, reason in BLOCKED_BY.items() if reason is None]  # 12 条
 ```
-pytest              -> 1360 passed, 1 skipped
+
+**这不改变 `locked_defect` 的语义**——标记仍然是"锁住现状，修复那刻变红"。
+只是"修复"的含义对不同缺陷不同：12 条是改代码，5 条是换数据。
+
+`tests/retrieval/test_locked_defect_manifest.py` 有 5 条测试守着这个字段：
+每条未修复缺陷必须声明、取值必须来自固定词表、`dataset-frozen` 集合必须是那 5 条、
+`needs-design` 只能是缺陷 23、三组之和必须等于 `DEFECT_TESTS` 的条数。
+
+```
+pytest              -> 1368 passed, 1 skipped
 ruff / mypy         -> clean
-locked_defect       -> 39 条收集（37 个标记，parametrize 展开 2 条）
+locked_defect       -> 36 条收集（34 个标记，parametrize 展开 2 条）
+plan_check          -> 3 条（方案论证，不随修复变红）
 evidence_lock       -> 6 条（读 git 归档，只有历史被改写才红）
 integrity_check     -> 1 条（工作区归档被覆盖时红，动作是还原）
 ```
@@ -1294,21 +1328,21 @@ if result["seh_at_k"] >= 1.0:
 **C4 里"这些不是实现缺陷，是数据表达能力的上限"这句话错了一半**——
 前两条限制是数据问题，1.000 本身是实现缺陷。
 
-## 37 个 `locked_defect` 标记不许删（收集为 39 条）
+## 34 个 `locked_defect` 标记不许删（收集为 36 条）
 
-C4 的 19 条 + v2 的 4 条缺陷（20/21/22/23）现在由 **37 个 `@pytest.mark.locked_defect` 标记**锁着，
-收集时展开为 **39 条测试**（`test_authority_and_status_have_no_variance_in_pool`
+C4 的 19 条 + v2 的 4 条缺陷（20/21/22/23）现在由 **34 个 `@pytest.mark.locked_defect` 标记**锁着，
+收集时展开为 **36 条测试**（`test_authority_and_status_have_no_variance_in_pool`
 的 `parametrize` 有 3 个 split，占 3 条而只算 1 个标记）。
 
 ```bash
-uv run --no-sync pytest -m locked_defect -q                        # 39 passed
+uv run --no-sync pytest -m locked_defect -q                        # 36 passed
 uv run --no-sync pytest -m locked_defect --collect-only -q         # 看清单
 uv run --no-sync pytest -m evidence_lock -q                        # 6 条，读 git 归档
 uv run --no-sync pytest -m integrity_check -q                      # 1 条，检测归档被覆盖
 ```
 
 **它们锁定的是"现状是坏的"，不是期望行为。** 造完 v2、跑出真实分数之后，
-这 37 个标记**不应该被删**——它们记录的是一次真实的测量失败，
+这 34 个标记**不应该被删**——它们记录的是一次真实的测量失败，
 比任何"我们做得很好"的叙述都有价值。
 
 - 改成正向断言的时机是**修复提交**，不是新数据上线时

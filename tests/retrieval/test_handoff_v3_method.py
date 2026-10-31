@@ -133,8 +133,8 @@ def test_section_0_7_separates_defects_from_markers() -> None:
     section = _section_until_next_heading("0.7")
 
     assert "23 条缺陷" in section
-    assert "37 个" in section
-    assert "39 条收集" in section
+    assert "34 个" in section
+    assert "36 条收集" in section
 
 
 def test_section_0_7_explains_both_gaps() -> None:
@@ -142,7 +142,7 @@ def test_section_0_7_explains_both_gaps() -> None:
     section = _section_until_next_heading("0.7")
 
     # 23 -> 33：多标记 + 已修复的用正向断言
-    assert "+14" in section
+    assert "+16" in section
     assert "正向断言" in section
     # 33 -> 35：parametrize
     assert "+2" in section
@@ -175,7 +175,7 @@ def test_counts_match_reality() -> None:
                 for dec in node.decorator_list:
                     if "locked_defect" in ast.unparse(dec):
                         markers += 1
-    assert markers == 37, f"标记数变成 {markers}"
+    assert markers == 34, f"标记数变成 {markers}"
 
 
 def test_locked_defect_collected_count_matches_the_document() -> None:
@@ -720,6 +720,62 @@ def test_section_0_6_says_exact_matching_kills_correct_behaviour() -> None:
     assert "乙 看起来最好" in section
     # 乙需要区间占位
     assert "区间占位" in section
+
+
+def _section_by_title(prefix: str) -> str:
+    """按小节标题前缀取内容，截到下一个同级或更高级标题。"""
+    import re
+
+    text = _text()
+    start = text.find(prefix)
+    assert start != -1, f"找不到小节：{prefix}"
+    rest = text[start:]
+    match = re.search(r"^#{2,3} ", rest[len(prefix) :], re.M)
+    return rest[: len(prefix) + match.start()] if match else rest
+
+
+def test_section_0_7_distinguishes_plan_check_from_locked_defect() -> None:
+    """`plan_check` 与 `locked_defect` 必须分开记，并写出实测依据。
+
+    修缺陷 23 时：locked_defect 会红（该翻面），plan_check 不会（方案论证）。
+    若不写清，修完会看到"7 红 3 绿"然后困惑。
+    """
+    # plan_check 的说明在 §0.7 的"带多个标记"表下方，属于 0.7 正文
+    section = _section_until_next_heading("0.7")
+
+    assert "plan_check" in section
+    # 实测数字
+    assert "3 failed" in section
+    assert "3 passed" in section
+    # 标记定义
+    assert "不调用产品的匹配/排序逻辑" in section
+    # 为什么必须分开
+    assert "困惑" in section
+
+
+def test_section_0_7_records_the_blocked_by_field() -> None:
+    """`blocked_by` 字段必须写明三档取值与条数。"""
+    section = _section_by_title("### 为什么还没修：`blocked_by` 字段")
+
+    assert "blocked_by" in section
+    assert "dataset-frozen" in section
+    assert "needs-design" in section
+    # 条数
+    assert "**12**" in section
+    assert "**5**" in section
+    assert "**1**" in section
+    # 可查询的过滤条件
+    assert "可查询" in section
+    # 不改标记语义
+    assert "不改变" in section and "语义" in section
+
+
+def test_section_0_7_explains_why_not_removing_unfixable_defects() -> None:
+    """必须写明"为什么不用'能不能修'做分类"。"""
+    section = _section_by_title("### 为什么还没修：`blocked_by` 字段")
+
+    assert "从清单消失" in section
+    assert "还剩多少没修" in section
 
 
 def test_section_0_6_records_that_the_audit_itself_was_wrong() -> None:

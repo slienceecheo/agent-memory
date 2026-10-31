@@ -85,16 +85,51 @@ DEFECT_TESTS: dict[int, tuple[str, ...]] = {
     # 记在 v2 报告 §8.0——v3 之前登记，修法需要设计决策（甲/乙/丙）。
     23: (
         "test_defect23_true_positive_hits_are_real",
-        "test_defect23_hits_are_overlapping_substrings",
         "test_defect23_multi_hits_are_not_overlapping_and_are_correct",
         "test_defect23_produces_a_false_positive_similarity",
         "test_defect23_chinese_english_pair_is_not_equal",
         "test_defect23_dataset_values_split_into_three_groups",
-        "test_defect23_datasets_group_b_and_collisions_are_disjoint",
-        "test_defect23_longest_match_fixes_all_collisions_and_keeps_group_b",
         "test_defect23_spec_example_does_not_match",
         "test_defect23_exact_matching_would_break_three_values",
     ),
+}
+
+# 缺陷编号 -> 为什么还没修。
+#
+# **这不是"哪些能修"的判断，是"修它的动作是什么"的记录。**
+# 分三类：
+#
+# | blocked_by | 含义 | 修它的动作 |
+# |---|---|---|
+# | `None` | 待修 | 改代码或改数据 |
+# | `"dataset-frozen"` | 数据集已冻结（v2 是报告集，不是修复集） | 换数据，需要 v3 或 v2.1 |
+# | `"needs-design"` | 修法有多个方案，需要设计决策 | 先定方案，再改代码 |
+#
+# **为什么不用"能不能修"做判断**：那会让"修不了"的缺陷从清单消失，
+# 而清单的价值正是"还剩多少没修"。`blocked_by` 只回答"下一步是什么"。
+BLOCKED_BY: dict[int, str | None] = {
+    # 缺陷 1/9/10/13/16：全部是数据构造问题，修法是换数据集
+    1: "dataset-frozen",
+    9: "dataset-frozen",
+    10: "dataset-frozen",
+    13: "dataset-frozen",
+    16: "dataset-frozen",
+    # 缺陷 2/3/4/5/6/11/15/18/19：评测装置或权重问题，v3 可改
+    2: None,
+    3: None,
+    4: None,
+    5: None,
+    6: None,
+    11: None,
+    15: None,
+    18: None,
+    19: None,
+    # 缺陷 20/21/22：v3 可修（改 adapter / 调权重 / 补区间）
+    20: None,
+    21: None,
+    22: None,
+    # 缺陷 23：三种修法各有代价，必须先定方案
+    23: "needs-design",
 }
 
 # 已修复的缺陷编号 -> 翻面后的正向断言。
@@ -231,3 +266,74 @@ def test_all_mapped_tests_exist_and_are_marked() -> None:
 def test_defect_number_appears_in_report(defect: int) -> None:
     """映射里的每个编号都真的出现在报告表格里。"""
     assert defect in _defect_numbers_in_report()
+
+
+# ---------- blocked_by：为什么还没修 ----------
+
+
+def test_every_unrepaired_defect_declares_why() -> None:
+    """每条未修复缺陷都必须回答"为什么还没修"。
+
+    **不回答会让 `blocked_by` 变成半个字段**——只有部分条目填了，
+    下一个人查询"还剩多少能修"时会得到错误的数。
+    """
+    from tests.retrieval.test_locked_defect_manifest import BLOCKED_BY
+
+    unrepaired = set(DEFECT_TESTS)
+    missing = unrepaired - set(BLOCKED_BY)
+    assert not missing, f"缺陷 {sorted(missing)} 未声明 blocked_by"
+
+    extra = set(BLOCKED_BY) - unrepaired
+    assert not extra, f"已修复的缺陷不该出现在 BLOCKED_BY：{sorted(extra)}"
+
+
+def test_blocked_by_values_are_from_a_fixed_vocabulary() -> None:
+    """取值只能是三种：None / dataset-frozen / needs-design。
+
+    自由文本会让"还剩多少能修"无法机器统计，而那正是这个字段的用途。
+    """
+    from tests.retrieval.test_locked_defect_manifest import BLOCKED_BY
+
+    allowed = {None, "dataset-frozen", "needs-design"}
+    bad = {k: v for k, v in BLOCKED_BY.items() if v not in allowed}
+    assert not bad, f"未知的 blocked_by 取值：{bad}"
+
+
+def test_dataset_frozen_defects_are_the_data_ones() -> None:
+    """`dataset-frozen` 必须只标在"修法是换数据"的缺陷上。
+
+    实测依据：这些缺陷的锁定测试都不随代码改动变红（除 13/16 依赖 evals 代码）。
+    若哪天把一条代码缺陷标成 `dataset-frozen`，这个过滤条件就失去意义了。
+    """
+    from tests.retrieval.test_locked_defect_manifest import BLOCKED_BY
+
+    frozen = {k for k, v in BLOCKED_BY.items() if v == "dataset-frozen"}
+    assert frozen == {1, 9, 10, 13, 16}, f"dataset-frozen 集合变成 {sorted(frozen)}"
+
+
+def test_needs_design_is_only_defect_23() -> None:
+    """`needs-design` 目前只有缺陷 23（三种修法各有代价）。"""
+    from tests.retrieval.test_locked_defect_manifest import BLOCKED_BY
+
+    design = {k for k, v in BLOCKED_BY.items() if v == "needs-design"}
+    assert design == {23}, f"needs-design 集合变成 {sorted(design)}"
+
+
+def test_actionable_defect_count_is_queryable() -> None:
+    """`blocked_by is None` 的条数是可查询的——这是这个字段存在的理由。
+
+    23 条未修复缺陷 = 12 条待修 + 5 条等换数据 + 1 条等设计 + 5 条已修复不该在此表。
+
+    注意：本表只覆盖**未修复**的缺陷（`DEFECT_TESTS`，18 条），已修复的 5 条
+    在 `REPAIRED` 里。所以三组之和必须等于 `DEFECT_TESTS` 的条数。
+    """
+    from tests.retrieval.test_locked_defect_manifest import BLOCKED_BY
+
+    actionable = [k for k, v in BLOCKED_BY.items() if v is None]
+    frozen = [k for k, v in BLOCKED_BY.items() if v == "dataset-frozen"]
+    design = [k for k, v in BLOCKED_BY.items() if v == "needs-design"]
+
+    assert len(actionable) == 12, f"待修变成 {len(actionable)} 条：{sorted(actionable)}"
+    assert len(frozen) == 5
+    assert len(design) == 1
+    assert len(actionable) + len(frozen) + len(design) == len(DEFECT_TESTS)
