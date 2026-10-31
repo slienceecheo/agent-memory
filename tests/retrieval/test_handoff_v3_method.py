@@ -817,6 +817,86 @@ def test_section_0_8_records_the_fix_actions() -> None:
     assert "2 条红" in section
 
 
+def test_section_0_8_records_that_the_arithmetic_was_wrong() -> None:
+    """必须记录这节的算术错过一次（0.1016 实为 0.1066），以及为什么会错。"""
+    section = _section_by_title("### 这一节的算术出过一次错")
+
+    assert "0.1016" in section
+    assert "0.1066" in section
+    # 错误来源
+    assert "位置搞反" in section
+    # 与抄常量同性质
+    assert "错误性质与 `w = 0.25` 抄常量相同" in section
+    # 两条防线
+    assert "从本文档里用正则抓出这些数字" in section
+    assert "只验算不读文档" in section
+
+
+def test_section_0_8_arithmetic_numbers_are_recomputable() -> None:
+    """文档里出现的每个算术数字都必须能从权重算出来。
+
+    **这条是为一次真实错误加的**：讨论"数值断言要防什么"时，
+    我把 base 0.26 / condition 0.24 的差值口算成 0.1016，
+    实际是 0.1066（把 0.26×0.09 算成了 0.24×0.09）。
+
+    错误性质与 `w = 0.25` 抄常量相同：用一个不需要更新的来源（记忆）
+    代替一个会变的来源（计算）。区别只是测试的错误会被 CI 抓，对话里的不会。
+    """
+    d_base = 1.0 - 0.91
+    d_cond = 1.0 - 0.50
+
+    # 基准：uniform 各 0.25
+    base_adv = 0.25 * d_base + 0.25 * d_cond
+    assert base_adv == pytest.approx(0.1475, abs=1e-4)
+    assert 0.25 - base_adv == pytest.approx(0.1025, abs=1e-4)
+
+    # 变异 A：base 0.24 / cond 0.26（文档 §0.8 写的 0.0984）
+    adv_a = 0.24 * d_base + 0.26 * d_cond
+    assert adv_a == pytest.approx(0.1516, abs=1e-4)
+    assert 0.25 - adv_a == pytest.approx(0.0984, abs=1e-4)
+
+    # 变异 B：base 0.26 / cond 0.24（文档 §0.8 写的 0.1066，不是 0.1016）
+    adv_b = 0.26 * d_base + 0.24 * d_cond
+    assert adv_b == pytest.approx(0.1434, abs=1e-4)
+    assert 0.25 - adv_b == pytest.approx(0.1066, abs=1e-4)
+
+    # 两种变异下结构断言都仍成立——所以它们不是"缺陷被修"的信号
+    assert adv_a < 0.25
+    assert adv_b < 0.25
+
+    # 临界点：a = (0.75 - a)/2 * (d_base + d_cond) => a = 0.4425 / 2.59
+    crit = 0.4425 / 2.59
+    assert crit == pytest.approx(0.170849, abs=1e-5)
+
+    # 临界点两侧
+    def adv_at(a: float) -> float:
+        rest = (1.0 - a - 0.25) / 2
+        return rest * d_base + rest * d_cond
+
+    assert crit > adv_at(crit) - 1e-9        # 临界点成立
+    just_below = 0.17
+    assert just_below < adv_at(just_below)   # 再降就不成立
+
+    # 最后：文档里写的数字必须与上面算出的一致
+    import re
+
+    section = _section_by_title("### 但数值断言也有反方向的代价")
+
+    documented = re.search(r"diff\s*=\s*0\.25\s*−\s*0\.1434\s*=\s*([0-9.]+)", section)
+    assert documented, "文档里找不到 0.1434 那组算式的差值"
+    assert float(documented.group(1)) == pytest.approx(0.1066, abs=1e-4), (
+        f"文档写 {documented.group(1)}，实际应为 0.1066"
+    )
+
+    adv_doc = re.search(
+        r"advantage\s*=\s*0\.26\s*×\s*0\.09\s*\+\s*0\.24\s*×\s*0\.50\s*="
+        r"\s*0\.0234\s*\+\s*0\.1200\s*=\s*([0-9.]+)",
+        section,
+    )
+    assert adv_doc, "文档里找不到完整的 advantage 算式"
+    assert float(adv_doc.group(1)) == pytest.approx(0.1434, abs=1e-4)
+
+
 def test_section_0_8_records_assertion_types_not_two_layers() -> None:
     """必须区分结构断言与数值断言，不能说成"引用符号不够"。"""
     section = _section_by_title("### 断言类型的选择")

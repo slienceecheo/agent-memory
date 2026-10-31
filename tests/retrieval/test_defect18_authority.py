@@ -137,7 +137,13 @@ def test_q4_loses_to_unrelated_entries_on_authority() -> None:
     # 量化判据：推翻条件等价于 w.authority > w.base*d_base + w.condition*d_cond
     assert d_base + d_cond < 1.0
     assert auth_penalty - advantage == pytest.approx(0.1025, abs=1e-4), (
-        f"净差变成 {auth_penalty - advantage}，不再是 0.1025"
+        f"净差变成 {auth_penalty - advantage:.4f}，不再是 0.1025。\n"
+        "先分清两件事再动手：\n"
+        "  - 若 authority **没降**、只是 base/condition 重新分配 —— 缺陷 19 还在，\n"
+        "    只需更新报告里的 0.1025（c4-retrieval.md:353、v2-sample-validation.md:211）\n"
+        "  - 若 authority **被降** —— 那才是缺陷被修，应翻面成正向断言\n"
+        "结构断言（auth_penalty > advantage）红才说明缺陷没了；\n"
+        "只有数值断言红时，缺陷可能完好。"
     )
 
 
