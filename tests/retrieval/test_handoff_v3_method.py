@@ -221,24 +221,44 @@ def test_section_0_6_records_the_coverage_limit() -> None:
     section = text.split("### 0.6 自动检查的边界")[1].split("### 0.7")[0]
 
     assert "83" in section, "未写 MUST/SHALL 总行数"
-    assert "5" in section, "未写可自动检查的条数"
-    # 覆盖率 6%
-    assert "6%" in section, "未写覆盖率"
-    assert "94%" in section, "未写无法检查的比例"
-    # 能力分组表
+    # 按可验证性细分
+    assert "1.2%" in section, "未写函数实现可验证率"
+    assert "3.6%" in section, "未写字段可验证率"
+    # 关键区分
+    assert "有反引号" in section and "不等于" in section
+    # 能力分组
     assert "conflict-resolution" in section
     assert "memory-store" in section
 
 
-def test_section_0_6_has_a_non_empty_mapping_table() -> None:
-    """映射表必须非空——空表从来不会被维护。"""
+def test_section_0_6_records_that_the_audit_itself_was_wrong() -> None:
+    """**必须记录这次审计本身算错过一次。**
+
+    第一版写的是"13 条中 5 条，38%"，错因是脚本只读了部分 spec 文件。
+    记录它，是为了让后来者先验证提取脚本，再相信输出。
+    """
     text = _text()
     section = text.split("### 0.6 自动检查的边界")[1].split("### 0.7")[0]
 
-    # 至少三条已知映射
+    assert "审计本身出过一次错" in section
+    assert "13 条" in section     # 错误的旧数字
+    assert "38%" in section       # 错误的旧比例
+    assert "只读了部分" in section  # 错因
+    assert "装置可能出错" in section
+
+
+def test_section_0_6_has_a_non_empty_mapping_table() -> None:
+    """映射表必须非空，且带"可自动验证"一列。"""
+    text = _text()
+    section = text.split("### 0.6 自动检查的边界")[1].split("### 0.7")[0]
+
     assert "配对 bootstrap 区间" in section
     assert "path_returns" in section
     assert "substring_exact_match" in section
+    # 新增的可验证性列
+    assert "可自动验证" in section
+    assert "❌ 无符号" in section
+    assert "✅ **有函数名**" in section
 
 
 def test_section_0_6_warns_about_false_assurance() -> None:
@@ -247,16 +267,24 @@ def test_section_0_6_warns_about_false_assurance() -> None:
     section = text.split("### 0.6 自动检查的边界")[1].split("### 0.7")[0]
 
     assert "虚假的安全感" in section
-    assert "没有任何测试守着" in section
+    assert "没测到" in section
 
 
 def test_must_coverage_numbers_are_real() -> None:
-    """83 / 5 / 6% / 94% 必须能从 spec 复算。"""
+    """83 与"1 条函数名"必须能从 spec 复算。"""
     import re
 
     specs = ROOT / "openspec" / "specs"
     total = 0
-    with_symbol = 0
+    function_lines = 0
+
+    fields = {
+        "valid_from", "valid_to", "recorded_at", "value", "condition",
+        "subject", "relation", "owner", "scope",
+    }
+    constants = {"no-memory", "full-context", "naive-rag"}
+    # 参数名不是函数
+    params = {"gold_item_id"}
 
     for path in specs.rglob("spec.md"):
         for line in path.read_text(encoding="utf-8").splitlines():
@@ -264,9 +292,19 @@ def test_must_coverage_numbers_are_real() -> None:
             if "MUST" not in stripped and "SHALL" not in stripped:
                 continue
             total += 1
-            if re.findall(r"`([A-Za-z_][A-Za-z0-9_.]*)`", stripped):
-                with_symbol += 1
+            syms = re.findall(r"`([^`]+)`", stripped)
+            real_functions = [
+                s
+                for s in syms
+                if re.fullmatch(r"[a-z_][a-z0-9_]*", s)
+                and s not in fields
+                and s not in constants
+                and s not in params
+            ]
+            if real_functions:
+                function_lines += 1
 
     assert total == 83, f"含 MUST/SHALL 的行变成 {total}"
-    assert with_symbol == 5, f"含反引号符号的行变成 {with_symbol}"
-    assert with_symbol / total < 0.10, "覆盖率不应超过 10%"
+    assert function_lines == 1, (
+        f"能验证函数实现的行变成 {function_lines}——文档里的 1.2% 要更新"
+    )

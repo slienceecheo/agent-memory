@@ -197,41 +197,64 @@ F24 的 detail 在 tag **之后**改进过：现在分两段写
 
 **先记一组数字**（可复算，见 `tests/retrieval/test_handoff_v3_method.py`）：
 
-| 能力 | 含 `MUST`/`SHALL` 的行 | 其中含反引号符号 |
+| 能力 | 含 `MUST`/`SHALL` 的行 |
+|---|---|
+| `conflict-resolution` | 9 |
+| `evaluation-harness` | 15 |
+| `llm-and-embedding-io` | 12 |
+| `memory-retrieval` | 23 |
+| `memory-store` | 24 |
+| **合计** | **83** |
+
+**其中含反引号内容的只有 10 行，而按"能验证什么"细分**：
+
+| 可验证的东西 | 行数 | 占 83 |
 |---|---|---|
-| `conflict-resolution` | 9 | **0** |
-| `evaluation-harness` | 15 | 1 |
-| `llm-and-embedding-io` | 12 | **0** |
-| `memory-retrieval` | 23 | 2 |
-| `memory-store` | 24 | 2 |
-| **合计** | **83** | **5** |
+| **函数实现存在** | **1**（`substring_exact_match`） | **1.2%** |
+| 字段存在 | 3（`valid_from`/`valid_to`/`recorded_at`） | 3.6% |
+| 字符串常量存在 | 1（`no-memory`/`full-context`/`naive-rag`） | 1.2% |
+| **非符号**（元组签名、索引键） | **4** | 0% |
+| **完全没有反引号** | **73** | 0% |
 
-**覆盖率 5/83 = 6%。94% 的 MUST/SHALL 无法自动检查。**
+> **"有反引号"不等于"有可检查的符号"。**
+> `(owner, scope, subject, relation, condition)` 是索引键的结构描述，
+> 在源码里不是字面量——它无法被"exists"检查覆盖。
 
-**能做的一半**（自动，但只覆盖 6%）：
+**能做的那 1.2%**：
 
-> 对 spec 里被反引号包裹的符号（如 `` `substring_exact_match` ``），
-> 断言它在源码里存在。这能抓"spec 点了名但没实现"。
+> 对 spec 里被反引号包裹的**函数名**，断言它在源码里存在。
 
-**做不到的 94%**：
+**做不到的 98.8%**：
 
-> spec 描述一个能力但不点名任何符号时（如"配对 bootstrap 区间"），
+> spec 描述一个能力但不点名函数时（如"配对 bootstrap 区间"），
 > **无法从文本推出它该由哪个函数实现**。
 
-**缺陷 22 正属于后者**——spec 要求了区间，但没写任何函数名。所以它能挂两个版本不被发现。
+**缺陷 22 正属于后者**——spec 要求了区间，但没写任何函数名。
+
+### 这次审计本身出过一次错
+
+**第一版统计写的是"13 条 MUST 中 5 条含符号，38%"。**
+
+错因：审计脚本只读了部分 spec 文件，而我没有验证它读全了。
+
+**这是一个可复用的教训**：写这类审计脚本时，先确认它扫到的文件数
+与 `openspec/specs/*/spec.md` 的实际数量一致，再相信它的输出。
+
+> 这与本项目的 `test_..._actually_fires`、`evidence_lock`、`integrity_check`
+> 是同一条原则：**让"装置可能出错"这件事有痕迹，而不是假设它不出错。**
 
 ### 当前只有一份手工映射表（且不完整）
 
-| MUST 句子 | 实现位置 | 测试 |
-|---|---|---|
-| "MUST 给出配对 bootstrap 区间" | **无** | **无**（缺陷 22） |
-| "MUST 记录各召回路径的返回条数" | `run_retrieval.py` 的 `path_returns` | L6a / L6c |
-| "SHALL 实现 `substring_exact_match`" | `src/memory/eval/metrics.py` | `tests/test_metrics.py` |
+| MUST 句子 | 实现位置 | 测试 | 可自动验证 |
+|---|---|---|---|
+| "MUST 给出配对 bootstrap 区间" | **无** | **无**（缺陷 22） | ❌ 无符号 |
+| "MUST 记录各召回路径的返回条数" | `run_retrieval.py` 的 `path_returns` | L6a / L6c | ❌ 无符号 |
+| "SHALL 实现 `substring_exact_match`" | `src/memory/eval/metrics.py` | `tests/test_metrics.py` | ✅ **有函数名** |
 
 **这张表只能人工维护，且必须随每次归档更新。当前它只覆盖 3 条，而 spec 里有 83 条 MUST/SHALL。**
 
 > **危险在于**："我们有 1300+ 个测试"这句话会给人虚假的安全感。
-> 实测：spec 里 **94% 的 MUST/SHALL 没有任何测试守着**（5/83 可自动检查）。
+> 实测：spec 里能自动验证**函数实现存在**的只有 **1/83 = 1.2%**。
 > 绿的测试可能只是没测到。
 
 **加这张表的时机**：下一次归档前。空表从来不会被维护，
@@ -302,7 +325,7 @@ grep "bootstrap|interval|proportion_ci|paired" evals/run_retrieval.py
 | **F24**（A 轴不得满分） | **正确的失败** | **billing A 轴 `SEH@1 = 1.0000`** |
 
 ```
-pytest              -> 1317 passed, 1 skipped
+pytest              -> 1318 passed, 1 skipped
 ruff / mypy         -> clean
 locked_defect       -> 29 条收集（27 个标记，parametrize 展开 2 条）
 evidence_lock       -> 6 条（读 git 归档，只有历史被改写才红）
