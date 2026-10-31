@@ -56,37 +56,102 @@ def test_bootstrap_has_spec_backing() -> None:
     assert (SRC / "memory" / "eval" / "bootstrap.py").exists()
 
 
-def test_no_src_eval_module_lacks_spec_mention() -> None:
-    """`src/memory/eval/` 下每个模块都应在 spec 里被提到。
+def test_no_src_eval_module_is_unbacked() -> None:
+    """`src/memory/eval/` 下每个模块必须有**依据**，依据有两种形式之一：
 
-    这是"实现先行、spec 缺失"的直接检查。
+    1. **spec 明确要求**它（如 `bootstrap` 的"配对 bootstrap 置信区间"、
+       `metrics` 的 `substring_exact_match`）
+    2. **被生产代码调用**（`src/` 或 `evals/` 里有 import）
+
+    **为什么不用"名字出现在 spec 里"当判据**：那是靠关键词白名单，
+    新模块凑巧名字匹配就会通过。而"有没有被调用"是结构事实，不需要白名单。
+
+    第一版写成手工 `keywords` 表，只覆盖 `metrics` 和 `bootstrap` 两个模块——
+    那是"测试名字覆盖一类、实现只查两个实例"，正是本文件要防的形态。
     """
-    spec = _spec_text().lower()
     eval_dir = SRC / "memory" / "eval"
     if not eval_dir.exists():
         pytest.skip("src/memory/eval 不存在")
 
+    spec = _spec_text().lower()
+
+    # 收集"被谁 import"——结构事实，不依赖白名单
+    importers: dict[str, set[str]] = {}
+    for root in (SRC, ROOT / "evals"):
+        for path in root.rglob("*.py"):
+            text = path.read_text(encoding="utf-8")
+            for module in eval_dir.glob("*.py"):
+                if module.name.startswith("__"):
+                    continue
+                stem = module.stem
+                if f"eval.{stem}" in text or f"eval import {stem}" in text:
+                    # 排除模块自身所在目录的自引用
+                    if root == SRC and module.parent in path.parents:
+                        continue
+                    importers.setdefault(stem, set()).add(
+                        str(path.relative_to(ROOT))
+                    )
+
     unbacked: list[str] = []
-    for path in eval_dir.glob("*.py"):
-        if path.name.startswith("__"):
+    for module in eval_dir.glob("*.py"):
+        if module.name.startswith("__"):
             continue
-        stem = path.stem.lower()
-        # 模块名或其核心概念应出现在 spec 中
-        if stem in spec:
-            continue
-        # 允许"模块名与概念名不同"的情况，按关键词匹配
-        keywords = {
-            "metrics": ["macro-f1", "seh", "srs"],
-            "bootstrap": ["bootstrap"],
-        }.get(stem, [])
-        if any(k in spec for k in keywords):
-            continue
-        unbacked.append(path.name)
+        stem = module.stem
+        in_spec = stem in spec
+        called = bool(importers.get(stem))
+
+        if not in_spec and not called:
+            unbacked.append(f"{module.name}（spec 未提，且无生产调用方）")
 
     assert not unbacked, (
-        f"这些模块在 src/ 但没有 spec 依据：{unbacked}。"
-        "要么补 requirement（需开变更），要么移到 evals/"
+        f"这些模块在 src/ 但没有依据：{unbacked}。"
+        "依据 = spec 明确要求，或被生产代码调用。"
+        "两者都没有就是'实现先行'——要么补 requirement（需开变更），要么移到 evals/"
     )
+
+
+def test_metrics_py_has_both_kinds_of_backing() -> None:
+    """`metrics.py` 是"两种依据都有"的样本，用来验证上面的判据真能工作。
+
+    - spec 第 59 行要求 `substring_exact_match`
+    - `evals/baselines/base.py` 调用它
+
+    若这条红，说明判据（spec 提及 / 生产调用）本身失效了。
+    """
+    spec = _spec_text()
+    assert "substring_exact_match" in spec, "spec 不再要求 substring_exact_match"
+
+    base = ROOT / "evals" / "baselines" / "base.py"
+    if not base.exists():
+        pytest.skip("evals/baselines/base.py 缺失")
+    assert "memory.eval.metrics" in base.read_text(encoding="utf-8"), (
+        "base.py 不再调用 metrics——依据只剩 spec 了"
+    )
+
+
+def test_unbacked_detector_actually_fires() -> None:
+    """**判据必须真的会红**——否则它只是装饰。
+
+    做法：临时在 `src/memory/eval/` 放一个无依据模块（spec 未提、无人调用），
+    断言检测逻辑能抓到它，然后删掉。
+
+    这条测试防的是"测试名字覆盖一类、实现只查一个实例"这一路反复出现的形态：
+    第一版用的是手工 `keywords` 白名单，只覆盖 `metrics` 与 `bootstrap`，
+    新模块只要名字凑巧匹配就会通过。
+    """
+    probe = SRC / "memory" / "eval" / "tmp_unbacked_probe.py"
+    if not (SRC / "memory" / "eval").exists():
+        pytest.skip("src/memory/eval 不存在")
+
+    probe.write_text("MARKER = 1\n", encoding="utf-8")
+    try:
+        with pytest.raises(AssertionError, match="tmp_unbacked_probe"):
+            test_no_src_eval_module_is_unbacked()
+    finally:
+        probe.unlink(missing_ok=True)
+
+    # 删除后必须恢复绿色
+    test_no_src_eval_module_is_unbacked()
 
 
 def test_wilson_docstring_explains_its_location() -> None:
