@@ -71,20 +71,40 @@ def wilson_interval(hits: int, n: int, *, z: float = Z_95) -> WilsonInterval:
 def minimum_hits_to_beat(baseline: float, n: int, *, z: float = Z_95) -> int | None:
     """在该 `n` 下，要通过"Wilson 下界 > baseline"至少需要几次命中。
 
-    返回 `None` 表示该 `n` 下无论多少命中都不通过。
+    **返回值有两种含义，必须能区分**：
 
-    **为什么需要这个函数**：判据本身随 `n` 自动变严，而"有多严"是
-    读者判断结论强度的必要信息。实测（基线 1/3）：
+    | 情形 | 返回 | 含义 |
+    |---|---|---|
+    | `n == 0` | **抛 `ValueError`** | 参数非法：没有分母，无法定义"命中数" |
+    | `n ≥ 1` 但无解 | `None` | **该 `n` 下不可达**：即使全中也过不了基线 |
+    | `n ≥ 1` 有解 | `int` | 最小命中数 |
+
+    早先的实现把 `n=0` 和"不可达"都返回 `None`，调用方无法区分
+    "参数错了"和"这个样本量下永远过不了"。
+
+    **实测（基线 1/3）**：
 
     | n | 最小命中 | 命中率 |
     |---|---|---|
-    | 4 | **4/4**（满分，与 F24 冲突） | 1.000 |
+    | 2 | 2/2 | 1.000（满分） |
+    | 4 | 4/4 | 1.000（满分） |
     | 5 | 4/5 | 0.800 |
-    | 6 | 5/6 | 0.833 |
     | 9 | 6/9 | 0.667 |
     | 10 | 7/10 | 0.700 |
     | 20 | 11/20 | 0.550 |
+
+    而 `n=1` 返回 `None`——`1/1` 的下界 0.2065 < 1/3，无法通过。
     """
+    if n < 0:
+        raise ValueError(f"n 不能为负：{n}")
+    if n == 0:
+        raise ValueError(
+            "n=0 无法定义最小命中数——没有分母。"
+            "这与'该 n 下不可达'是两件事，后者返回 None。"
+        )
+    if not 0.0 <= baseline <= 1.0:
+        raise ValueError(f"baseline 必须在 [0, 1] 内：{baseline}")
+
     for hits in range(n + 1):
         if wilson_interval(hits, n, z=z).low > baseline:
             return hits
