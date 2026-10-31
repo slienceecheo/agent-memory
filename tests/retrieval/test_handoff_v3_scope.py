@@ -166,6 +166,62 @@ def test_condition_slots_are_actually_groupable() -> None:
     assert len(values) == 19, f"条件值数量变了：{len(values)}"
 
 
+# ---------- v3 验收判据 ----------
+
+
+def test_v3_acceptance_uses_wilson_not_bootstrap() -> None:
+    """判据必须用 Wilson，且写明为什么不用 bootstrap。"""
+    text = _handoff()
+    section = text.split("### v3 的验收判据")[1].split("### v3 的数据纪律")[0]
+
+    assert "Wilson" in section
+    assert "bootstrap" in section
+    # 必须给出坍缩的实测证据
+    assert "2/2" in section
+    assert "[1.0, 1.0]" in section or "1.0, 1.0" in section
+
+
+def test_v3_acceptance_has_no_hard_n_floor() -> None:
+    """**不得设 n 的硬下限**——那会把"更严"说成"无定义"。"""
+    text = _handoff()
+    section = text.split("### v3 的验收判据")[1].split("### v3 的数据纪律")[0]
+
+    assert "不设" in section and "硬下限" in section
+    # 必须解释为什么
+    assert "更严" in section
+    assert "无定义" in section
+
+
+def test_v3_acceptance_records_rejected_justifications() -> None:
+    """两条被推翻的依据必须写明，防止有人重新提出来。"""
+    text = _handoff()
+    section = text.split("### v3 的验收判据")[1].split("### v3 的数据纪律")[0]
+
+    assert "宽度 < 0.5" in section
+    assert "0.527" in section  # 实测反例
+    assert "收敛" in section
+
+
+def test_v3_minimum_hits_table_matches_module() -> None:
+    """HANDOFF 里那张表必须与 `memory.eval.wilson` 的实现一致。"""
+    import sys
+
+    sys.path.insert(0, str(ROOT))
+    from memory.eval.wilson import minimum_hits_to_beat
+
+    baseline = 1 / 3  # billing A 轴
+    expected = {4: "4/4", 5: "4/5", 6: "5/6", 9: "6/9", 10: "7/10", 20: "11/20"}
+
+    text = _handoff()
+    section = text.split("### v3 的验收判据")[1].split("### v3 的数据纪律")[0]
+
+    for n, label in expected.items():
+        want = minimum_hits_to_beat(baseline, n)
+        hits, total = (int(x) for x in label.split("/"))
+        assert (hits, total) == (want, n), f"n={n}: 模块给 {want}/{n}，手写 {label}"
+        assert label in section, f"HANDOFF 未写 {label}"
+
+
 def test_report_upgraded_defect13_impact() -> None:
     """C4 报告的缺陷 13 必须升级为"同 key 全部丢弃"。"""
     if not REPORT.exists():
