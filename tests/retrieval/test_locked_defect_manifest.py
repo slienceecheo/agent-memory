@@ -73,6 +73,14 @@ DEFECT_TESTS: dict[int, tuple[str, ...]] = {
         "test_authority_penalty_equals_condition_bonus",
         "test_only_one_case_triggers_the_authority_critical_point",
     ),
+    # 缺陷 22：spec 要求配对 bootstrap 区间，检索评测从未产出。
+    # 这是"spec 的 MUST 没有对应测试"的实例——归档时未核对。
+    22: (
+        "test_spec_still_requires_intervals",
+        "test_runner_does_not_compute_intervals",
+        "test_results_have_no_interval_fields",
+        "test_no_test_asserts_intervals_exist",
+    ),
 }
 
 # 已修复的缺陷编号 -> 翻面后的正向断言。

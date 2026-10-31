@@ -20,6 +20,23 @@
 > **这一节存在的理由与 C4 报告 §0.1 相同**：防止数字被当成能力。
 > 而这次风险更高，因为四条结论都很干净、很强，容易被当成"项目结论"。
 
+### 0.0 本报告不满足 spec 的一条 MUST
+
+**`openspec/specs/evaluation-harness/spec.md` 第 184–188 行要求**
+"**MUST 同时给出样本数与配对 bootstrap 区间**"。
+
+**本报告未给出任何区间**，因为检索评测从来不计算它
+（`evals/run_retrieval.py` 里 `bootstrap` / `interval` 零匹配）。
+这不是遗漏，是能力缺失，已登记为**缺陷 22**。
+
+本报告里的所有数字都是**点估计**：`SEH@1`、`SEH@5`、`SRS`、掉幅、余弦。
+它们没有置信区间支撑，因此在 n=9、n=10 这样的样本量上，
+**"高 0.1"之类的判断无法区分真实差异与抽样波动**。
+
+补区间要重跑并改结果，而 v2 已冻结（协议 §1.2），所以这里只标注缺口。
+v3 必须补（方法见 `evals/metrics/wilson.py`：小样本比例用 Wilson，
+大样本用配对 bootstrap）。
+
 ### 0.1 数据缺陷清单：这份数据有 5 处已知缺陷
 
 **tag `dataset-v2-frozen` 的含义是"这是 v2 的最终版，带 5 处已登记的缺陷"，
@@ -399,6 +416,7 @@ third_party      0.00   罚分 0.2500
 |---|---|---|---|
 | **20** | `query_condition` 是 `gold.condition` 的逐字副本 | adapter 不传该字段，或造数据不填副本 | `test_query_condition_is_a_verbatim_copy_of_gold` |
 | **21** | `third_party` 的 authority 罚分恰好等于 condition 的全部加成（都是 0.25） | 调权重，或要求降级必须有场景依据 | `test_authority_penalty_equals_condition_bonus` |
+| **22** | **spec 要求配对 bootstrap 区间，检索评测从未产出** | `run_retrieval` 接上 `proportion_ci` 并写出区间字段 | `test_runner_does_not_compute_intervals` |
 
 ### 8.1 缺陷 20：同一错误在另一个字段上的复发
 

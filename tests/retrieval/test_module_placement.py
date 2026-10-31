@@ -56,24 +56,42 @@ def test_bootstrap_has_spec_backing() -> None:
     assert (SRC / "memory" / "eval" / "bootstrap.py").exists()
 
 
+def _spec_requires(stem: str) -> bool:
+    """spec 是否**明确要求**了这个模块——不是"词出现过"。
+
+    **两种判据，都要求符号级匹配**：
+
+    1. spec 里有反引号包裹的符号：`` `substring_exact_match` ``
+    2. spec 里有 requirement 标题含该词：`### Requirement: 配对 bootstrap 置信区间`
+
+    **为什么不能只查 `stem in spec`**：那是关键词匹配。
+    实测反例——建一个空的 `src/memory/eval/dedup.py`，
+    `"dedup"` 在 spec 别处（memory-retrieval 的去重需求）出现过，
+    于是 `stem in spec` 为真、判据通过，而该模块零要求、零调用。
+    """
+    spec = _spec_text()
+
+    # 1. 反引号包裹的符号（含 .py）
+    if f"`{stem}`" in spec or f"`{stem}.py`" in spec:
+        return True
+
+    # 2. requirement 标题含该词
+    for line in spec.splitlines():
+        if line.strip().startswith("### Requirement:") and stem.lower() in line.lower():
+            return True
+
+    return False
+
+
 def test_no_src_eval_module_is_unbacked() -> None:
-    """`src/memory/eval/` 下每个模块必须有**依据**，依据有两种形式之一：
+    """`src/memory/eval/` 下每个模块必须有**依据**，两种形式之一：
 
-    1. **spec 明确要求**它（如 `bootstrap` 的"配对 bootstrap 置信区间"、
-       `metrics` 的 `substring_exact_match`）
-    2. **被生产代码调用**（`src/` 或 `evals/` 里有 import）
-
-    **为什么不用"名字出现在 spec 里"当判据**：那是靠关键词白名单，
-    新模块凑巧名字匹配就会通过。而"有没有被调用"是结构事实，不需要白名单。
-
-    第一版写成手工 `keywords` 表，只覆盖 `metrics` 和 `bootstrap` 两个模块——
-    那是"测试名字覆盖一类、实现只查两个实例"，正是本文件要防的形态。
+    1. **spec 的 requirement 明确要求**它（符号级匹配，不是关键词）
+    2. **被生产代码 import**（`src/` 或 `evals/` 里）
     """
     eval_dir = SRC / "memory" / "eval"
     if not eval_dir.exists():
         pytest.skip("src/memory/eval 不存在")
-
-    spec = _spec_text().lower()
 
     # 收集"被谁 import"——结构事实，不依赖白名单
     importers: dict[str, set[str]] = {}
@@ -85,7 +103,6 @@ def test_no_src_eval_module_is_unbacked() -> None:
                     continue
                 stem = module.stem
                 if f"eval.{stem}" in text or f"eval import {stem}" in text:
-                    # 排除模块自身所在目录的自引用
                     if root == SRC and module.parent in path.parents:
                         continue
                     importers.setdefault(stem, set()).add(
@@ -97,15 +114,12 @@ def test_no_src_eval_module_is_unbacked() -> None:
         if module.name.startswith("__"):
             continue
         stem = module.stem
-        in_spec = stem in spec
-        called = bool(importers.get(stem))
-
-        if not in_spec and not called:
-            unbacked.append(f"{module.name}（spec 未提，且无生产调用方）")
+        if not _spec_requires(stem) and not importers.get(stem):
+            unbacked.append(f"{module.name}（spec 未明确要求，且无生产调用方）")
 
     assert not unbacked, (
         f"这些模块在 src/ 但没有依据：{unbacked}。"
-        "依据 = spec 明确要求，或被生产代码调用。"
+        "依据 = spec 的 requirement 明确要求，或被生产代码调用。"
         "两者都没有就是'实现先行'——要么补 requirement（需开变更），要么移到 evals/"
     )
 

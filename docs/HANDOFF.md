@@ -52,6 +52,43 @@ git diff 47e4785..dataset-v2-frozen -- evals src
 → **v3 待办**：结果文件加 `git_commit`（干净 hash）与 `git_tag`，
 把"哪个 commit"和"哪个 tag"分开记。
 
+### 0.3 缺陷 22：v2 报告不满足 spec 的一条 MUST（未报置信区间）
+
+**`openspec/specs/evaluation-harness/spec.md` 第 184–188 行要求**：
+
+> 系统 SHALL 为检索任务提供 SEH@K、SRS 与四类失败归因，
+> **并 MUST 同时给出样本数与配对 bootstrap 区间。**
+
+**实测：检索评测从未产出过区间。**
+
+```
+grep "bootstrap|interval|proportion_ci|paired" evals/run_retrieval.py
+（空）
+```
+
+结果文件顶层键里也没有任何区间字段。
+
+**这不是"报告忘了写"，是"从来不算"。** 所以 v2 的所有报告
+（`c4-retrieval.md`、`v2-*.md`、`three-way-recall.md`）都只报点估计。
+
+| 层 | 状态 | 处置 |
+|---|---|---|
+| spec | 要求了 MUST | 不改 |
+| 代码 | `run_retrieval` 不计算 | v3 实现 |
+| **测试** | **无任何断言"结果必须含区间"** | **已补（会红），见下** |
+| 报告 | 无数据可报 | **本报告标注未满足此条** |
+
+**根因：spec 的 MUST 没有对应的测试，所以它可以一直是假的。**
+
+这条要求从 `retrieval-and-rerank` 归档（`45f787d`，10-25）时就存在，
+而它要求的东西从未被实现——归档流程没有核对"spec 的每条 MUST 有没有实现"。
+
+**已锁定**：`tests/retrieval/test_defect22_missing_intervals.py` 有四条
+`locked_defect` 测试断言"现在没有区间"。修复后它们会红，届时翻面。
+
+**为什么不现在补**：补区间要重跑并改结果，而 v2 已冻结（`dataset-v2-frozen`），
+违反协议 §1.2。所以 v2 保留缺口，v3 补。
+
 ### 0.2 `results/` 里的 gates 是 tag 时的产物，文案可滞后但判定不可变
 
 F24 的 detail 在 tag **之后**改进过：现在分两段写
@@ -94,9 +131,9 @@ F24 的 detail 在 tag **之后**改进过：现在分两段写
 | **F24**（A 轴不得满分） | **正确的失败** | **billing A 轴 `SEH@1 = 1.0000`** |
 
 ```
-pytest              -> 1292 passed, 1 skipped
+pytest              -> 1300 passed, 1 skipped
 ruff / mypy         -> clean
-locked_defect       -> 25 条收集（23 个标记，parametrize 展开 2 条）
+locked_defect       -> 29 条收集（27 个标记，parametrize 展开 2 条）
 evidence_lock       -> 6 条（读 git 归档，只有历史被改写才红）
 integrity_check     -> 1 条（工作区归档被覆盖时红，动作是还原）
 ```
@@ -691,21 +728,21 @@ if result["seh_at_k"] >= 1.0:
 **C4 里"这些不是实现缺陷，是数据表达能力的上限"这句话错了一半**——
 前两条限制是数据问题，1.000 本身是实现缺陷。
 
-## 23 个 `locked_defect` 标记不许删（收集为 25 条）
+## 27 个 `locked_defect` 标记不许删（收集为 29 条）
 
-C4 的 19 条 + v2 的 2 条缺陷现在由 **23 个 `@pytest.mark.locked_defect` 标记**锁着，
-收集时展开为 **25 条测试**（`test_authority_and_status_have_no_variance_in_pool`
+C4 的 19 条 + v2 的 3 条缺陷（20/21/22）现在由 **27 个 `@pytest.mark.locked_defect` 标记**锁着，
+收集时展开为 **29 条测试**（`test_authority_and_status_have_no_variance_in_pool`
 的 `parametrize` 有 3 个 split，占 3 条而只算 1 个标记）。
 
 ```bash
-uv run --no-sync pytest -m locked_defect -q                        # 25 passed
+uv run --no-sync pytest -m locked_defect -q                        # 29 passed
 uv run --no-sync pytest -m locked_defect --collect-only -q         # 看清单
 uv run --no-sync pytest -m evidence_lock -q                        # 6 条，读 git 归档
 uv run --no-sync pytest -m integrity_check -q                      # 1 条，检测归档被覆盖
 ```
 
 **它们锁定的是"现状是坏的"，不是期望行为。** 造完 v2、跑出真实分数之后，
-这 23 个标记**不应该被删**——它们记录的是一次真实的测量失败，
+这 27 个标记**不应该被删**——它们记录的是一次真实的测量失败，
 比任何"我们做得很好"的叙述都有价值。
 
 - 改成正向断言的时机是**修复提交**，不是新数据上线时
