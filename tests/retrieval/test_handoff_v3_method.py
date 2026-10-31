@@ -855,6 +855,56 @@ def test_section_0_8_states_the_critical_point_premises() -> None:
     assert "缺陷 19 的判据不受影响" in section
 
 
+def test_section_0_8_uses_a_bound_not_a_point() -> None:
+    """这是本轮最后一条判据的应用：阈值必须是界，不是点估计。
+
+    0.170849 通过了"引用符号""可复算""与文档一致"三道检查，
+    但它只能回答"当前分配的临界点"，不能回答"该降到多少"——
+    后者需要所有分配下的下确界 0.061927。
+    """
+    section = _section_by_title('### 但 `0.170849` 是个点')
+
+    # 两个端点——断言整行，因为这两个数字在别处也出现
+    assert "| **0.0** | **0.250000** | 全给 condition" in section
+    assert "| **1.0** | **0.061927** | 全给 base" in section
+    assert "下确界" in section
+    assert "上确界" in section
+    # 闭式
+    assert "(1 − w_status) × d_base / (1 + d_base)" in section
+    # 倍数
+    assert "2.76" in section
+    # 单调性——极值在端点的依据
+    assert "单调递减" in section
+
+
+def test_section_0_8_records_the_015_counterexample() -> None:
+    """必须写"降到 0.15 在 base_share=1 时仍不安全"，那是点估计的具体危害。"""
+    section = _section_by_title('### 但 `0.170849` 是个点')
+
+    # 断言整行，避免命中别处的 0.15
+    assert "base_share=1.0  crit=0.061927  **不安全（缺陷仍在）**" in section
+    assert "0.15 > 0.062" in section or "0.15 > 0.0619" in section
+
+
+def test_section_0_9_threshold_is_at_most_the_infimum() -> None:
+    """新判据：结论里的阈值必须是下确界。
+
+    `0.170849` 是本轮唯一一个"三道检查全过但仍然错"的数——
+    不是数值错，是用途错。这条区分必须写下来。
+    """
+    section = _section_by_title("### 由此补一条判据")
+
+    assert "下确界" in section
+    assert "所有可能情形" in section
+    # 项目里已有的同类先例
+    assert "axis_baseline" in section
+
+    # "不是数值错，是用途错"这段在下一节
+    second = _section_by_title("### 这一层不是")
+    assert "不是数值错" in second and "是用途错" in second
+    assert "2.76" in second
+
+
 def test_section_0_8_arithmetic_numbers_are_recomputable() -> None:
     """文档里出现的每个算术数字都必须能从权重算出来。
 
@@ -912,6 +962,28 @@ def test_section_0_8_arithmetic_numbers_are_recomputable() -> None:
     assert crit_general(0.25, 0.6) == pytest.approx(0.151914, abs=1e-5)
     assert crit_general(0.25, 0.4) == pytest.approx(0.188623, abs=1e-5)
 
+    # 端点：下确界与上确界
+    #
+    # **这是"点估计 vs 界"的修正**：0.170849 只是 base_share=0.5 的值，
+    # 而"authority 该降到多少"要的是所有分配下的下确界。
+    infimum = crit_general(0.25, 1.0)
+    supremum = crit_general(0.25, 0.0)
+    assert infimum == pytest.approx(0.061927, abs=1e-5)
+    assert supremum == pytest.approx(0.250000, abs=1e-5)
+
+    # 单调性保证极值在端点，不必扫描内部
+    shares = [i / 50 for i in range(51)]
+    crits = [crit_general(0.25, s) for s in shares]
+    assert all(crits[i] >= crits[i + 1] for i in range(len(crits) - 1)), (
+        "crit 不再对 base_share 单调递减，端点极值的论证失效"
+    )
+
+    # 文档建议的 0.05 必须低于**下确界**，不是低于某个临界点
+    assert infimum > 0.05, "0.05 不再对全部分配安全"
+    # 反例：0.15 在某分配下不安全——这正是点估计的危险
+    assert infimum <= 0.15, "若 0.15 也安全，文档里那个反例就不成立"
+    assert crit_general(0.25, 0.5) > 0.15, "0.15 在等分时是安全的（所以它有迷惑性）"
+
     def adv_at(a: float) -> float:
         rest = (1.0 - a - 0.25) / 2
         return rest * d_base + rest * d_cond
@@ -946,13 +1018,18 @@ def test_section_0_8_records_assertion_types_not_two_layers() -> None:
 
     assert "结构断言" in section
     assert "数值断言" in section
-    # 失效条件相反
+    # 失效条件相反 —— 该节的核心判据
     assert "失效条件相反" in section
-    # 临界点
+    # 临界点与它的两个前提
     assert "0.1709" in section
-    # 数值断言先红
+    assert "0.170849 有两个前提" in section
+
+
+def test_section_0_8_records_which_assertion_fails_first() -> None:
+    """结构断言晚红、且"晚"有代价——这段在「由此补一条判据」一节内。"""
+    section = _section_by_title("### 由此补一条判据")
+
     assert "数值断言早红" in section
-    # 结构断言晚红的代价
     assert "缺陷被削弱但没被修" in section
 
 
