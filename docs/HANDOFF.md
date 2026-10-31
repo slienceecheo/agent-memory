@@ -369,7 +369,7 @@ parse_condition("节假日").slots    == {'time:holiday'}
 
 ### spec 自己举的例子，实测跑不通
 
-`memory-retrieval` 的这条 scenario 原文：
+`memory-retrieval` 的这条 scenario 原文（`spec.md:163-165`）：
 
 ```markdown
 #### Scenario: 中英表达归一到同一槽位
@@ -389,6 +389,88 @@ parse_condition("节假日").slots    == {'time:holiday'}
 **spec 用来解释这条规则的例子，是这条规则唯一不成立的形式。**
 
 这比 #8 的判定严重：**如果只按 spec 的例子写测试，测试会红；而写的测试换了例子（`写代码`/`coding`），它不会红。** 于是"这条 scenario 有测试吗"的答案，取决于你用哪个例子去问。
+
+### 修 spec 例子会让一条失败的 scenario 变成通过——而实现没变
+
+这是这一节最重要的一条，因为它长得像"修文档"。
+
+| 状态 | spec 写的例子 | 实测 | scenario |
+|---|---|---|---|
+| 现在 | `"应酬"` vs `"client dinner"` | **0.000** | 失败 |
+| 改例子后 | `"应酬"` vs `"client_dinner"` | **1.000** | 通过 |
+
+**它通过不是因为实现变好了，是因为标准降低了。**
+
+同一种形态在本项目已经出现过三次：
+
+| 位置 | 标准怎么被降低 |
+|---|---|
+| 协议 §1.2 | 看到分数后不许改数据——防的就是这个 |
+| 缺陷 20 | `query_condition` 是答案副本，把条件匹配拉低到"字符串相等" |
+| **本条** | **spec 的英文例子从"空格分隔的短语"降到"带下划线的标识符"** |
+
+所以处置顺序必须是：
+
+1. **修 spec 例子**（`client dinner` → `client_dinner`）——便宜、无争议、不动 `src/`
+2. **同时登记"子串误命中"为新缺陷（缺陷 23）**——不能让第 1 步造成"这条已经好了"的错觉
+3. **修匹配算法**——独立变更，需要设计决策
+
+### 缺陷 23：子串匹配造成假阳性
+
+`parse_condition` 的匹配是 `if alias.casefold() in folded`（子串包含，不是词边界、不是精确）。于是短别名会命中长词：
+
+| 短别名 | 被它误命中的词 | 实际槽位 | 语义上应得的 |
+|---|---|---|---|
+| `day` (`time:day`) | `holiday` | `{time:day, time:holiday}` | `{time:holiday}` |
+| `开发` (`activity:coding`) | `开发环境` | `{activity:coding, env:development}` | `{env:development}` |
+| `开发` (`activity:coding`) | `功能开发` | `{activity:coding, activity:feature}` | `{activity:feature}` |
+
+**这会产生假的相似度**，已实测：
+
+```
+condition_match("开发环境", "写代码")  = 0.500   # 只因为共享 activity:coding
+condition_match("功能开发", "写代码")  = 0.500
+condition_match("holiday",   "day")   = 0.500
+```
+
+0.5 在 `condition_match` 的口径里是"中性（一方没提条件）"，但这里两边都提了条件，给 0.5 等于说**"开发环境"和"写代码"没关系**——而它真实给的信号是"有 1/2 槽位重合"。**这个 0.5 是巧合，不是设计。**
+
+`condition_match` 在 `src/memory/retrieval/rerank.py:111` 与 `evals/run_retrieval.py:571` 都是**生产路径**，不是死代码。
+
+### 三种修法都有代价——所以这是设计决策，不是 bug fix
+
+| 方案 | 做法 | 问题 |
+|---|---|---|
+| **甲** 词边界 | `day` 只匹配独立的 `day` | **中文没有词边界**，只对英文有效 |
+| **乙** 最长匹配优先 | `holiday` 命中后不再匹配 `day` | 但 `开发环境` 该不该同时给两个槽位，本身就是语义问题 |
+| **丙** 精确匹配 | 整串相等 | 数据集里 **3 个值会退化为 `raw`**（见下） |
+
+**丙 的实际代价**（已实测，不是推测）：
+
+```
+工作日白天  ->  现在 {time:day}                 精确后 {raw:工作日白天}
+本地开发    ->  现在 {activity:coding, env:local}  精确后 {raw:本地开发}
+生产环境    ->  现在 {env:production}           精确后 {raw:生产环境}
+```
+
+> **顺带更正一个说法**：`客户应酬` **在** `_ALIASES` 里（是精确键），
+> 所以"精确匹配会打断 `客户应酬`"不成立。真正会被打断的是上面那 3 个
+> ——它们是"词表里没有整串、只能靠子串命中"的值。
+
+### 引用列记录的是会随实现翻转的映射
+
+把上面两件事合起来看：
+
+```
+现在：  scenario 用 spec 的例子   -> 红
+修词表：scenario 用 spec 的例子   -> 绿（测试名没变）
+```
+
+**`Test:` 引用列填的是测试名，而测试的红绿会随实现变化翻转。** 所以那句"引用是结构事实"要再退一步：
+
+> 引用关系是稳定的（测试名不变），
+> 但**"这条引用代表通过还是失败"是不稳定的**。
+> 引用列能回答"谁负责"，不能回答"现在成立吗"。
 
 ### 这个分布推翻了 A/B 二选一
 
@@ -477,18 +559,36 @@ Test: test_llm_cache.py::test_corrupt_row_is_treated_as_miss
 ### 0.7 缺陷与标记的计数关系
 
 ```
-22 条缺陷  ->  27 个 `locked_defect` 标记  ->  29 条收集
+23 条缺陷  ->  33 个 `locked_defect` 标记  ->  35 条收集
 ```
 
 多出来的关系：
 
 | 环节 | 差值 | 原因 |
 |---|---|---|
-| 22 → 27 | +5 | 8 条缺陷带多个标记（5/10/11/15/16/20/21/22），
-其中 5 条已修复（7/8/12/14/17）用正向断言，不标 `locked_defect` |
-| 27 → 29 | +2 | `test_authority_and_status_have_no_variance_in_pool` 的 `parametrize` 展开 3 条 |
+| 23 → 33 | +10 | 多条缺陷带多个标记，见下表；其中 5 条已修复（7/8/12/14/17）用正向断言，不标 `locked_defect` |
+| 33 → 35 | +2 | `test_authority_and_status_have_no_variance_in_pool` 的 `parametrize` 展开 3 条 |
 
-**所以"27 个标记"不等于"27 条缺陷"**，写的时候必须带上缺陷数。
+**带多个标记的缺陷（10 条）**：
+
+| 缺陷 | 标记数 |
+|---|---|
+| 5 | 2 |
+| 10 | 2 |
+| 11 | 2 |
+| 15 | 2 |
+| 16 | 2 |
+| 18 | 2 |
+| 20 | 2 |
+| 21 | 2 |
+| 22 | 4 |
+| 23 | 6 |
+
+> **缺陷 23 带 6 个标记**，因为它的六个侧面必须分别锁：
+> 三对误命中、假相似度、中英不等、碰撞总数、spec 例子失败、丙方案代价。
+> 只锁"误命中存在"会让"为什么不能改成精确匹配"这个证据消失。
+
+**所以"33 个标记"不等于"33 条缺陷"**，写的时候必须带上缺陷数。
 
 **`openspec/specs/evaluation-harness/spec.md` 第 184–188 行要求**：
 
@@ -538,9 +638,9 @@ grep "bootstrap|interval|proportion_ci|paired" evals/run_retrieval.py
 | **F24**（A 轴不得满分） | **正确的失败** | **billing A 轴 `SEH@1 = 1.0000`** |
 
 ```
-pytest              -> 1334 passed, 1 skipped
+pytest              -> 1353 passed, 1 skipped
 ruff / mypy         -> clean
-locked_defect       -> 29 条收集（27 个标记，parametrize 展开 2 条）
+locked_defect       -> 35 条收集（33 个标记，parametrize 展开 2 条）
 evidence_lock       -> 6 条（读 git 归档，只有历史被改写才红）
 integrity_check     -> 1 条（工作区归档被覆盖时红，动作是还原）
 ```
@@ -1135,21 +1235,21 @@ if result["seh_at_k"] >= 1.0:
 **C4 里"这些不是实现缺陷，是数据表达能力的上限"这句话错了一半**——
 前两条限制是数据问题，1.000 本身是实现缺陷。
 
-## 27 个 `locked_defect` 标记不许删（收集为 29 条）
+## 33 个 `locked_defect` 标记不许删（收集为 35 条）
 
-C4 的 19 条 + v2 的 3 条缺陷（20/21/22）现在由 **27 个 `@pytest.mark.locked_defect` 标记**锁着，
-收集时展开为 **29 条测试**（`test_authority_and_status_have_no_variance_in_pool`
+C4 的 19 条 + v2 的 4 条缺陷（20/21/22/23）现在由 **33 个 `@pytest.mark.locked_defect` 标记**锁着，
+收集时展开为 **35 条测试**（`test_authority_and_status_have_no_variance_in_pool`
 的 `parametrize` 有 3 个 split，占 3 条而只算 1 个标记）。
 
 ```bash
-uv run --no-sync pytest -m locked_defect -q                        # 29 passed
+uv run --no-sync pytest -m locked_defect -q                        # 35 passed
 uv run --no-sync pytest -m locked_defect --collect-only -q         # 看清单
 uv run --no-sync pytest -m evidence_lock -q                        # 6 条，读 git 归档
 uv run --no-sync pytest -m integrity_check -q                      # 1 条，检测归档被覆盖
 ```
 
 **它们锁定的是"现状是坏的"，不是期望行为。** 造完 v2、跑出真实分数之后，
-这 27 个标记**不应该被删**——它们记录的是一次真实的测量失败，
+这 33 个标记**不应该被删**——它们记录的是一次真实的测量失败，
 比任何"我们做得很好"的叙述都有价值。
 
 - 改成正向断言的时机是**修复提交**，不是新数据上线时

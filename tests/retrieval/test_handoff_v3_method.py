@@ -33,6 +33,22 @@ def _section(number: str, next_number: str) -> str:
     return text[start:end] if end != -1 else text[start:]
 
 
+def _section_until_next_heading(number: str) -> str:
+    """截到下一个 `## ` 或 `### ` 标题为止。
+
+    §0.7 是 §0 的最后一节，它后面接的是正文（不是小标题），
+    所以不能用 `### x` 作锚点——那样会把后面整篇都算进来。
+    """
+    import re
+
+    text = _text()
+    start = text.find(f"### {number} ")
+    assert start != -1, f"找不到 §{number}"
+    rest = text[start + len(f"### {number} ") :]
+    match = re.search(r"^#{2,3} ", rest, re.M)
+    return rest[: match.start()] if match else rest
+
+
 # ---------- 0.4 工具选型 ----------
 
 
@@ -109,28 +125,36 @@ def test_spec_really_says_paired_resampling() -> None:
     assert "配对重采样" in text, "spec 不再要求配对重采样——§0.5 的前提变了"
 
 
-# ---------- 0.6 计数关系 ----------
+# ---------- 0.7 计数关系 ----------
 
 
-def test_section_0_6_separates_defects_from_markers() -> None:
-    """必须区分"22 条缺陷"与"27 个标记"。"""
-    section = _section("0.6", "未通过的门禁")
+def test_section_0_7_separates_defects_from_markers() -> None:
+    """必须区分"23 条缺陷"与"33 个标记"。"""
+    section = _section_until_next_heading("0.7")
 
-    assert "22 条缺陷" in section
-    assert "27 个" in section
-    assert "29 条收集" in section
+    assert "23 条缺陷" in section
+    assert "33 个" in section
+    assert "35 条收集" in section
 
 
-def test_section_0_6_explains_both_gaps() -> None:
-    """两个差值都要解释：22→27 与 27→29。"""
-    section = _section("0.6", "未通过的门禁")
+def test_section_0_7_explains_both_gaps() -> None:
+    """两个差值都要解释：23→33 与 33→35。"""
+    section = _section_until_next_heading("0.7")
 
-    # 22 -> 27：多标记 + 已修复的用正向断言
-    assert "+5" in section
+    # 23 -> 33：多标记 + 已修复的用正向断言
+    assert "+10" in section
     assert "正向断言" in section
-    # 27 -> 29：parametrize
+    # 33 -> 35：parametrize
     assert "+2" in section
     assert "parametrize" in section
+
+
+def test_section_0_7_lists_defects_with_multiple_markers() -> None:
+    """带多个标记的缺陷必须逐条列出，否则 +10 无法核对。"""
+    section = _section_until_next_heading("0.7")
+
+    for defect in (5, 10, 11, 15, 16, 18, 20, 21, 22, 23):
+        assert f"| {defect} |" in section, f"缺陷 {defect} 未在表中"
 
 
 def test_counts_match_reality() -> None:
@@ -142,7 +166,7 @@ def test_counts_match_reality() -> None:
     from tests.retrieval.test_locked_defect_manifest import DEFECT_TESTS, REPAIRED
 
     defects = len(set(DEFECT_TESTS) | set(REPAIRED))
-    assert defects == 22, f"缺陷编号数变成 {defects}"
+    assert defects == 23, f"缺陷编号数变成 {defects}"
 
     markers = 0
     for path in (ROOT / "tests").rglob("*.py"):
@@ -151,7 +175,63 @@ def test_counts_match_reality() -> None:
                 for dec in node.decorator_list:
                     if "locked_defect" in ast.unparse(dec):
                         markers += 1
-    assert markers == 27, f"标记数变成 {markers}"
+    assert markers == 33, f"标记数变成 {markers}"
+
+
+def test_locked_defect_collected_count_matches_the_document() -> None:
+    """`-m locked_defect` 实际收集到的条数必须等于文档写的 35。
+
+    **为什么单独测**：参数化展开后的条数无法从 AST 直接算出
+    （`parametrize` 的 args 可能是变量），只能问 pytest 自己。
+    而文档写"35 条收集"，若实际是 34 或 36，没人会发现。
+    """
+    import subprocess
+    import sys
+
+    proc = subprocess.run(
+        [
+            sys.executable, "-m", "pytest",
+            "-m", "locked_defect", "--collect-only", "-q",
+            "-p", "no:cacheprovider",
+            # 必须显式限制目录：否则 `-m` 会连 deselected 一起列出，
+            # 汇总行是全量条数而不是被选中的条数。
+            "tests",
+        ],
+        cwd=ROOT, capture_output=True, text=True,
+        encoding="utf-8", errors="replace",
+    )
+    # 实际跑一遍拿"passed"数比解析 collect-only 更可靠：
+    # collect-only 的汇总行在含 deselected 时是 `N/M tests collected`。
+    proc = subprocess.run(
+        [
+            sys.executable, "-m", "pytest",
+            "-m", "locked_defect", "-q",
+            "-p", "no:cacheprovider",
+            "tests",
+        ],
+        cwd=ROOT, capture_output=True, text=True,
+        encoding="utf-8", errors="replace",
+    )
+    import re
+
+    match = re.search(r"(\d+)\s+passed", proc.stdout)
+    assert match, f"无法从输出解析通过条数：{proc.stdout[-400:]}"
+    collected = int(match.group(1))
+
+    # 必须真去读文档里的数字，否则这条测试只验证了 pytest 自己。
+    # 文档里有两处陈述收集条数，格式不同：
+    #   `locked_defect -> 35 条收集（33 个标记...）`
+    #   `## 33 个标记不许删（收集为 35 条）`
+    text = _text()
+    stated = re.search(r"-> (\d+) 条收集", text) or re.search(
+        r"收集为 (\d+) 条", text
+    )
+    assert stated, "文档里找不到 locked_defect 的收集条数"
+    documented = int(stated.group(1))
+
+    assert collected == documented, (
+        f"`-m locked_defect` 实际跑了 {collected} 条，文档写 {documented} 条"
+    )
 
 
 def test_section_numbers_are_sequential() -> None:
@@ -346,6 +426,143 @@ def test_section_0_6_records_the_spec_example_that_fails() -> None:
     assert "client dinner" in section
     assert "client_dinner" in section
     assert "唯一不成立的形式" in section
+
+
+def test_section_0_6_warns_that_fixing_the_example_lowers_the_standard() -> None:
+    """修 spec 例子会让场景从失败变通过，而实现没变——必须写明。"""
+    text = _text()
+    section = text.split("### 0.6 自动检查的边界")[1].split("### 0.7")[0]
+
+    assert "因为标准降低了" in section
+    # 三个先例
+    assert "协议 §1.2" in section
+    assert "缺陷 20" in section
+    # 处置顺序
+    assert "同时登记" in section
+    assert "缺陷 23" in section
+
+
+def test_section_0_6_records_defect_23_substring_false_positives() -> None:
+    """缺陷 23 的三对误命中必须点名，且给出假相似度的实测值。"""
+    text = _text()
+    section = text.split("### 0.6 自动检查的边界")[1].split("### 0.7")[0]
+
+    assert "缺陷 23" in section
+    assert "`day`" in section and "`holiday`" in section
+    assert "开发环境" in section and "功能开发" in section
+    # 假相似度
+    assert "condition_match(\"开发环境\", \"写代码\")" in section
+    assert "0.500" in section
+    # 生产路径，不是死代码
+    assert "rerank.py:111" in section
+
+
+def test_section_0_6_records_the_three_fix_options_and_their_costs() -> None:
+    """甲/乙/丙三条修法各有代价，必须列出，否则会以为这是简单 bugfix。"""
+    text = _text()
+    section = text.split("### 0.6 自动检查的边界")[1].split("### 0.7")[0]
+
+    assert "词边界" in section
+    assert "最长匹配" in section
+    assert "精确匹配" in section
+    # 丙的实测代价：3 个值退化
+    assert "工作日白天" in section
+    assert "生产环境" in section
+    # 更正：客户应酬 在词表里——断言整句，因为"不成立"在本节出现两次
+    assert "`客户应酬` **在** `_ALIASES` 里" in section
+    assert '"精确匹配会打断 `客户应酬`"不成立' in section
+
+
+def test_section_0_6_records_that_references_flip_with_implementation() -> None:
+    """引用列记录的映射会随实现翻转——它只能回答"谁负责"。"""
+    text = _text()
+    section = text.split("### 0.6 自动检查的边界")[1].split("### 0.7")[0]
+
+    assert "会随实现翻转" in section
+    assert "谁负责" in section
+    assert "不能回答" in section
+
+
+# ---------- 上面这些数字必须可复算 ----------
+
+
+def test_defect23_false_positives_really_occur() -> None:
+    """三对子串误命中产生 0.5 的假相似度。"""
+    import sys
+
+    sys.path.insert(0, str(ROOT))
+    from memory.retrieval.condition import parse_condition
+
+    assert parse_condition("holiday").slots == frozenset(
+        {"time:day", "time:holiday"}
+    )
+    assert parse_condition("开发环境").slots == frozenset(
+        {"activity:coding", "env:development"}
+    )
+    assert parse_condition("功能开发").slots == frozenset(
+        {"activity:coding", "activity:feature"}
+    )
+
+
+def test_defect23_produces_a_false_positive_similarity() -> None:
+    """语义无关的两个条件，因为共享误命中槽位而得到 0.5。"""
+    import sys
+
+    sys.path.insert(0, str(ROOT))
+    from memory.retrieval.condition import condition_match
+
+    assert condition_match("开发环境", "写代码") == pytest.approx(0.5)
+    assert condition_match("功能开发", "写代码") == pytest.approx(0.5)
+
+
+def test_exact_matching_would_break_these_three_values() -> None:
+    """精确匹配（丙）会让恰好 3 个数据集值退化为 raw。"""
+    import sys
+
+    sys.path.insert(0, str(ROOT))
+    from memory.retrieval.condition import _ALIASES, parse_condition
+
+    folded = {a.casefold() for a in _ALIASES}
+    would_break = [
+        v
+        for v in ("工作日白天", "本地开发", "生产环境")
+        if v.casefold() not in folded and parse_condition(v).structured
+    ]
+
+    assert len(would_break) == 3, f"实际会被打断：{would_break}"
+
+
+def test_client_dinner_is_not_in_the_alias_table() -> None:
+    """`client dinner`（空格）不在词表里——这是 spec 例子失败的原因。"""
+    import sys
+
+    sys.path.insert(0, str(ROOT))
+    from memory.retrieval.condition import _ALIASES
+
+    assert "client_dinner" in _ALIASES
+    assert "client dinner" not in _ALIASES
+
+
+def test_client_yingshou_is_an_exact_key() -> None:
+    """更正：`客户应酬` 是精确键，精确匹配不会打断它。"""
+    import sys
+
+    sys.path.insert(0, str(ROOT))
+    from memory.retrieval.condition import _ALIASES
+
+    assert "客户应酬" in _ALIASES
+    assert "应酬" in _ALIASES
+
+
+def test_condition_match_is_on_the_production_path() -> None:
+    """缺陷 23 不是死代码：`rerank.py` 与 `run_retrieval.py` 都调用它。"""
+    rerank = (ROOT / "src" / "memory" / "retrieval" / "rerank.py").read_text(
+        encoding="utf-8"
+    )
+    runner = (ROOT / "evals" / "run_retrieval.py").read_text(encoding="utf-8")
+
+    assert "condition_match" in rerank
+    assert "condition_match" in runner
 
 
 def test_section_0_6_records_the_subset_assertion_blind_spot() -> None:

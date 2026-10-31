@@ -417,6 +417,38 @@ third_party      0.00   罚分 0.2500
 | **20** | `query_condition` 是 `gold.condition` 的逐字副本 | adapter 不传该字段，或造数据不填副本 | `test_query_condition_is_a_verbatim_copy_of_gold` |
 | **21** | `third_party` 的 authority 罚分恰好等于 condition 的全部加成（都是 0.25） | 调权重，或要求降级必须有场景依据 | `test_authority_penalty_equals_condition_bonus` |
 | **22** | **spec 要求配对 bootstrap 区间，检索评测从未产出** | `run_retrieval` 接上 `proportion_ci` 并写出区间字段 | `test_runner_does_not_compute_intervals` |
+| **23** | **`parse_condition` 用子串匹配，短别名命中长词，产生假槽位** | 改匹配算法（甲/乙/丙，需设计决策） | `test_defect23_false_positives_are_real` |
+
+### 8.0 缺陷 23：子串匹配造成的假阳性（v3 前登记）
+
+`parse_condition` 的匹配是 `if alias.casefold() in folded`——**子串包含**，不是词边界，也不是精确。
+
+| 短别名 | 被误命中的词 | 实际槽位 | 语义上应得 |
+|---|---|---|---|
+| `day` (`time:day`) | `holiday` | `{time:day, time:holiday}` | `{time:holiday}` |
+| `开发` (`activity:coding`) | `开发环境` | `{activity:coding, env:development}` | `{env:development}` |
+| `开发` (`activity:coding`) | `功能开发` | `{activity:coding, activity:feature}` | `{activity:feature}` |
+
+**它产生假相似度**（实测）：
+
+```
+condition_match("开发环境", "写代码")  = 0.500
+condition_match("功能开发", "写代码")  = 0.500
+```
+
+0.5 在 `condition_match` 的口径里表示"一方没提条件"，而这里两边都提了。
+**这个 0.5 是巧合，不是设计。**
+
+`condition_match` 在 `src/memory/retrieval/rerank.py:111` 与 `evals/run_retrieval.py:571`
+都是生产路径，所以这是**行为缺陷**，不是死代码。
+
+**为什么不修**：三条修法各有代价，需要设计决策——
+甲（词边界）对中文无效；乙（最长优先）绕不开"`开发环境` 该不该给两个槽位"；
+丙（精确匹配）会让数据集里 3 个值退化为 `raw`（`工作日白天`/`本地开发`/`生产环境`）。
+
+**关联的 spec 问题**：`memory-retrieval:163-165` 举的例子 `"应酬"` / `"client dinner"`
+实测 `condition_match = 0.000`，而 `"client_dinner"` 才是 `1.000`。
+**修 spec 例子会让这条 scenario 从失败变通过，而实现没变**——所以必须与缺陷 23 同时处置。
 
 ### 8.1 缺陷 20：同一错误在另一个字段上的复发
 
