@@ -260,6 +260,100 @@ F24 的 detail 在 tag **之后**改进过：现在分两段写
 `Test: <测试名>` 引用。而这一列一旦存在，就能被自动检查
 （断言引用的测试名真实存在）。
 
+### 抽查 10 个 scenario：不是"A 有测试没标"，也不是"B 没测试"
+
+按能力分层抽 10 个（每能力 2 个），逐条去 `tests/` 找"THEN 的每一段是否都被断言过"。
+
+**判定规则**（先定规则，再看结果）：
+
+| 判定 | 含义 |
+|---|---|
+| ✅ | THEN 的**每一段**都有测试断言 |
+| ⚠️ | THEN 有测试，但只覆盖其中一段，另一段无断言 |
+| ❌ | 找不到测这个 scenario 的测试，或找到的测试测的是别的东西 |
+
+| # | Scenario | 对应测试 | 判定 |
+|---|---|---|---|
+| 1 | 大小写与空白归一 | `resolver/test_normalize.py::test_case_and_whitespace_are_folded` | ✅ |
+| 2 | 模型输出不可解析 → CONFLICT 兜底 + `change_source="failed"` | `test_change_marker_llm.py::test_unparsable_output_is_marked_failed` 断 FAILED；`test_rules.py::test_rule7_fallback_when_state_change_unconfirmed` 断 CONFLICT。**但两条分别用一个 `is_new_state=False` 的桩，没有测试把"不可解析输出"真的喂进规则层** | ⚠️ 两段各有人测，接缝没人测 |
+| 3 | 加载 6K 单跳子集 | `test_factconsolidation.py::test_load_selects_subset_by_length_and_hop` | ✅ |
+| 4 | 缓存完整性校验 → 退出码 0 | `test_check_cache.py::test_complete_cache_exits_zero` | ✅ |
+| 5 | 强制分块 → 完整消息 + 拼接正文 + usage + **不暴露分块** | `test_llm_client.py::test_forced_stream_is_collected_into_full_text` 只断 `content`；`test_sse.py::test_usage_is_captured_from_final_chunk` 断 usage | ⚠️ 三段中"不暴露分块"无断言 |
+| 6 | 缓存损坏 → 视为未命中 + **重新请求** + **记警告** | `test_llm_cache.py::test_corrupt_row_is_treated_as_miss` 只断 `get() is None`；`test_cache.py::test_corrupt_entry_can_be_rewritten` 测的是能写回 | ⚠️ 三段中后两段无断言 |
+| 7 | 有 gold 的查询计入 SEH/SRS | `retrieval/test_metrics.py` 测指标本身；`test_run_retrieval.py::test_without_gold_cases_are_counted` 断 `without_gold == 4`；`test_low_difficulty_scores_are_locked` 断 `seh_at_k == 1.0`。排除逻辑由总量不是 count 隐含固定 | ✅ |
+| 8 | 中英表达归一到同槽位 | `test_condition.py::test_client_dinner_maps_to_activity` 只测 `"客户应酬" → activity:client_dinner`，**输入是中文，测的不是中英归一**（真测中英的是 `test_production_and_chinese_equivalent` 等，但没覆盖"应酬/client dinner"这一对） | ⚠️ 有一半，缺另一语言 |
+| 9 | 补录过去有效的事实（`valid_from < recorded_at`） | 全库只有 20 处 `recorded_at`，`test_query.py` 的 fixture 把两者都设为 `BASE`；`test_write.py:276` 的 `valid_from=NOW-timedelta(days=1)` 在 `supersede` 里被**强制前移**（断言"不能倒挂"），恰恰是反例 | ❌ 无 |
+| 10 | 条件为空时只返回空条件条目 | `test_query.py::test_unconditional_query_does_not_mix_branches` | ✅ |
+
+**分布**：
+
+| 判定 | 条数 | 哪些 |
+|---|---|---|
+| ✅ THEN 每段都有断言 | **5** | #1 #3 #4 #7 #10 |
+| ⚠️ 有测试但只覆盖部分 | **4** | #2 #5 #6 #8 |
+| ❌ 没有 / 测的不是这个 | **1** | #9 |
+
+> **#8 的判定**：表里记 ⚠️，因为它确实有一个测试覆盖这个键
+> （`test_client_dinner_maps_to_activity`），只是只喂了中文。
+> 若把口径收紧成"必须两种语言都断言"，它就落到 ❌。
+> **两种口径都记下来，是因为这个边界本身就说明判据不唯一**——
+> 而"判据不唯一"正是 `Test:` 引用列要面对的第二个难题。
+
+> **#7 的判定说明**：它没有一条"断言排除逻辑"的测试，但 `test_low_difficulty_scores_are_locked` 锁定了 `seh_at_k == 1.0`——若排除逻辑被删，4 条无 gold 用例会以 `seh=False` 进分母，均值掉到 26/30 = 0.867，测试即红。所以它是**间接锁定**，不是直接断言。这类"靠总量被动锁住"的覆盖，在抽样里会被误判成 ✅，而它其实对"为什么"一无所知。
+
+### 这个分布推翻了 A/B 二选一
+
+原先是二选一：
+
+- **A**：大部分有测试但没标 → 加引用列，纯记录工作，收益高
+- **B**：大部分没测试 → 缺口 200 量级，要么补测试要么承认
+
+实测是**第三种**：**有测试的 8 条里，4 条只覆盖了 THEN 的一部分。**
+
+这个分布决定了两件事：
+
+**1. `Test:` 引用列的真实收益比 A 情况低。**
+
+它不是"把已有的证明写下来"，因为已有的证明只到"一半"。填引用时会出现这样的条目：
+
+```
+#### Scenario: 缓存损坏
+Test: test_llm_cache.py::test_corrupt_row_is_treated_as_miss
+```
+
+引用检查全绿，但这个测试只验证"视为未命中"，**没验证"重新请求"和"记录警告"**——THEN 有三段，断言只覆盖一段。
+
+**2. 一个测试可以支撑多个 scenario 的引用，而检查看不出来。**
+
+引用检查只能断言"这个名字存在"，不能断言"它覆盖了这个 scenario 的每一段"。
+
+### 所以：引用列能保证"有引用"，不能保证"引用覆盖了该 scenario"
+
+**这是必须写下来的一句**：否则下一次会有人以为"加 `Test:` 列就能解决"。
+
+> 引用列能保证"有引用"，不能保证"引用覆盖了该 scenario"。
+> 一个测试填给多个 scenario 时，引用检查仍会全绿。
+>
+> 所以 **"229 → 229 有引用"这个目标，不等于"229 条行为都有验证"**。
+> 前者是记录问题，后者是工程问题。
+
+### 更根本的：这个项目的测试是"问题驱动"的，不是"spec 驱动"的
+
+```
+229 个 scenario    vs    1322 个测试
+```
+
+测试比 scenario 多得多。所以**问题不是"没有测试"，而是"测试和 scenario 之间没有映射关系"**。
+
+而 1322 个测试大多围绕**缺陷、指标、数据结构**写的（29 条 `locked_defect`、各种 `evidence_lock`、一致性检查），不是围绕 scenario 写的。
+
+| 组织方式 | 保证什么 |
+|---|---|
+| **问题驱动**（现状） | 每个 bug 有回归测试 |
+| **spec 驱动**（缺失） | 每条 scenario 有测试 |
+
+所以这不是"补一列元数据"，而是**组织方式的改变**。它必须在变更的 proposal 里说清楚，不能当成格式工作。
+
 ### 这次审计本身出过一次错
 
 **第一版统计写的是"13 条 MUST 中 5 条含符号，38%"。**
@@ -355,7 +449,7 @@ grep "bootstrap|interval|proportion_ci|paired" evals/run_retrieval.py
 | **F24**（A 轴不得满分） | **正确的失败** | **billing A 轴 `SEH@1 = 1.0000`** |
 
 ```
-pytest              -> 1322 passed, 1 skipped
+pytest              -> 1330 passed, 1 skipped
 ruff / mypy         -> clean
 locked_defect       -> 29 条收集（27 个标记，parametrize 展开 2 条）
 evidence_lock       -> 6 条（读 git 归档，只有历史被改写才红）

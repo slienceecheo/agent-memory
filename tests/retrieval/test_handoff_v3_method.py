@@ -280,6 +280,101 @@ def test_scenario_count_is_real() -> None:
     assert total == 229, f"Scenario 数变成 {total}"
 
 
+# ---------- 0.6 抽样与 Test: 列的边界 ----------
+
+
+def test_spec_has_zero_test_references() -> None:
+    """spec 里必须有 **0** 条测试引用——这是"映射表"这一节的前提。
+
+    若将来有人加了 `Test: xxx` 行，这个数字会变，本节的所有推论都要重算。
+    """
+    import re
+
+    total = 0
+    for path in (ROOT / "openspec" / "specs").rglob("spec.md"):
+        text = path.read_text(encoding="utf-8")
+        total += len(re.findall(r"^\s*(?:\*\*)?Test(?:\*\*)?:", text, re.M))
+        total += len(re.findall(r"tests/test_[a-z_]+\.py", text))
+    assert total == 0, f"spec 里出现了 {total} 条测试引用，§0.6 的结论需要重算"
+
+
+def test_section_0_6_records_the_sample_of_ten() -> None:
+    """必须记录"抽了 10 个 scenario"以及三种判定各自的条数。"""
+    text = _text()
+    section = text.split("### 0.6 自动检查的边界")[1].split("### 0.7")[0]
+
+    assert "抽 10 个" in section
+    # 三种判定
+    assert "THEN 每段都有断言" in section
+    assert "只覆盖部分" in section
+    assert "没有 / 测的不是这个" in section
+    # 分布是 5 / 4 / 1，不是 4 / 4 / 2
+    assert "| **5** |" in section
+    assert "| **4** |" in section
+    assert "| **1** |" in section
+
+
+def test_section_0_6_says_the_sample_refutes_the_a_or_b_choice() -> None:
+    """抽样必须明确写出"不是 A 也不是 B，是第三种"。"""
+    text = _text()
+    section = text.split("### 0.6 自动检查的边界")[1].split("### 0.7")[0]
+
+    assert "推翻了 A/B 二选一" in section
+    assert "第三种" in section
+
+
+def test_section_0_6_records_the_partial_coverage_case() -> None:
+    """必须举出"引用全绿但只覆盖一段"的具体例子（缓存损坏）。"""
+    text = _text()
+    section = text.split("### 0.6 自动检查的边界")[1].split("### 0.7")[0]
+
+    assert "test_corrupt_row_is_treated_as_miss" in section
+    assert "重新请求" in section
+    assert "记录警告" in section
+    # 结论句
+    assert "引用列能保证" in section
+    assert "不等于" in section and "229 条行为都有验证" in section
+
+
+def test_section_0_6_records_that_test_structure_is_problem_driven() -> None:
+    """"问题驱动 vs spec 驱动"这个区分必须在，否则读者会以为只是补一列。"""
+    text = _text()
+    section = text.split("### 0.6 自动检查的边界")[1].split("### 0.7")[0]
+
+    assert "问题驱动" in section
+    assert "spec 驱动" in section
+    assert "组织方式的改变" in section
+    # 测试比 scenario 多
+    assert "1322" in section
+
+
+def test_section_0_6_records_why_7_is_counted_as_covered() -> None:
+    """#7 是"间接锁定"而非直接断言，必须写明，否则会被误读成直接断言。"""
+    text = _text()
+    section = text.split("### 0.6 自动检查的边界")[1].split("### 0.7")[0]
+
+    assert "间接锁定" in section
+    assert "26/30" in section
+
+
+def test_section_0_6_records_the_unmeasurable_case() -> None:
+    """#9 是"全库找不到对应测试"的具体缺口，必须点名。"""
+    text = _text()
+    section = text.split("### 0.6 自动检查的边界")[1].split("### 0.7")[0]
+
+    assert "valid_from < recorded_at" in section
+    assert "test_write.py:276" in section
+
+
+def test_section_0_6_records_why_judging_is_not_unique() -> None:
+    """#8 两种口径都能自圆其说——这说明判据不唯一，是引用列的第二难题。"""
+    text = _text()
+    section = text.split("### 0.6 自动检查的边界")[1].split("### 0.7")[0]
+
+    assert "判据不唯一" in section
+    assert "两种口径" in section
+
+
 def test_section_0_6_records_that_the_audit_itself_was_wrong() -> None:
     """**必须记录这次审计本身算错过一次。**
 
