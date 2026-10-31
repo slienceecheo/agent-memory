@@ -817,16 +817,41 @@ def test_section_0_8_records_the_fix_actions() -> None:
     assert "2 条红" in section
 
 
-def test_section_0_8_records_the_two_layer_criterion() -> None:
-    """引用符号还不够——断言的具体数值也必须随符号变化。"""
-    section = _section_by_title("### 引用符号还不够")
+def test_section_0_8_records_assertion_types_not_two_layers() -> None:
+    """必须区分结构断言与数值断言，不能说成"引用符号不够"。"""
+    section = _section_by_title("### 断言类型的选择")
 
-    assert "带余量的不等式" in section
-    assert "仍然真" in section
-    # 两层
-    assert "测试引用产品的符号" in section
-    assert "断言的具体数值随符号变化" in section
-    assert "只有两层都满足" in section
+    assert "结构断言" in section
+    assert "数值断言" in section
+    # 失效条件相反
+    assert "失效条件相反" in section
+    # 临界点
+    assert "0.1709" in section
+    # 数值断言先红
+    assert "数值断言早红" in section
+    # 结构断言晚红的代价
+    assert "缺陷被削弱但没被修" in section
+
+
+def test_section_0_8_records_the_numerical_assertion_cost() -> None:
+    """数值断言也有反方向代价：无关权重调整会误报。"""
+    section = _section_by_title("### 但数值断言也有反方向的代价")
+
+    assert "误报" in section
+    assert "缺陷 19 一点没变" in section
+    # 两者都留
+    assert "两者都留" in section
+
+
+def test_section_0_8_records_the_01025_scope() -> None:
+    """0.1025 是 uniform 权重下的条件值，不是缺陷常量。"""
+    section = _section_by_title("### 报告里的 0.1025 是条件值")
+
+    assert "c4-retrieval.md" in section
+    assert "v2-sample-validation.md" in section
+    assert "条件值" in section
+    # 为什么不改报告
+    assert "已冻结" in section
 
 
 def test_section_0_7_has_the_four_step_checklist() -> None:
