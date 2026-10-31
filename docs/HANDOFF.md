@@ -264,42 +264,131 @@ F24 的 detail 在 tag **之后**改进过：现在分两段写
 
 按能力分层抽 10 个（每能力 2 个），逐条去 `tests/` 找"THEN 的每一段是否都被断言过"。
 
-**判定规则**（先定规则，再看结果）：
+**判定规则**（先定规则，再看结果）——**五类，不是三类**：
 
-| 判定 | 含义 |
-|---|---|
-| ✅ | THEN 的**每一段**都有测试断言 |
-| ⚠️ | THEN 有测试，但只覆盖其中一段，另一段无断言 |
-| ❌ | 找不到测这个 scenario 的测试，或找到的测试测的是别的东西 |
+| 类型 | 定义 | 下一步动什么 |
+|---|---|---|
+| ✅ **直接覆盖** | 有断言直接触碰该行为 | 不用动 |
+| 🔒 **间接锁定** | 测试断言了该行为的**后果**，但不解释它 | **补注释**，不是补断言 |
+| 🧩 **parametrize 分支** | 多个断言属于同一个测试函数，各自只覆盖一半 | 引用该函数即可，但要知道它是"多分支" |
+| ⚠️ **部分覆盖** | THEN 的某几段有断言，其余段没有 | **补断言** |
+| ❌ **无覆盖** | 没有任何断言 | **补测试** |
 
-| # | Scenario | 对应测试 | 判定 |
+**为什么必须把 🔒 和 ⚠️ 分开**：两者的处置相反。间接锁定**不需要补断言**（删掉逻辑它会红，这是测试的主要目的），它要补的是"为什么 1.0 是对的"这层解释。混成一类会让下一步动作不明确。
+
+| # | Scenario | 对应测试 | 类型 |
 |---|---|---|---|
 | 1 | 大小写与空白归一 | `resolver/test_normalize.py::test_case_and_whitespace_are_folded` | ✅ |
-| 2 | 模型输出不可解析 → CONFLICT 兜底 + `change_source="failed"` | `test_change_marker_llm.py::test_unparsable_output_is_marked_failed` 断 FAILED；`test_rules.py::test_rule7_fallback_when_state_change_unconfirmed` 断 CONFLICT。**但两条分别用一个 `is_new_state=False` 的桩，没有测试把"不可解析输出"真的喂进规则层** | ⚠️ 两段各有人测，接缝没人测 |
+| 2 | 模型输出不可解析 → CONFLICT 兜底 + `change_source="failed"` | `test_change_marker_llm.py::test_unparsable_output_is_marked_failed` 断 FAILED；`test_rules.py::test_rule7_fallback_when_state_change_unconfirmed` 断 CONFLICT。**两条各用 `is_new_state=False` 的桩，没有测试把"不可解析输出"真的喂进规则层** | ⚠️ 接缝没人测 |
 | 3 | 加载 6K 单跳子集 | `test_factconsolidation.py::test_load_selects_subset_by_length_and_hop` | ✅ |
 | 4 | 缓存完整性校验 → 退出码 0 | `test_check_cache.py::test_complete_cache_exits_zero` | ✅ |
-| 5 | 强制分块 → 完整消息 + 拼接正文 + usage + **不暴露分块** | `test_llm_client.py::test_forced_stream_is_collected_into_full_text` 只断 `content`；`test_sse.py::test_usage_is_captured_from_final_chunk` 断 usage | ⚠️ 三段中"不暴露分块"无断言 |
-| 6 | 缓存损坏 → 视为未命中 + **重新请求** + **记警告** | `test_llm_cache.py::test_corrupt_row_is_treated_as_miss` 只断 `get() is None`；`test_cache.py::test_corrupt_entry_can_be_rewritten` 测的是能写回 | ⚠️ 三段中后两段无断言 |
-| 7 | 有 gold 的查询计入 SEH/SRS | `retrieval/test_metrics.py` 测指标本身；`test_run_retrieval.py::test_without_gold_cases_are_counted` 断 `without_gold == 4`；`test_low_difficulty_scores_are_locked` 断 `seh_at_k == 1.0`。排除逻辑由总量不是 count 隐含固定 | ✅ |
-| 8 | 中英表达归一到同槽位 | `test_condition.py::test_client_dinner_maps_to_activity` 只测 `"客户应酬" → activity:client_dinner`，**输入是中文，测的不是中英归一**（真测中英的是 `test_production_and_chinese_equivalent` 等，但没覆盖"应酬/client dinner"这一对） | ⚠️ 有一半，缺另一语言 |
-| 9 | 补录过去有效的事实（`valid_from < recorded_at`） | 全库只有 20 处 `recorded_at`，`test_query.py` 的 fixture 把两者都设为 `BASE`；`test_write.py:276` 的 `valid_from=NOW-timedelta(days=1)` 在 `supersede` 里被**强制前移**（断言"不能倒挂"），恰恰是反例 | ❌ 无 |
+| 5 | 强制分块 → 完整消息 + 拼接正文 + usage + **不暴露分块** | `test_llm_client.py::test_forced_stream_is_collected_into_full_text` 断 `content`；`test_sse.py::test_usage_is_captured_from_final_chunk` 断 usage | ⚠️ "不暴露分块"无断言 |
+| 6 | 缓存损坏 → 视为未命中 + **重新请求** + **记警告** | `test_llm_cache.py::test_corrupt_row_is_treated_as_miss` 只断 `get() is None` | ⚠️ 后两段无断言 |
+| 7 | 有 gold 的查询计入 SEH/SRS | `test_low_difficulty_scores_are_locked` 断 `seh_at_k == 1.0` | 🔒 **间接锁定** |
+| 8 | 中英表达归一到同槽位 | `test_known_expressions_map_to_slots` 的 parametrize 里 `("night","time:night")` 与 `("深夜","time:night")` 各一项 | 🧩 **parametrize 分支** |
+| 9 | 补录过去有效的事实（`valid_from < recorded_at`） | 全库无此用例；`test_write.py:276` 的倒挂输入被 `supersede` 强制前移，断言的是**反面** | ❌ 无 |
 | 10 | 条件为空时只返回空条件条目 | `test_query.py::test_unconditional_query_does_not_mix_branches` | ✅ |
 
 **分布**：
 
-| 判定 | 条数 | 哪些 |
+| 类型 | 条数 | 哪些 |
 |---|---|---|
-| ✅ THEN 每段都有断言 | **5** | #1 #3 #4 #7 #10 |
-| ⚠️ 有测试但只覆盖部分 | **4** | #2 #5 #6 #8 |
-| ❌ 没有 / 测的不是这个 | **1** | #9 |
+| ✅ 直接覆盖 | **4** | #1 #3 #4 #10 |
+| 🧩 parametrize 分支 | **1** | #8 |
+| 🔒 间接锁定 | **1** | #7 |
+| ⚠️ 部分覆盖 | **3** | #2 #5 #6 |
+| ❌ 无覆盖 | **1** | #9 |
 
-> **#8 的判定**：表里记 ⚠️，因为它确实有一个测试覆盖这个键
-> （`test_client_dinner_maps_to_activity`），只是只喂了中文。
-> 若把口径收紧成"必须两种语言都断言"，它就落到 ❌。
-> **两种口径都记下来，是因为这个边界本身就说明判据不唯一**——
-> 而"判据不唯一"正是 `Test:` 引用列要面对的第二个难题。
+> **这张表里只有"条数"和"哪些编号"受测试保护**
+> （`test_section_0_6_records_the_sample_of_ten` 断言 4/3/1 出现）。
+> **每条判定的理由文字不受保护**——上一版我把 #8 的理由写错了，测试照样绿。
+> 理由是给人读的，不是给测试读的；能自动检查的只有分类和计数。
+> 而"分类对不对"本身也仍需人读——**测试只保证"这张表没被意外改动"，不保证"表是对的"。**
 
-> **#7 的判定说明**：它没有一条"断言排除逻辑"的测试，但 `test_low_difficulty_scores_are_locked` 锁定了 `seh_at_k == 1.0`——若排除逻辑被删，4 条无 gold 用例会以 `seh=False` 进分母，均值掉到 26/30 = 0.867，测试即红。所以它是**间接锁定**，不是直接断言。这类"靠总量被动锁住"的覆盖，在抽样里会被误判成 ✅，而它其实对"为什么"一无所知。
+> **#8 改判说明（原先误判为 ⚠️）**：我当时去找"一条对比中英的测试"，
+> 没找到就判了"只喂了中文"。**但覆盖不需要长成那个样子**——
+> parametrize 的两个分支各断言一次，就覆盖了。这是我的判据范围错了，
+> 不是测试的问题。
+
+> **#7 为什么单列**：它没有一条"断言排除逻辑"的测试，但
+> `test_low_difficulty_scores_are_locked` 锁定了 `seh_at_k == 1.0`。
+> 若排除逻辑被删，4 条无 gold 用例以 `seh=False` 进分母，
+> 均值从 `26/26 = 1.0` 掉到 `26/30 = 0.867`。
+> **所以这条测试会红——因为它断言的是 `== 1.0`，而 0.867 不等于 1.0。**
+>
+> **防回归有效，理解无效**：它不说"为什么 1.0 是对的"，读者只能看到"必须等于 1.0"。
+> 而"1.0 意味着池里没有干扰项"这层含义只在上面的散文里，不在断言里。
+
+### `Test:` 引用列的第三个盲区：它不是"已验证"，是"由谁负责"
+
+`#8` 暴露的问题和"一个测试填给多个 scenario"不同：**parametrize 的多分支算一条测试，还是多条？**
+
+写 `Test: test_known_expressions_map_to_slots` 一条，它其实覆盖了 14 个槽位断言。而某个 scenario 可能只对应其中一项。
+
+所以引用列的语义只能是：
+
+> **"这条 scenario 由哪个测试函数负责"**
+
+而不是：
+
+> ~~"这条 scenario 已被验证"~~
+
+前者是结构事实，后者是语义判断。两者的差别在于：`Test: xxx` 填上之后，检查能断言"xxx 存在"，不能断言"xxx 覆盖了这个 scenario 的每一段"。
+
+### `expected_slot in parsed.slots` 是子集断言，看不见多出来的槽位
+
+`#8` 还暴露一个更隐蔽的问题：那条 parametrize 用的是
+
+```python
+assert expected_slot in parsed.slots   # 子集
+```
+
+不是相等。所以当解析**多给了槽位**时它仍然绿。
+
+实测：
+
+```
+parse_condition("holiday").slots   == {'time:day', 'time:holiday'}
+parse_condition("节假日").slots    == {'time:holiday'}
+```
+
+原因：`_ALIASES` 里 `"day" → time:day` 是 `"holiday"` 的子串，子串匹配把两个槽位都给了。
+
+**所以 `holiday` 与 `节假日` 这一对"中英对照"实际并不相等，而 4 条 parametrize 全绿。**
+
+| 短别名 | 被它误命中的词 | 结果 |
+|---|---|---|
+| `开发` (`activity:coding`) | `开发环境` | 同时给 `env:development` |
+| `开发` (`activity:coding`) | `功能开发` | 同时给 `activity:feature` |
+| `day` (`time:day`) | `holiday` | 同时给 `time:holiday` |
+
+共 **3 对**，全部是"长别名包含短别名、槽位不同"。
+
+> 这是第五类覆盖：**测试断言了"包含"，而 scenario 要求"相等"**。
+> 它同时说明为什么"有测试"和"测试通过"都不足以回答"scenario 成立吗"。
+
+### spec 自己举的例子，实测跑不通
+
+`memory-retrieval` 的这条 scenario 原文：
+
+```markdown
+#### Scenario: 中英表达归一到同一槽位
+- **WHEN** 同一条件以中文与英文分别表达（如"应酬"与"client dinner"）
+- **THEN** 归一到相同的槽位键
+```
+
+实测：
+
+```
+应酬  vs  client dinner   -> condition_match = 0.000
+应酬  vs  client_dinner   -> condition_match = 1.000
+```
+
+`_ALIASES` 里只有 `client_dinner`（下划线），没有 `client dinner`（空格）。
+
+**spec 用来解释这条规则的例子，是这条规则唯一不成立的形式。**
+
+这比 #8 的判定严重：**如果只按 spec 的例子写测试，测试会红；而写的测试换了例子（`写代码`/`coding`），它不会红。** 于是"这条 scenario 有测试吗"的答案，取决于你用哪个例子去问。
 
 ### 这个分布推翻了 A/B 二选一
 
@@ -449,7 +538,7 @@ grep "bootstrap|interval|proportion_ci|paired" evals/run_retrieval.py
 | **F24**（A 轴不得满分） | **正确的失败** | **billing A 轴 `SEH@1 = 1.0000`** |
 
 ```
-pytest              -> 1330 passed, 1 skipped
+pytest              -> 1334 passed, 1 skipped
 ruff / mypy         -> clean
 locked_defect       -> 29 条收集（27 个标记，parametrize 展开 2 条）
 evidence_lock       -> 6 条（读 git 归档，只有历史被改写才红）

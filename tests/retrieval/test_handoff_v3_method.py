@@ -299,80 +299,165 @@ def test_spec_has_zero_test_references() -> None:
 
 
 def test_section_0_6_records_the_sample_of_ten() -> None:
-    """必须记录"抽了 10 个 scenario"以及三种判定各自的条数。"""
+    """必须记录"抽了 10 个 scenario"以及五类覆盖各自的条数。"""
     text = _text()
     section = text.split("### 0.6 自动检查的边界")[1].split("### 0.7")[0]
 
     assert "抽 10 个" in section
-    # 三种判定
-    assert "THEN 每段都有断言" in section
-    assert "只覆盖部分" in section
-    assert "没有 / 测的不是这个" in section
-    # 分布是 5 / 4 / 1，不是 4 / 4 / 2
-    assert "| **5** |" in section
+    # 五类，不是三类
+    assert "直接覆盖" in section
+    assert "间接锁定" in section
+    assert "parametrize 分支" in section
+    assert "部分覆盖" in section
+    assert "无覆盖" in section
+    # 分布 4 / 1 / 1 / 3 / 1
     assert "| **4** |" in section
+    assert "| **3** |" in section
     assert "| **1** |" in section
 
 
-def test_section_0_6_says_the_sample_refutes_the_a_or_b_choice() -> None:
-    """抽样必须明确写出"不是 A 也不是 B，是第三种"。"""
+def test_section_0_6_separates_indirect_lock_from_partial() -> None:
+    """间接锁定与部分覆盖的处置相反，必须写明"补注释"vs"补断言"。"""
     text = _text()
     section = text.split("### 0.6 自动检查的边界")[1].split("### 0.7")[0]
 
-    assert "推翻了 A/B 二选一" in section
-    assert "第三种" in section
+    assert "补注释" in section
+    assert "补断言" in section
+    # 理由：两者处置相反
+    assert "处置相反" in section
 
 
-def test_section_0_6_records_the_partial_coverage_case() -> None:
-    """必须举出"引用全绿但只覆盖一段"的具体例子（缓存损坏）。"""
+def test_section_0_6_records_the_correction_of_scenario_8() -> None:
+    """#8 原先误判为 ⚠️，必须记录改判和原因。"""
     text = _text()
     section = text.split("### 0.6 自动检查的边界")[1].split("### 0.7")[0]
 
-    assert "test_corrupt_row_is_treated_as_miss" in section
-    assert "重新请求" in section
-    assert "记录警告" in section
-    # 结论句
-    assert "引用列能保证" in section
-    assert "不等于" in section and "229 条行为都有验证" in section
+    assert "#8 改判说明" in section
+    assert "原先误判" in section
+    assert "覆盖不需要长成那个样子" in section
 
 
-def test_section_0_6_records_that_test_structure_is_problem_driven() -> None:
-    """"问题驱动 vs spec 驱动"这个区分必须在，否则读者会以为只是补一列。"""
+def test_section_0_6_records_the_spec_example_that_fails() -> None:
+    """spec 自己举的 "应酬 / client dinner" 例子实测跑不通，必须记录。"""
     text = _text()
     section = text.split("### 0.6 自动检查的边界")[1].split("### 0.7")[0]
 
-    assert "问题驱动" in section
-    assert "spec 驱动" in section
-    assert "组织方式的改变" in section
-    # 测试比 scenario 多
-    assert "1322" in section
+    assert "spec 自己举的例子" in section
+    assert "client dinner" in section
+    assert "client_dinner" in section
+    assert "唯一不成立的形式" in section
 
 
-def test_section_0_6_records_why_7_is_counted_as_covered() -> None:
-    """#7 是"间接锁定"而非直接断言，必须写明，否则会被误读成直接断言。"""
+def test_section_0_6_records_the_subset_assertion_blind_spot() -> None:
+    """`expected_slot in slots` 是子集断言，看不见多出来的槽位。"""
     text = _text()
     section = text.split("### 0.6 自动检查的边界")[1].split("### 0.7")[0]
 
-    assert "间接锁定" in section
-    assert "26/30" in section
+    assert "子集断言" in section
+    assert "holiday" in section
+    assert "3 对" in section
 
 
-def test_section_0_6_records_the_unmeasurable_case() -> None:
-    """#9 是"全库找不到对应测试"的具体缺口，必须点名。"""
+def test_section_0_6_defines_test_reference_semantics() -> None:
+    """`Test:` 的语义是"由谁负责"，不是"已验收"。"""
     text = _text()
     section = text.split("### 0.6 自动检查的边界")[1].split("### 0.7")[0]
 
-    assert "valid_from < recorded_at" in section
-    assert "test_write.py:276" in section
+    assert "由哪个测试函数负责" in section
+    assert "已被验证" in section
+    # 这是第三个盲区
+    assert "第三个盲区" in section
 
 
-def test_section_0_6_records_why_judging_is_not_unique() -> None:
-    """#8 两种口径都能自圆其说——这说明判据不唯一，是引用列的第二难题。"""
-    text = _text()
-    section = text.split("### 0.6 自动检查的边界")[1].split("### 0.7")[0]
+# ---------- 上面这些数字必须可复算 ----------
 
-    assert "判据不唯一" in section
-    assert "两种口径" in section
+
+def test_spec_example_client_dinner_really_does_not_match() -> None:
+    """`应酬 / client dinner` 匹配 0.0，而 `应酬 / client_dinner` 匹配 1.0。"""
+    import sys
+
+    sys.path.insert(0, str(ROOT))
+    from memory.retrieval.condition import condition_match
+
+    assert condition_match("应酬", "client dinner") == pytest.approx(0.0)
+    assert condition_match("应酬", "client_dinner") == pytest.approx(1.0)
+
+
+def test_holiday_and_chinese_equivalent_are_not_equal() -> None:
+    """`holiday` 多给一个 `time:day`，与 `节假日` 不相等。"""
+    import sys
+
+    sys.path.insert(0, str(ROOT))
+    from memory.retrieval.condition import parse_condition
+
+    en = parse_condition("holiday").slots
+    zh = parse_condition("节假日").slots
+
+    assert en != zh
+    assert en == frozenset({"time:day", "time:holiday"})
+    assert zh == frozenset({"time:holiday"})
+
+
+def test_there_are_exactly_three_substring_collisions() -> None:
+    """`_ALIASES` 里"短别名是长别名子串且槽位不同"的组合恰好 3 对。"""
+    import sys
+
+    sys.path.insert(0, str(ROOT))
+    from memory.retrieval.condition import _ALIASES
+
+    collisions = [
+        (short, long)
+        for short in _ALIASES
+        for long in _ALIASES
+        if short != long
+        and short.casefold() in long.casefold()
+        and _ALIASES[short] != _ALIASES[long]
+    ]
+
+    assert len(collisions) == 3, f"子串误命中变成 {len(collisions)} 对：{collisions}"
+
+
+def test_indirect_lock_really_fails_when_exclusion_is_removed() -> None:
+    """#7 说"删掉排除逻辑，均值会变"——这个说法必须实测。
+
+    若这个差不存在，"间接锁定"这个类型就是编出来的。
+    **这里不用 skip**：文件缺失时必须红，否则这条测试会在无人察觉时变成空转。
+    """
+    import json
+
+    data = ROOT / "data" / "conflict-set" / "independent.jsonl"
+    assert data.exists(), f"样本文件丢失：{data}"
+
+    rows = [
+        json.loads(line)
+        for line in data.read_text(encoding="utf-8").splitlines()
+        if line.strip()
+    ]
+    with_gold = [r for r in rows if r.get("gold")]
+    without_gold = [r for r in rows if not r.get("gold")]
+
+    assert len(with_gold) == 26
+    assert len(without_gold) == 4
+
+    excluded_mean = 26 / 26   # 排除无 gold
+    included_mean = 26 / 30   # 不排除，4 条以 False 进分母
+
+    assert excluded_mean == pytest.approx(1.0)
+    assert included_mean == pytest.approx(0.867, abs=1e-3)
+    assert included_mean < 1.0, "若仍等于 1.0，这条间接锁定就是假的"
+
+
+def test_parametrize_uses_subset_not_equality() -> None:
+    """`test_known_expressions_map_to_slots` 断言的是 `in`，不是相等。
+
+    这个断言本身是"记录现状"：只要它还写 `in`，多给槽位就不会红。
+    """
+    source = (ROOT / "tests" / "retrieval" / "test_condition.py").read_text(
+        encoding="utf-8"
+    )
+
+    assert "assert expected_slot in parsed.slots" in source
+    assert "assert parsed.slots == {" not in source
 
 
 def test_section_0_6_records_that_the_audit_itself_was_wrong() -> None:
