@@ -231,6 +231,55 @@ def test_section_0_6_records_the_coverage_limit() -> None:
     assert "memory-store" in section
 
 
+def test_section_0_6_records_the_three_layer_split() -> None:
+    """必须写明三层（符号存在 / 行为符合 / 人工映射），不是一个比例。"""
+    text = _text()
+    section = text.split("### 0.6 自动检查的边界")[1].split("### 0.7")[0]
+
+    assert "三层，不是两层" in section
+    assert "符号存在" in section
+    assert "行为符合" in section
+    # 关键：行为符合是 0%
+    assert "0/83 = 0%" in section or "0%" in section
+    # 关键：不是 98.8%
+    assert "100% 的" in section
+
+
+def test_section_0_6_has_the_four_way_split() -> None:
+    """四种分类的数字都要在。"""
+    text = _text()
+    section = text.split("### 0.6 自动检查的边界")[1].split("### 0.7")[0]
+
+    assert "88.0%" in section   # 无反引号
+    assert "1.2%" in section    # 函数名
+    assert "4.8%" in section    # 字符串常量
+    assert "6.0%" in section    # 非字面量
+
+
+def test_section_0_6_records_scenario_gap() -> None:
+    """**真正的缺口**：229 个 Scenario 只有 3 个有映射测试。"""
+    text = _text()
+    section = text.split("### 0.6 自动检查的边界")[1].split("### 0.7")[0]
+
+    assert "229" in section
+    assert "Scenario" in section
+    assert "1.3%" in section
+    # 修复成本更低
+    assert "Test:" in section or "引用的测试名" in section
+
+
+def test_scenario_count_is_real() -> None:
+    """229 这个数必须能从 spec 复算。"""
+    import re
+
+    total = 0
+    for path in (ROOT / "openspec" / "specs").rglob("spec.md"):
+        total += len(
+            re.findall(r"^#### Scenario:", path.read_text(encoding="utf-8"), re.M)
+        )
+    assert total == 229, f"Scenario 数变成 {total}"
+
+
 def test_section_0_6_records_that_the_audit_itself_was_wrong() -> None:
     """**必须记录这次审计本身算错过一次。**
 
