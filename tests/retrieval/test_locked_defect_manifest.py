@@ -81,13 +81,17 @@ DEFECT_TESTS: dict[int, tuple[str, ...]] = {
         "test_results_have_no_interval_fields",
         "test_no_test_asserts_intervals_exist",
     ),
-    # 缺陷 23：`parse_condition` 子串匹配造成假阳性槽位。
+    # 缺陷 23：`parse_condition` 子串匹配混淆"误命中"与"多命中"。
     # 记在 v2 报告 §8.0——v3 之前登记，修法需要设计决策（甲/乙/丙）。
     23: (
-        "test_defect23_false_positives_are_real",
+        "test_defect23_true_positive_hits_are_real",
+        "test_defect23_hits_are_overlapping_substrings",
+        "test_defect23_multi_hits_are_not_overlapping_and_are_correct",
         "test_defect23_produces_a_false_positive_similarity",
         "test_defect23_chinese_english_pair_is_not_equal",
-        "test_defect23_is_exactly_three_collisions",
+        "test_defect23_dataset_values_split_into_three_groups",
+        "test_defect23_datasets_group_b_and_collisions_are_disjoint",
+        "test_defect23_longest_match_fixes_all_collisions_and_keeps_group_b",
         "test_defect23_spec_example_does_not_match",
         "test_defect23_exact_matching_would_break_three_values",
     ),

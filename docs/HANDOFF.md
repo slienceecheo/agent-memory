@@ -415,47 +415,93 @@ parse_condition("节假日").slots    == {'time:holiday'}
 2. **同时登记"子串误命中"为新缺陷（缺陷 23）**——不能让第 1 步造成"这条已经好了"的错觉
 3. **修匹配算法**——独立变更，需要设计决策
 
-### 缺陷 23：子串匹配造成假阳性
+### 缺陷 23：子串匹配把「误命中」与「多命中」混在一起
 
-`parse_condition` 的匹配是 `if alias.casefold() in folded`（子串包含，不是词边界、不是精确）。于是短别名会命中长词：
+`parse_condition` 的匹配是 `if alias.casefold() in folded`（子串包含，不是词边界、不是精确）。
 
-| 短别名 | 被它误命中的词 | 实际槽位 | 语义上应得的 |
+**但"子串匹配坏了"这句话不准确。** 它同时产生两种后果，性质不同：
+
+| 类型 | 定义 | 例子 | 是否错 |
 |---|---|---|---|
-| `day` (`time:day`) | `holiday` | `{time:day, time:holiday}` | `{time:holiday}` |
-| `开发` (`activity:coding`) | `开发环境` | `{activity:coding, env:development}` | `{env:development}` |
-| `开发` (`activity:coding`) | `功能开发` | `{activity:coding, activity:feature}` | `{activity:feature}` |
+| **误命中** | 长词里**包含**短别名，但语义上短别名不成立 | `day` 命中 `holiday` | **一定是错的** |
+| **多命中** | 两个**不重叠**的别名各自独立命中 | `本地开发` = `本地`+`开发` | **可能都对** |
 
-**这会产生假的相似度**，已实测：
+**实测判据**：看两个命中区间是否重叠。
+
+| 文本 | 命中别名 | 区间 | 重叠？ | 类型 |
+|---|---|---|---|---|
+| `holiday` | `day` `holiday` | `[4,7)` `[0,7)` | **是**（被包含） | **误命中** |
+| `开发环境` | `开发` `开发环境` | `[0,2)` `[0,4)` | **是**（被包含） | **误命中** |
+| `功能开发` | `开发` `功能开发` | `[2,4)` `[0,4)` | **是**（被包含） | **误命中** |
+| `本地开发` | `本地` `开发` | `[0,2)` `[2,4)` | **否**（相邻不交） | **多命中** |
+| `工作日白天` | `白天` | `[3,5)` | 只有一个 | 正确（`白天`→`time:day`） |
+| `生产环境` | `生产` | `[0,2)` | 只有一个 | 正确 |
+
+**所以缺陷 23 的三对碰撞里，只有 1 对是"误命中"、1 对是"多命中"、1 对其实是正确的。**
+
+而且 `本地开发` 的 `{activity:coding, env:local}` **语义上是对的**——它既是活动也是环境。
+
+**这会产生假的相似度**（实测）和**真相似度**混在一起：
 
 ```
-condition_match("开发环境", "写代码")  = 0.500   # 只因为共享 activity:coding
-condition_match("功能开发", "写代码")  = 0.500
-condition_match("holiday",   "day")   = 0.500
+condition_match("开发环境", "写代码")  = 0.500   # 误命中造成，是假的
+condition_match("功能开发", "写代码")  = 0.500   # 误命中造成，是假的
+condition_match("holiday",   "day")   = 0.500   # 误命中造成，是假的
 ```
 
 0.5 在 `condition_match` 的口径里是"中性（一方没提条件）"，但这里两边都提了条件，给 0.5 等于说**"开发环境"和"写代码"没关系**——而它真实给的信号是"有 1/2 槽位重合"。**这个 0.5 是巧合，不是设计。**
 
 `condition_match` 在 `src/memory/retrieval/rerank.py:111` 与 `evals/run_retrieval.py:571` 都是**生产路径**，不是死代码。
 
-### 三种修法都有代价——所以这是设计决策，不是 bug fix
+### 三组分类：41 个数据集条件值
 
-| 方案 | 做法 | 问题 |
-|---|---|---|
-| **甲** 词边界 | `day` 只匹配独立的 `day` | **中文没有词边界**，只对英文有效 |
-| **乙** 最长匹配优先 | `holiday` 命中后不再匹配 `day` | 但 `开发环境` 该不该同时给两个槽位，本身就是语义问题 |
-| **丙** 精确匹配 | 整串相等 | 数据集里 **3 个值会退化为 `raw`**（见下） |
+| 组 | 条件 | 数量 | 说明 |
+|---|---|---|---|
+| **A** 精确键 | 整串在 `_ALIASES` 里 | **26** | 不受任何方案影响 |
+| **B** 靠子串命中 | 不是精确键，但在词表里有子串 | **3** | 见下 |
+| **C** 本来就是 raw | 两种方案下都是 raw | **12** | 不受影响 |
 
-**丙 的实际代价**（已实测，不是推测）：
+**组 B 只有 3 个值**，而且它们的命中都**不是重叠的**（即都不是误命中）：
 
 ```
-工作日白天  ->  现在 {time:day}                 精确后 {raw:工作日白天}
-本地开发    ->  现在 {activity:coding, env:local}  精确后 {raw:本地开发}
-生产环境    ->  现在 {env:production}           精确后 {raw:生产环境}
+工作日白天  <- 白天 [3,5)            -> {time:day}                 语义正确
+本地开发    <- 本地 [0,2) + 开发 [2,4) -> {activity:coding, env:local} 语义正确（多命中）
+生产环境    <- 生产 [0,2)            -> {env:production}           语义正确
 ```
+
+> **组 C 的 12 个值不该算进"被打断"**——它们在子串与精确两种方案下都是 `raw`。
+> 上一版我把"3 个退化"和"本来就 raw"混成一句，会让选方案时低估丙的代价。
+
+### 三种修法对两类问题的处理不同
+
+| 方案 | 修误命中？ | 保留多命中？ | 代价（实测） |
+|---|---|---|---|
+| **甲** 词边界 | **只修英文**（中文无边界） | ✅ 保留 | 全词表 54 键中只改 1 个键（`holiday`） |
+| **乙** 最长匹配优先 | ✅ 全部修 | ✅ **保留** | 改 3 个键（`holiday`/`开发环境`/`功能开发`） |
+| **丙** 精确匹配 | ✅ 全部修 | ❌ **杀掉** | 数据集 **3 个值退化**，全词表 3 个键 |
+
+**乙 看起来最好**，因为它同时修误命中、保留多命中。实测 `本地开发` 在乙下仍是 `{activity:coding, env:local}`。
+
+**但乙 需要定义"什么叫重叠"**：
+
+```
+按别名长度降序匹配，命中后占用区间；被占用区间覆盖的别名丢弃。
+```
+
+- `holiday`：`holiday [0,7)` 先占，`day [4,7)` 被包含 → 丢弃 ✅
+- `本地开发`：`本地 [0,2)` 与 `开发 [2,4)` 不重叠 → 都保留 ✅
+
+**这不是简单改遍历顺序就能做的**——要引入区间占位状态，属于实现结构变更。
+
+**丙 的代价精确表述**：
+
+> 丙 会让 **3 个当前能正确解析的值**退化为 `raw`，
+> 另有 **12 个本来就是 raw** 的值不受影响。
+
+上一版写"3 个值退化"，读者会以为这 3 个里有错的部分——实测它们**全是语义正确的**。
 
 > **顺带更正一个说法**：`客户应酬` **在** `_ALIASES` 里（是精确键），
-> 所以"精确匹配会打断 `客户应酬`"不成立。真正会被打断的是上面那 3 个
-> ——它们是"词表里没有整串、只能靠子串命中"的值。
+> 所以"精确匹配会打断 `客户应酬`"不成立。
 
 ### 引用列记录的是会随实现翻转的映射
 
@@ -559,15 +605,15 @@ Test: test_llm_cache.py::test_corrupt_row_is_treated_as_miss
 ### 0.7 缺陷与标记的计数关系
 
 ```
-23 条缺陷  ->  33 个 `locked_defect` 标记  ->  35 条收集
+23 条缺陷  ->  37 个 `locked_defect` 标记  ->  39 条收集
 ```
 
 多出来的关系：
 
 | 环节 | 差值 | 原因 |
 |---|---|---|
-| 23 → 33 | +10 | 多条缺陷带多个标记，见下表；其中 5 条已修复（7/8/12/14/17）用正向断言，不标 `locked_defect` |
-| 33 → 35 | +2 | `test_authority_and_status_have_no_variance_in_pool` 的 `parametrize` 展开 3 条 |
+| 23 → 37 | +14 | 多条缺陷带多个标记，见下表；其中 5 条已修复（7/8/12/14/17）用正向断言，不标 `locked_defect` |
+| 37 → 39 | +2 | `test_authority_and_status_have_no_variance_in_pool` 的 `parametrize` 展开 3 条 |
 
 **带多个标记的缺陷（10 条）**：
 
@@ -582,13 +628,26 @@ Test: test_llm_cache.py::test_corrupt_row_is_treated_as_miss
 | 20 | 2 |
 | 21 | 2 |
 | 22 | 4 |
-| 23 | 6 |
+| 23 | 10 |
 
-> **缺陷 23 带 6 个标记**，因为它的六个侧面必须分别锁：
-> 三对误命中、假相似度、中英不等、碰撞总数、spec 例子失败、丙方案代价。
-> 只锁"误命中存在"会让"为什么不能改成精确匹配"这个证据消失。
+> **缺陷 23 带 10 个标记**，因为"误命中"与"多命中"必须**分别锁**：
+>
+> | 锁什么 | 测试 |
+> |---|---|
+> | 三对误命中存在 | `..._true_positive_hits_are_real` |
+> | 误命中的判据（区间重叠） | `..._hits_are_overlapping_substrings` |
+> | **多命中不是错的**（区间不交、结果正确） | `..._multi_hits_are_not_overlapping_and_are_correct` |
+> | 假相似度 0.500 | `..._produces_a_false_positive_similarity` |
+> | 中英对照不等 | `..._chinese_english_pair_is_not_equal` |
+> | 41 值三组分类 | `..._dataset_values_split_into_three_groups` |
+> | 碰撞恰好 3 对 | `..._is_exactly_three_collisions` |
+> | spec 例子失败 | `..._spec_example_does_not_match` |
+> | 丙方案代价 3 个**正确**值 | `..._exact_matching_would_break_three_values` |
+>
+> **"多命中不是错的"那一条最容易被漏掉**：只锁"误命中存在"和"丙会打断 3 个值"，
+> 读的人会以为那 3 个值本来就是错的。而它们语义正确，丙是在消灭正确行为。
 
-**所以"33 个标记"不等于"33 条缺陷"**，写的时候必须带上缺陷数。
+**所以"37 个标记"不等于"37 条缺陷"**，写的时候必须带上缺陷数。
 
 **`openspec/specs/evaluation-harness/spec.md` 第 184–188 行要求**：
 
@@ -638,9 +697,9 @@ grep "bootstrap|interval|proportion_ci|paired" evals/run_retrieval.py
 | **F24**（A 轴不得满分） | **正确的失败** | **billing A 轴 `SEH@1 = 1.0000`** |
 
 ```
-pytest              -> 1353 passed, 1 skipped
+pytest              -> 1360 passed, 1 skipped
 ruff / mypy         -> clean
-locked_defect       -> 35 条收集（33 个标记，parametrize 展开 2 条）
+locked_defect       -> 39 条收集（37 个标记，parametrize 展开 2 条）
 evidence_lock       -> 6 条（读 git 归档，只有历史被改写才红）
 integrity_check     -> 1 条（工作区归档被覆盖时红，动作是还原）
 ```
@@ -1235,21 +1294,21 @@ if result["seh_at_k"] >= 1.0:
 **C4 里"这些不是实现缺陷，是数据表达能力的上限"这句话错了一半**——
 前两条限制是数据问题，1.000 本身是实现缺陷。
 
-## 33 个 `locked_defect` 标记不许删（收集为 35 条）
+## 37 个 `locked_defect` 标记不许删（收集为 39 条）
 
-C4 的 19 条 + v2 的 4 条缺陷（20/21/22/23）现在由 **33 个 `@pytest.mark.locked_defect` 标记**锁着，
-收集时展开为 **35 条测试**（`test_authority_and_status_have_no_variance_in_pool`
+C4 的 19 条 + v2 的 4 条缺陷（20/21/22/23）现在由 **37 个 `@pytest.mark.locked_defect` 标记**锁着，
+收集时展开为 **39 条测试**（`test_authority_and_status_have_no_variance_in_pool`
 的 `parametrize` 有 3 个 split，占 3 条而只算 1 个标记）。
 
 ```bash
-uv run --no-sync pytest -m locked_defect -q                        # 35 passed
+uv run --no-sync pytest -m locked_defect -q                        # 39 passed
 uv run --no-sync pytest -m locked_defect --collect-only -q         # 看清单
 uv run --no-sync pytest -m evidence_lock -q                        # 6 条，读 git 归档
 uv run --no-sync pytest -m integrity_check -q                      # 1 条，检测归档被覆盖
 ```
 
 **它们锁定的是"现状是坏的"，不是期望行为。** 造完 v2、跑出真实分数之后，
-这 33 个标记**不应该被删**——它们记录的是一次真实的测量失败，
+这 37 个标记**不应该被删**——它们记录的是一次真实的测量失败，
 比任何"我们做得很好"的叙述都有价值。
 
 - 改成正向断言的时机是**修复提交**，不是新数据上线时

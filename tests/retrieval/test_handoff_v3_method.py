@@ -133,8 +133,8 @@ def test_section_0_7_separates_defects_from_markers() -> None:
     section = _section_until_next_heading("0.7")
 
     assert "23 条缺陷" in section
-    assert "33 个" in section
-    assert "35 条收集" in section
+    assert "37 个" in section
+    assert "39 条收集" in section
 
 
 def test_section_0_7_explains_both_gaps() -> None:
@@ -142,7 +142,7 @@ def test_section_0_7_explains_both_gaps() -> None:
     section = _section_until_next_heading("0.7")
 
     # 23 -> 33：多标记 + 已修复的用正向断言
-    assert "+10" in section
+    assert "+14" in section
     assert "正向断言" in section
     # 33 -> 35：parametrize
     assert "+2" in section
@@ -175,7 +175,7 @@ def test_counts_match_reality() -> None:
                 for dec in node.decorator_list:
                     if "locked_defect" in ast.unparse(dec):
                         markers += 1
-    assert markers == 33, f"标记数变成 {markers}"
+    assert markers == 37, f"标记数变成 {markers}"
 
 
 def test_locked_defect_collected_count_matches_the_document() -> None:
@@ -675,6 +675,51 @@ def test_parametrize_uses_subset_not_equality() -> None:
 
     assert "assert expected_slot in parsed.slots" in source
     assert "assert parsed.slots == {" not in source
+
+
+def test_section_0_6_separates_false_hits_from_multi_hits() -> None:
+    """必须区分"误命中"（区间重叠）与"多命中"（区间不交）。
+
+    这两类性质不同：误命中一定是错的，多命中可能都对。
+    不分开记，选方案时就不知道在选什么。
+    """
+    text = _text()
+    section = text.split("### 0.6 自动检查的边界")[1].split("### 0.7")[0]
+
+    assert "误命中" in section
+    assert "多命中" in section
+    # 判据是区间重叠
+    assert "重叠" in section
+    # 多命中可能是对的
+    assert "可能都对" in section
+
+
+def test_section_0_6_records_the_three_value_groups() -> None:
+    """41 个条件值必须分成三组：26 精确键 / 3 靠子串 / 12 本来就 raw。"""
+    text = _text()
+    section = text.split("### 0.6 自动检查的边界")[1].split("### 0.7")[0]
+
+    assert "**A** 精确键" in section
+    assert "**B** 靠子串命中" in section
+    assert "**C** 本来就是 raw" in section
+    assert "**26**" in section
+    assert "**3**" in section
+    assert "**12**" in section
+    # 组 C 不该算进"被打断"
+    assert "不该算进" in section
+
+
+def test_section_0_6_says_exact_matching_kills_correct_behaviour() -> None:
+    """丙会让 3 个**语义正确**的值退化——必须写明，否则读者以为那 3 个本来错。"""
+    text = _text()
+    section = text.split("### 0.6 自动检查的边界")[1].split("### 0.7")[0]
+
+    assert "全是语义正确的" in section
+    assert "杀掉" in section
+    # 乙保留多命中
+    assert "乙 看起来最好" in section
+    # 乙需要区间占位
+    assert "区间占位" in section
 
 
 def test_section_0_6_records_that_the_audit_itself_was_wrong() -> None:
