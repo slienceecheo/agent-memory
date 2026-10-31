@@ -175,8 +175,70 @@ F24 的 detail 在 tag **之后**改进过：现在分两段写
   "bootstrap 说 `[0.333, 1.0]` 而 Wilson 说 `[0.354, 0.879]`"这个对照，
   比任一单独区间都更能说明该样本量下区间估计有多不确定
 
+### 双报的判据：用差距标记"bootstrap 是否可信"
 
-### 0.6 缺陷与标记的计数关系
+**差距本身就是"bootstrap 在这个 n 上是否可信"的指标**——
+不需要预先判断 `n` 够不够，数据自己会说。
+
+| 情形 | bootstrap 下界 | Wilson 下界 | 差 | 解读 |
+|---|---|---|---|---|
+| 6/9 | 0.3333 | 0.3542 | **0.021** | 一致，bootstrap 可用 |
+| 9/9 | 1.0000 | 0.7008 | **0.299** | 分歧，bootstrap 坍缩 |
+| 2/2 | 1.0000 | 0.3424 | **0.658** | 严重分歧，bootstrap 无意义 |
+
+**报告规则**：
+
+> 报双区间；当两者下界差 **> 0.1** 时，必须标注
+> "bootstrap 在此样本量上不可信，以 Wilson 为准"。
+
+这比"选一个方法"更好，因为它把"需要判断 n 够不够"变成了"看一个可观测的量"。
+
+### 0.6 自动检查的边界：spec 的 MUST 几乎全部没有测试守着
+
+**先记一组数字**（可复算，见 `tests/retrieval/test_handoff_v3_method.py`）：
+
+| 能力 | 含 `MUST`/`SHALL` 的行 | 其中含反引号符号 |
+|---|---|---|
+| `conflict-resolution` | 9 | **0** |
+| `evaluation-harness` | 15 | 1 |
+| `llm-and-embedding-io` | 12 | **0** |
+| `memory-retrieval` | 23 | 2 |
+| `memory-store` | 24 | 2 |
+| **合计** | **83** | **5** |
+
+**覆盖率 5/83 = 6%。94% 的 MUST/SHALL 无法自动检查。**
+
+**能做的一半**（自动，但只覆盖 6%）：
+
+> 对 spec 里被反引号包裹的符号（如 `` `substring_exact_match` ``），
+> 断言它在源码里存在。这能抓"spec 点了名但没实现"。
+
+**做不到的 94%**：
+
+> spec 描述一个能力但不点名任何符号时（如"配对 bootstrap 区间"），
+> **无法从文本推出它该由哪个函数实现**。
+
+**缺陷 22 正属于后者**——spec 要求了区间，但没写任何函数名。所以它能挂两个版本不被发现。
+
+### 当前只有一份手工映射表（且不完整）
+
+| MUST 句子 | 实现位置 | 测试 |
+|---|---|---|
+| "MUST 给出配对 bootstrap 区间" | **无** | **无**（缺陷 22） |
+| "MUST 记录各召回路径的返回条数" | `run_retrieval.py` 的 `path_returns` | L6a / L6c |
+| "SHALL 实现 `substring_exact_match`" | `src/memory/eval/metrics.py` | `tests/test_metrics.py` |
+
+**这张表只能人工维护，且必须随每次归档更新。当前它只覆盖 3 条，而 spec 里有 83 条 MUST/SHALL。**
+
+> **危险在于**："我们有 1300+ 个测试"这句话会给人虚假的安全感。
+> 实测：spec 里 **94% 的 MUST/SHALL 没有任何测试守着**（5/83 可自动检查）。
+> 绿的测试可能只是没测到。
+
+**加这张表的时机**：下一次归档前。空表从来不会被维护，
+所以它从"已知的 3 条"开始，而不是从空开始。
+
+
+### 0.7 缺陷与标记的计数关系
 
 ```
 22 条缺陷  ->  27 个 `locked_defect` 标记  ->  29 条收集
@@ -240,7 +302,7 @@ grep "bootstrap|interval|proportion_ci|paired" evals/run_retrieval.py
 | **F24**（A 轴不得满分） | **正确的失败** | **billing A 轴 `SEH@1 = 1.0000`** |
 
 ```
-pytest              -> 1311 passed, 1 skipped
+pytest              -> 1317 passed, 1 skipped
 ruff / mypy         -> clean
 locked_defect       -> 29 条收集（27 个标记，parametrize 展开 2 条）
 evidence_lock       -> 6 条（读 git 归档，只有历史被改写才红）

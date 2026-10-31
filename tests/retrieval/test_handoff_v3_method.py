@@ -170,3 +170,103 @@ def test_section_numbers_are_sequential() -> None:
     assert numbers, "找不到 §0 的小节"
     expected = [str(i) for i in range(1, len(numbers) + 1)]
     assert numbers == expected, f"编号乱序：{numbers}"
+
+
+# ---------- 0.5 双报判据 ----------
+
+
+def test_dual_interval_gap_is_used_as_a_flag() -> None:
+    """必须写明"用两区间下界的差标记 bootstrap 是否可信"。
+
+    这比"选一个方法"更好：把"需要判断 n 够不够"变成"看一个可观测的量"。
+    """
+    text = _text()
+    section = text.split("### 双报的判据")[1].split("### 0.6")[0]
+
+    assert "差距本身" in section
+    assert "0.021" in section   # 6/9 一致
+    assert "0.299" in section   # 9/9 分歧
+    assert "0.658" in section   # 2/2 严重分歧
+    # 阈值规则
+    assert "> 0.1" in section
+    assert "以 Wilson 为准" in section
+
+
+def test_dual_interval_gap_numbers_are_real() -> None:
+    """三个差距必须能从模块复算。"""
+    import sys
+
+    sys.path.insert(0, str(ROOT))
+    from evals.metrics.wilson import wilson_interval
+
+    from memory.eval.bootstrap import proportion_ci
+
+    cases = [(6, 9, 0.021), (9, 9, 0.299), (2, 2, 0.658)]
+    for k, n, expected_gap in cases:
+        boot = proportion_ci([True] * k + [False] * (n - k), seed=0)
+        wilson = wilson_interval(k, n)
+        gap = abs(boot.low - wilson.low)
+        assert gap == pytest.approx(expected_gap, abs=2e-3), (
+            f"{k}/{n}: bootstrap {boot.low:.4f} vs Wilson {wilson.low:.4f}，"
+            f"差 {gap:.4f}，文档写 {expected_gap}"
+        )
+
+
+# ---------- 0.6 自动检查的边界 ----------
+
+
+def test_section_0_6_records_the_coverage_limit() -> None:
+    """必须写明"能自动检查的只有一部分"及其真实比例。"""
+    text = _text()
+    section = text.split("### 0.6 自动检查的边界")[1].split("### 0.7")[0]
+
+    assert "83" in section, "未写 MUST/SHALL 总行数"
+    assert "5" in section, "未写可自动检查的条数"
+    # 覆盖率 6%
+    assert "6%" in section, "未写覆盖率"
+    assert "94%" in section, "未写无法检查的比例"
+    # 能力分组表
+    assert "conflict-resolution" in section
+    assert "memory-store" in section
+
+
+def test_section_0_6_has_a_non_empty_mapping_table() -> None:
+    """映射表必须非空——空表从来不会被维护。"""
+    text = _text()
+    section = text.split("### 0.6 自动检查的边界")[1].split("### 0.7")[0]
+
+    # 至少三条已知映射
+    assert "配对 bootstrap 区间" in section
+    assert "path_returns" in section
+    assert "substring_exact_match" in section
+
+
+def test_section_0_6_warns_about_false_assurance() -> None:
+    """必须写明"1300+ 测试"会给人虚假安全感。"""
+    text = _text()
+    section = text.split("### 0.6 自动检查的边界")[1].split("### 0.7")[0]
+
+    assert "虚假的安全感" in section
+    assert "没有任何测试守着" in section
+
+
+def test_must_coverage_numbers_are_real() -> None:
+    """83 / 5 / 6% / 94% 必须能从 spec 复算。"""
+    import re
+
+    specs = ROOT / "openspec" / "specs"
+    total = 0
+    with_symbol = 0
+
+    for path in specs.rglob("spec.md"):
+        for line in path.read_text(encoding="utf-8").splitlines():
+            stripped = line.strip()
+            if "MUST" not in stripped and "SHALL" not in stripped:
+                continue
+            total += 1
+            if re.findall(r"`([A-Za-z_][A-Za-z0-9_.]*)`", stripped):
+                with_symbol += 1
+
+    assert total == 83, f"含 MUST/SHALL 的行变成 {total}"
+    assert with_symbol == 5, f"含反引号符号的行变成 {with_symbol}"
+    assert with_symbol / total < 0.10, "覆盖率不应超过 10%"
