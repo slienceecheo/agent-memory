@@ -908,13 +908,21 @@ def test_section_0_8_records_the_joint_infimum_is_zero() -> None:
 
 
 def test_section_0_8_says_the_bound_is_conditional() -> None:
-    """必须改成"条件安全"，并写明前提是 status = 0.25。"""
-    section = _section_by_title("### 所以正确表述是")
+    """必须写明三层前提，且指出 (c) 是最隐蔽的（数据属性，不是配置）。"""
+    section = _section_by_title('### 所以正确表述是"条件安全"')
 
-    assert "条件安全" in section
-    assert "在 `status` 权重保持 0.25 的前提下" in section
+    assert "三层前提" in section
+    # 三个前提
+    assert "`status` 权重 = 0.25" in section
+    assert "`base/condition` 的分配已取最不利" in section
+    assert "该 case 的 `d_base` 落在" in section
+    # (c) 是数据属性
+    assert "**数据属性**" in section
+    assert "最隐蔽" in section
+    # 0.02 的反例
+    assert "0.0147" in section
     # v3 的约束
-    assert "必须联合声明三个权重的取值" in section
+    assert "必须联合声明四个权重的取值" in section
 
 
 def test_section_0_8_compares_the_two_variables() -> None:
@@ -937,6 +945,81 @@ def test_section_0_8_records_the_quantifier_scope() -> None:
     assert "| **6** | **论域** |" in section
     assert "量词的辖域" in section
     assert "无条件" in section and "有条件" in section
+
+
+def test_section_0_8_records_that_d_base_is_the_only_runtime_variable() -> None:
+    """**第七次**：`d_base` 既不是配置也不是常量，它逐 case 变。
+
+    `0.09` 是 q4 这条 case 的检索分差，不是产品参数。
+    混在"常量"里会让阈值看起来对所有 case 成立。
+    """
+    section = _section_by_title("### 三个变量里，只有 `d_base` 不是配置")
+
+    # 五个符号的来源清单
+    assert "`auth_gap`" in section
+    assert "常量" in section and "`_AUTHORITY_SCORE`" in section
+    assert "`d_cond`" in section and "中性值" in section
+    assert "`PREREGISTERED_WEIGHTS`" in section
+    assert "**运行时算出来的检索分差，逐 case 不同**" in section
+    # 0.910 的来源
+    assert "c4-retrieval.md:341" in section
+
+
+def test_section_0_8_records_the_direction_of_d_base() -> None:
+    """方向必须写清：d_base 越大，缺陷越容易存在（不是越难）。"""
+    section = _section_by_title("### 方向容易搞反")
+
+    assert "越大，缺陷越**容易**存在" in section
+    assert "最容易被推翻的是 `d_base` 最小的那条" in section
+    # 三个数
+    assert "0.1250" in section
+    assert "0.1475" in section
+    assert "0.2500" in section
+
+
+def test_section_0_8_records_the_three_split_scenarios() -> None:
+    """"降 authority 要分给别人"，分给谁决定边界——三情形必须列出。"""
+    section = _section_by_title("### 但\"降 authority\"必须把权重分给别人")
+
+    assert "情形 A" in section
+    assert "情形 B" in section
+    assert "情形 C" in section
+    # 三者在 d_base=0 时的边界——断言整行
+    assert "| A（给 status） | 0.1250 |" in section
+    assert "| B（平分） | 0.1500 |" in section
+    assert "| **C（condition 归零）** | **0.0000** |" in section
+    # 情形 C 的前提与 q4 不自洽
+    assert "与 q4 的算式不自洽" in section
+
+
+def test_section_0_8_records_the_exhaustive_rate() -> None:
+    """穷举比例必须写出来，否则"5.4%"没有依据。"""
+    section = _section_by_title("### 穷举：`a = 0.05` 时")
+
+    assert "975 / 18081" in section
+    assert "5.4%" in section
+    # 集中在哪里
+    assert "`w_cond` 很小的一端" in section
+
+
+def test_section_0_8_replaces_threshold_with_per_case_criterion() -> None:
+    """正确形式是判据，不是阈值。"""
+    section = _section_by_title("### 正确表述：不是阈值，是逐 case 判据")
+
+    assert "对每条 case，若" in section
+    assert "缺陷 19 在该 case 上成立" in section
+    # 取最小值，不是最大值
+    assert "扫全部 case 的 `d_base`" in section
+    assert "按**最小的 `d_base`** 取界" in section
+
+
+def test_section_0_8_compares_the_two_missed_variables() -> None:
+    """两个方向都能漏：有对应物的以为定了，没对应物的以为不用管。"""
+    section = _section_by_title("### 这一条到底属于第几次")
+
+    assert "在产品里有对应物" in section
+    assert "在产品里没有对应物" in section
+    assert "两个方向都能漏" in section
 
 
 def test_section_0_8_arithmetic_numbers_are_recomputable() -> None:
@@ -1027,6 +1110,59 @@ def test_section_0_8_arithmetic_numbers_are_recomputable() -> None:
     # 联合下确界为 0：w_status 趋近 1 时 crit 趋近 0
     assert crit_general(0.99, 1.0) < 0.001
     assert crit_general(0.999, 1.0) < 0.0001
+
+    # ---------- 第七次：d_base 是逐 case 变量 ----------
+    #
+    # 三种"降 authority 后权重分给谁"的情形，各自的临界值。
+    # 情形 A：省下的给 status，base/cond 固定 0.25
+    def a_crit_A(d_base: float) -> float:
+        return 0.25 * (d_base + d_cond)
+
+    # 情形 B：省下的平分给 base/cond
+    def a_crit_B(d_base: float) -> float:
+        k = d_base + d_cond
+        return 0.375 * k / (1.0 + k / 2.0)
+
+    # 情形 C：condition 权重归零（base_share=1）
+    def a_crit_C(d_base: float) -> float:
+        return 0.75 * d_base / (1.0 + d_base)
+
+    # d_base=0 是最不利情形，三种情形的边界
+    assert a_crit_A(0.0) == pytest.approx(0.1250, abs=1e-4)
+    assert a_crit_B(0.0) == pytest.approx(0.1500, abs=1e-4)
+    assert a_crit_C(0.0) == pytest.approx(0.0000, abs=1e-6)
+
+    # q4 的 0.09
+    assert a_crit_A(0.09) == pytest.approx(0.1475, abs=1e-4)
+    assert a_crit_B(0.09) == pytest.approx(0.1708, abs=1e-4)
+    assert a_crit_C(0.09) == pytest.approx(0.0619, abs=1e-4)
+
+    # 用户给的 0.0714 只在情形 C 成立
+    assert a_crit_C(0.0714) == pytest.approx(0.0500, abs=1e-4)
+    # 而在情形 A/B 下，同样的 d_base 边界远高于 0.05
+    assert a_crit_A(0.0714) == pytest.approx(0.1429, abs=1e-4)
+    assert a_crit_B(0.0714) == pytest.approx(0.1667, abs=1e-4)
+
+    # 方向：d_base 越小，边界越低（缺陷越容易存在）
+    for fn in (a_crit_A, a_crit_B, a_crit_C):
+        assert fn(0.0) < fn(0.09) < fn(0.5)
+
+    # 穷举：a=0.05 时缺陷仍存在的比例
+    defect = 0
+    total = 0
+    for i in range(41):
+        w_base = i / 40 * 0.95
+        for j in range(41):
+            w_cond = j / 40 * 0.95
+            if w_base + w_cond + 0.05 > 1.0 + 1e-9:
+                continue
+            for k2 in range(21):
+                d = k2 / 20 * 0.5
+                total += 1
+                if w_base * d + w_cond * d_cond < 0.05:
+                    defect += 1
+    assert (defect, total) == (975, 18081), f"穷举结果变成 {defect}/{total}"
+    assert defect / total == pytest.approx(0.054, abs=1e-3)
 
     # 单调性保证极值在端点，不必扫描内部
     shares = [i / 50 for i in range(51)]
