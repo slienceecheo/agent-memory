@@ -103,27 +103,42 @@ def test_q4_loses_to_unrelated_entries_on_authority() -> None:
 
     这是四特征值之间的**算术事实**，不依赖 LLM 或 embedding：
 
-        base: +0.25 × (1.000 − 0.910) = +0.0225
-        cond: +0.25 × (1.00 − 0.50)   = +0.1250
-        auth: +0.25 × (0.00 − 1.00)   = −0.2500
-        净差                           = −0.1025
+        base: +w.base      × (1.000 − 0.910)
+        cond: +w.condition × (1.00 − 0.50)
+        auth: −w.authority × (1.00 − 0.00)
+
+    在 `uniform` 权重下（各 0.25）：
+
+        base: +0.0225 / cond: +0.1250 / auth: −0.2500 / 净差 −0.1025
+
+    **`w` 必须从 `PREREGISTERED_WEIGHTS` 读，不能抄 0.25。**
+    抄常量会让"改产品权重"不触发这条测试——实测把 `uniform` 改成
+    base 0.24 / condition 0.26 时，抄常量的版本仍然全绿，
+    而它恰好是缺陷 19/21 唯一的相关锁定。
 
     断言的是**缺陷存在**（auth 罚分能推翻 base+cond 的双重优势）。
     修好（`authority` 移出排序特征，或权重降到 0.05 以下）后变红。
     """
-    w = 0.25
+    from memory.retrieval.rerank import PREREGISTERED_WEIGHTS
+
+    w = PREREGISTERED_WEIGHTS["uniform"]
     d_base = 1.000 - 0.910
     d_cond = 1.00 - 0.50
-    auth_penalty = w * (1.00 - 0.00)
+    auth_penalty = w.authority * (1.00 - 0.00)
 
-    advantage = w * (d_base + d_cond)
-    assert advantage == pytest.approx(0.1475, abs=1e-4)
+    advantage = w.base * d_base + w.condition * d_cond
+    assert advantage == pytest.approx(0.1475, abs=1e-4), (
+        f"base+cond 优势 {advantage} 不再是 0.1475——"
+        "`uniform` 权重变了，缺陷 19 的算术需要重新评估"
+    )
     assert auth_penalty == pytest.approx(0.25)
     assert auth_penalty > advantage, "auth 罚分不再能推翻 base+cond 双优，缺陷 19 可能已修"
 
-    # 量化判据：推翻条件等价于 1 > d_base + d_cond
+    # 量化判据：推翻条件等价于 w.authority > w.base*d_base + w.condition*d_cond
     assert d_base + d_cond < 1.0
-    assert auth_penalty - advantage == pytest.approx(0.1025, abs=1e-4)
+    assert auth_penalty - advantage == pytest.approx(0.1025, abs=1e-4), (
+        f"净差变成 {auth_penalty - advantage}，不再是 0.1025"
+    )
 
 
 def test_authority_weight_threshold_is_quantified() -> None:

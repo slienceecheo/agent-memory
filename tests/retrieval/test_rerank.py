@@ -101,6 +101,29 @@ def test_preregistered_count_is_five() -> None:
     assert len(PREREGISTERED_WEIGHTS) <= 5
 
 
+def test_uniform_weights_are_the_preregistered_values() -> None:
+    """缺陷 19/21 的临界点依赖 `uniform` 的**具体数值**，不只是"和为 1"。
+
+    实测缺口：`test_preregistered_weights_exist_and_sum_to_one` 只断言和 == 1，
+    所以把 `uniform` 从各 0.25 改成 base 0.24 / condition 0.26 时它仍然通过。
+
+    而缺陷 19 的净差 0.1025、缺陷 21 的"罚分 == 加成"都建立在那四个 0.25 上。
+    权重一变，这两条缺陷的算术就不成立了——那需要重新评估，而不是静默通过。
+
+    **若这条变红**：先看是不是有意调权重（v3 修缺陷 19/21），是则同步更新
+    `test_q4_loses_to_unrelated_entries_on_authority` 与
+    `test_authority_penalty_equals_condition_bonus` 的期望值并翻面。
+    """
+    from memory.retrieval.rerank import PREREGISTERED_WEIGHTS
+
+    w = PREREGISTERED_WEIGHTS["uniform"]
+
+    assert w.base == pytest.approx(0.25)
+    assert w.condition == pytest.approx(0.25)
+    assert w.authority == pytest.approx(0.25)
+    assert w.status == pytest.approx(0.25)
+
+
 # ---------- 组合与消融 ----------
 
 

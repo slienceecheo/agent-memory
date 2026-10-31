@@ -711,26 +711,26 @@ grep "bootstrap|interval|proportion_ci|paired" evals/run_retrieval.py
 |---|---|---|
 | **改 `condition.py` 的匹配逻辑** | **6** | 缺陷 23 的真锁 |
 | **改 `condition_match` 的中性值** | **1** | 缺陷 11 的真锁 |
-| 改 `rerank.py` 的权重 | **0** | ← 见下 |
+| **改 `rerank.py` 的权重** | **2**（见下，已从 0 修复） | 缺陷 19 / 21 的真锁 |
 | 改 `select_pool_distractors`（evals） | **6** | 池构造相关 |
 | 改数据 | **9** | 纯数据锁 |
 | 改什么都没反应 | **3** | 已移出为 `plan_check` |
 
-**所以"没有任何一条对 src 改动敏感"这个说法是错的**——`condition.py` 上就有 7 条会红。
+**所以"没有任何一条对 src 改动敏感"这个说法是错的**——`condition.py` 上 7 条，`rerank.py` 上 2 条。
 
-### 但 `rerank.py` 权重改动是 0 条——因为测试把权重抄进了自己
+### 已修：`rerank.py` 权重改动原本 0 条红，因为测试把权重抄进了自己
 
 缺陷 19（authority 罚分压过 base+cond）和缺陷 21（罚分恰好等于加成）
-都关于 `rerank` 权重。而改权重 0 条红，原因是：
+都关于 `rerank` 权重。而初次实测改权重是 **0 条红**，原因是：
 
 ```python
-# tests/retrieval/test_defect18_authority.py
+# 修复前 tests/retrieval/test_defect18_authority.py
 def test_q4_loses_to_unrelated_entries_on_authority() -> None:
     w = 0.25                        # <- 硬编码，不读 RerankWeights
     auth_penalty = w * (1.0 - 0.0)
     ...
 
-# tests/retrieval/test_defects_20_21.py
+# 修复前 tests/retrieval/test_defects_20_21.py
 def test_authority_penalty_equals_condition_bonus() -> None:
     w = 0.25                        # <- 同一个写法
     penalty = (1.0 - _AUTHORITY_SCORE[Authority.THIRD_PARTY]) * w
@@ -738,15 +738,37 @@ def test_authority_penalty_equals_condition_bonus() -> None:
 
 **它们验证的是"0.25 这个数会让 X 成立"，不是"产品用的权重会让 X 成立"。**
 
-所以：
-
-| 情形 | 这条测试 |
-|---|---|
-| 产品权重改成 0.30 | **仍绿**（它算的还是 0.25） |
-| 有人把 `w = 0.25` 改成 `0.30` | 会红（但那是改测试，不是改产品） |
+| 情形 | 修复前 | 修复后 |
+|---|---|---|
+| 产品权重改成 0.24/0.26 | **仍绿** | **2 条红** |
+| 改测试里的 `w = 0.25` | 会红（但那是改测试） | 不再有字面量可改 |
 
 **这是"测试抄了产品常量"的形态，而不是"没测试覆盖权重"。** 它比后者更隐蔽：
 测试看起来在算权重，实际上把被测对象复制了一份进来。
+
+### 修复动作（test-only，不需要 OpenSpec 变更）
+
+按 `AGENTS.md`，限制的是"改 `src/` 里的产品行为"。改测试断言不改任何产品行为，
+所以这是 test-only 改动，现在就能做。
+
+三处：
+
+1. `test_defect18_authority.py`：`w = 0.25` → `w = PREREGISTERED_WEIGHTS["uniform"]`，
+   并把 `advantage` 拆成 `w.base * d_base + w.condition * d_cond`（原来用一个 `w` 顶四个）
+2. `test_defects_20_21.py`：`penalty` 用 `w.authority`、`bonus` 用 `w.condition`
+   （原来两边共用一个 `w`，恰好掩盖了"两个字段可能不同"这个事实）
+3. `test_rerank.py`：新增 `test_uniform_weights_are_the_preregistered_values`，
+   断言四个 0.25 的**具体数值**
+
+第 3 条补的是实测缺口：原来 `test_preregistered_weights_exist_and_sum_to_one`
+只断言"和为 1"，所以 0.24/0.26 这种改动完全通不过它的视线。
+
+**实测验证**：
+
+```
+修复前：改权重 -> 0 条红（36 passed）
+修复后：改权重 -> 2 条红（缺陷 19 / 21 的测试 + 权重数值断言）
+```
 
 ### 为什么这次改动 0 条红，而 `condition.py` 有 7 条
 
@@ -755,10 +777,28 @@ def test_authority_penalty_equals_condition_bonus() -> None:
 | 测试 | 引用产品的什么 | 改产品会红吗 |
 |---|---|---|
 | 缺陷 23 的 7 条 | `parse_condition` / `_ALIASES` | ✅ 会 |
-| 缺陷 19/21 的 3 条 | 常量 `0.25`（抄来的） | ❌ 不会 |
+| 缺陷 19/21 的 3 条 | `PREREGISTERED_WEIGHTS`（修复后） | ✅ 会 |
 | 缺陷 1/9/10/13/16 的 9 条 | `data/` 下的文件 | ❌ 不会（改数据才会） |
 
-**所以"锁代码"的定义要精确成：测试必须引用产品的符号，而不是复制产品的数值。**
+**所以"锁代码"的判据是：测试必须引用产品的符号，而不是复制产品的数值。**
+引用符号还不够，断言的量也必须真的随它变化——见下。
+
+### 引用符号还不够：断言必须对改动有反应
+
+把 q4 那条改成读 `w.authority` 之后，`base` 从 0.25 降到 0.24 会改变 `advantage`，
+而 `advantage` 有显式断言（`== 0.1475`），所以会红。
+
+**但如果只写 `assert auth_penalty > advantage`（一个带余量的不等式），
+即使权重变了也可能仍然成立。** 实测：0.25 > 0.24×0.09+0.26×0.5 = 0.1516，仍然真。
+
+所以完整的判据是两层：
+
+| 层 | 条件 | 缺了会怎样 |
+|---|---|---|
+| 1 | 测试引用产品的符号 | 改产品不触发 |
+| 2 | 断言的具体数值随符号变化 | 引用也不触发 |
+
+**只有两层都满足，测试才算"锁住这个数值"。**
 
 ### 这三步检查（可复用的清单）
 
@@ -801,7 +841,7 @@ actionable = [d for d, reason in BLOCKED_BY.items() if reason is None]  # 12 条
 `needs-design` 只能是缺陷 23、三组之和必须等于 `DEFECT_TESTS` 的条数。
 
 ```
-pytest              -> 1375 passed, 1 skipped
+pytest              -> 1377 passed, 1 skipped
 ruff / mypy         -> clean
 locked_defect       -> 36 条收集（34 个标记，parametrize 展开 2 条）
 plan_check          -> 3 条（方案论证，不随修复变红）

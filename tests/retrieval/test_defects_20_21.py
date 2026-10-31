@@ -94,14 +94,25 @@ def test_condition_match_degenerates_to_string_equality(
 def test_authority_penalty_equals_condition_bonus() -> None:
     """缺陷 21：`third_party` 的罚分恰好等于 condition 的全部加成。
 
-    两者都是 `0.25`（权重） × `1.00`（特征差）。所以一条 `third_party` 的 gold
+    两者都是 `w × 1.00`（特征差），但**用的不是同一个权重字段**：
+
+        penalty = w.authority  × (1.0 − _AUTHORITY_SCORE[THIRD_PARTY])
+        bonus   = w.condition  × 1.0
+
+    在 `uniform` 下（各 0.25）它们相等，所以一条 `third_party` 的 gold
     会失去全部条件优势，胜负完全由 base 决定。
+
+    **`w` 必须从 `PREREGISTERED_WEIGHTS` 读，不能抄 0.25。**
+    抄常量会让"改产品权重"不触发这条测试——实测把 `uniform` 改成
+    base 0.24 / condition 0.26 时，抄常量的版本仍然全绿。
 
     **修复后这条会红**：修法是调权重，或要求降级必须有场景依据（缺陷 18 的判据）。
     """
-    w = 0.25
-    penalty = (1.0 - _AUTHORITY_SCORE[Authority.THIRD_PARTY]) * w
-    bonus = 1.0 * w
+    from memory.retrieval.rerank import PREREGISTERED_WEIGHTS
+
+    w = PREREGISTERED_WEIGHTS["uniform"]
+    penalty = (1.0 - _AUTHORITY_SCORE[Authority.THIRD_PARTY]) * w.authority
+    bonus = 1.0 * w.condition
 
     assert penalty == pytest.approx(bonus), (
         f"罚分 {penalty} 不等于加成 {bonus}——缺陷 21 可能已修复"

@@ -779,36 +779,54 @@ def test_section_0_7_explains_why_not_removing_unfixable_defects() -> None:
 
 
 def test_section_0_7_records_the_src_sensitivity_audit() -> None:
-    """必须记录"改什么会红"的实测分类，尤其是 rerank = 0 条。"""
+    """必须记录"改什么会红"的实测分类，含 rerank 修复后的 2 条。"""
     section = _section_until_next_heading("0.8")
 
     assert "改 `condition.py` 的匹配逻辑" in section
     assert "| **6** | 缺陷 23 的真锁 |" in section
     assert "改 `rerank.py` 的权重" in section
-    assert "| **0** | ← 见下 |" in section
+    # 修复后是 2 条，不再是 0
+    assert "**2**（见下，已从 0 修复）" in section
     # 结论：不是"没有一条对 src 敏感"
     assert "这个说法是错的" in section
 
 
-def test_section_0_7_records_the_copied_constant_problem() -> None:
-    """必须写明 rerank 那 0 条的根因：测试把权重抄进了自己。"""
-    section = _section_by_title("### 但 `rerank.py` 权重改动是 0 条")
+def test_section_0_8_records_the_copied_constant_problem_as_fixed() -> None:
+    """必须记录"抄常量"这个测试缺陷**已修**，以及修前修后的实测对照。"""
+    section = _section_by_title("### 已修：`rerank.py` 权重改动原本 0 条红")
 
     assert "硬编码" in section
     assert "w = 0.25" in section
-    # 关键区分：测试抄了常量，不是没覆盖
+    # 修前/修后对照
+    assert "**仍绿**" in section
+    assert "**2 条红**" in section
     assert "测试抄了产品常量" in section
-    assert "把被测对象复制了一份" in section
 
 
-def test_section_0_8_distinguishes_symbol_reference_from_value_copy() -> None:
-    """必须写明"引用产品符号"vs"复制产品数值"这个判据。"""
-    section = _section_by_title("### 为什么这次改动 0 条红")
+def test_section_0_8_records_the_fix_actions() -> None:
+    """三处修复动作必须写明，且说明为什么不需要开变更。"""
+    section = _section_by_title("### 修复动作（test-only，不需要 OpenSpec 变更）")
 
-    assert "引用产品的符号" in section
-    assert "复制产品的数值" in section
-    # 三类对照
-    assert "缺陷 23 的 7 条" in section
+    assert "test_defect18_authority.py" in section
+    assert "test_defects_20_21.py" in section
+    assert "test_rerank.py" in section
+    # 为什么不需要变更
+    assert "改测试断言不改任何产品行为" in section
+    # 实测验证
+    assert "0 条红（36 passed）" in section
+    assert "2 条红" in section
+
+
+def test_section_0_8_records_the_two_layer_criterion() -> None:
+    """引用符号还不够——断言的具体数值也必须随符号变化。"""
+    section = _section_by_title("### 引用符号还不够")
+
+    assert "带余量的不等式" in section
+    assert "仍然真" in section
+    # 两层
+    assert "测试引用产品的符号" in section
+    assert "断言的具体数值随符号变化" in section
+    assert "只有两层都满足" in section
 
 
 def test_section_0_7_has_the_four_step_checklist() -> None:
@@ -823,11 +841,20 @@ def test_section_0_7_has_the_four_step_checklist() -> None:
     assert "不要写成原则" in section
 
 
-def test_rerank_defect_tests_hardcode_the_weight() -> None:
-    """缺陷 19/21 的测试把 `w = 0.25` 写死，不读 `PREREGISTERED_WEIGHTS`。
+def test_rerank_defect_tests_read_the_product_weights() -> None:
+    """缺陷 19/21 的测试必须**读取**产品权重，不能抄 `w = 0.25`。
 
-    **这就是"改 rerank 权重 0 条红"的根因。**
-    若哪天有人把它们改成读产品常量，这条会红——那时要重测敏感度。
+    **这条记录了一次已修的测试缺陷**：
+
+    原先这两条测试各写 `w = 0.25`，于是"改 rerank 权重"不会让它们变红——
+    实测把 `uniform` 改成 base 0.24 / condition 0.26 时，36 条 `locked_defect`
+    一条都没红，而缺陷 19/21 恰恰是唯一与权重相关的锁。
+
+    两个测试改了之后：
+    - 引用 `PREREGISTERED_WEIGHTS["uniform"]` 的**符号**，
+    - 且断言的量（0.1475 / 0.25 / 0.1025 / 相等）确实随权重变化。
+
+    **若这条变红**：说明有人又把它改回了抄常量——那会让缺陷 19/21 重新失去保护。
     """
     q4 = (ROOT / "tests" / "retrieval" / "test_defect18_authority.py").read_text(
         encoding="utf-8"
@@ -836,12 +863,18 @@ def test_rerank_defect_tests_hardcode_the_weight() -> None:
         encoding="utf-8"
     )
 
-    assert "    w = 0.25" in q4, "缺陷 19 的测试不再硬编码权重，需重测 src 敏感度"
-    assert "    w = 0.25" in p21, "缺陷 21 的测试不再硬编码权重，需重测 src 敏感度"
+    for name, src in (("缺陷 19", q4), ("缺陷 21", p21)):
+        assert "PREREGISTERED_WEIGHTS" in src, (
+            f"{name}的测试没有引用产品权重表——抄常量会让权重改动不触发它"
+        )
+        assert "    w = 0.25" not in src, (
+            f"{name}的测试又把权重抄成了字面量"
+        )
 
-    # 反过来：它们不该引用产品的权重表
-    assert "PREREGISTERED_WEIGHTS" not in q4
-    assert "PREREGISTERED_WEIGHTS" not in p21
+    # 而且必须是分别取字段，不是取一个数当四个用
+    assert "w.authority" in q4, "缺陷 19 必须用 w.authority，不能拿单一 w 顶替"
+    assert "w.base * d_base" in q4, "缺陷 19 的 base 项必须用 w.base"
+    assert "w.condition" in p21, "缺陷 21 的加成必须用 w.condition"
 
 
 def test_thread_three_of_the_six_evals_sensitive_tests_are_locked_defect() -> None:
