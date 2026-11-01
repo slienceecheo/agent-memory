@@ -11,8 +11,9 @@
 
 ```
 v2 数据集   2 个 subject：project:ledger（12 记忆）、project:billing（9 记忆）
-结果文件    15 份统一指纹（11 评测 + 2 消融 + 2 门禁），由测试强制
-            指纹 = 47e4785-dirty / 36e9c165
+结果文件    15 份共享指纹 47e4785-dirty / 36e9c165（11 评测 + 2 消融 + 2 门禁），
+            由 test_unified_fingerprint 的显式清单强制——**只强制这 15 份**。
+            另有 33 个文件不在该清单内，见下方"结果目录的实际状态"
 门禁        ledger 21/27、billing 24/27
 结论        docs/reports/v2-what-it-measures.md（四条，每条带复算命令）
 冻结        tag dataset-v2-frozen（5a55620）= 数据最终版，带 5 处已登记缺陷
@@ -1325,6 +1326,74 @@ assert auth_penalty - advantage == approx(0.1025)   # 数值：净差
 
 **变异验证**：把三处的 A 改回 4、把 C 改回 3，四个变异全部变红。
 
+### 结果目录的实际状态：48 个文件，只有 15 份受强制检查
+
+`results/` 顶层有 **48 个 `.json`**，加上 `archive/` 里 1 个，共 62 个文件。
+按**指纹状态**分五类（互斥且穷尽，合计 48）：
+
+| 类 | 数量 | 指纹 | 说明 |
+|---|---|---|---|
+| A 当前批（`CURRENT`） | **15** | `47e4785-dirty / 36e9c165…` | 11 评测 + 2 消融 + 2 门禁 |
+| B 历史批（`HISTORICAL`） | **2** | `8b1b600-dirty`，两个**不同** hash | 明确标注的历史对照物 |
+| C 有指纹但未登记 | **4** | `899e2b6-dirty / 189db1d9…` | A3 四份对照 |
+| D **有 version、无 hash** | **1** | `5e8a3d6 / None` | `a3-with-dedup-rerun.json` |
+| E 完全无指纹 | **25** | 两字段都缺 | C4 时期 |
+| F 非结果 dict | **1** | — | `independent-variants.json` 是 list |
+
+**所以"15 份统一指纹"是子集，不是"所有结果文件"。**
+
+### 第 D 类最危险：它看起来像有指纹
+
+`code_version` 与 `code_diff_hash` 是**两个独立可用**的字段：
+
+| `version` | `hash` | 能回答什么 |
+|---|---|---|
+| ✅ | ✅ | 哪个 commit **+ 工作区是否干净** |
+| **✅** | **❌** | **只有 commit，不知有无未提交改动** |
+| ❌ | ❌ | 完全不可追溯 |
+
+**"无指纹"这个标签盖住了第 2、3 两种状态**，而第 2 种会被人当成"有指纹"。
+判据应该是**两个字段都齐才算可追溯**，而不是"有 version 就算"。
+
+### 由此补一条：`per_case` 没存特征分
+
+v3 若要离线复算"改权重后某条 case 会怎样"，需要逐条的四特征分。
+而实测 `per_case` 里只有：
+
+```
+rank_after_rerank, rerank_order_tags, pool_vectors, dedup_input_scores,
+tie_at_top1, tie_at_k_boundary, pool_tag_meta, ...
+```
+
+**没有 `base` / `condition` / `authority` / `status` 的逐条取值。**
+
+**所以任何权重敏感性分析都必须重跑检索**——不是因为"重跑会改指纹"，
+而是因为**现有产物里没有计算所需的数据**。
+
+> **v3 前置缺口**：`per_case` 必须存四个特征分。否则每次问"权重降一点会怎样"
+> 都得重跑一次，而 v2 已冻结、重跑会产第二批指纹。
+
+### 这是"一个标签盖住两种东西"的第七次
+
+| # | 标签 | 盖住的两种 |
+|---|---|---|
+| 1 | `path == name + ".jsonl"` | 单文件 / 目录 |
+| 2 | "MUST 含符号" | 函数名 / 元组写法 |
+| 3 | "有反引号" | 可检查符号 / 非符号 |
+| 4 | "spec 有测试" | 函数存在 / 行为符合 |
+| 5 | "数据锁" | 纯数据 / 数据×评测代码 |
+| 6 | "下确界" | 对 `base_share` / 对 `w_status` |
+| 7 | **"无指纹"** | **有 version 无 hash / 两字段都缺** |
+
+**七次都是通过"数一遍"发现的，不是通过推理。**
+
+### 为什么 15 这个数字特别容易被误引
+
+因为它在 HANDOFF **顶部摘要**里，而摘要的作用就是"让人不必往下读"。
+一个只覆盖 24%（15/62）的数字放在摘要里，读者会把它当成全部。
+
+**所以第 14 行现在明写"只强制这 15 份"，并指向本节。**
+
 ### 一个绕过检查的文件名，比一个失败的检查更难发现
 
 实测事故：一份扫描结果被直接写进 `results/v3-authority-threshold-scan.json`。
@@ -1410,7 +1479,7 @@ actionable = [d for d, reason in BLOCKED_BY.items() if reason is None]  # 12 条
 `needs-design` 只能是缺陷 23、三组之和必须等于 `DEFECT_TESTS` 的条数。
 
 ```
-pytest              -> 1416 passed, 1 skipped
+pytest              -> 1419 passed, 1 skipped
 ruff / mypy         -> clean
 locked_defect       -> 36 条收集（34 个标记，parametrize 展开 2 条）
 plan_check          -> 3 条（方案论证，不随修复变红）

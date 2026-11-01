@@ -104,6 +104,157 @@ def test_every_result_file_is_classified() -> None:
 
 
 def test_results_prefixes_are_documented() -> None:
+    """`results/` 下每个文件的前缀必须在一个已知集合里。
+
+    **这条记录的是它现在**没有**解决的问题**：`results/` 里混着 4 代产物
+    （`conflict-*`、`retrieval-*`、`a3-*`、`v2-*`），只有 `v2-*` 受指纹检查。
+
+    实测（见 `test_results_files_split_into_five_classes`）：
+    25 个完全无指纹 + 1 个仅有 version。
+
+    **本条只做一件事**：把前缀集合写死，让新增一个陌生前缀时有人被提醒，
+    而不是静默通过。它不声称已解决分层问题。
+    """
+    KNOWN_PREFIXES = {
+        "v2-", "conflict-", "retrieval-", "a3-", "c4-",
+        "equivalence-", "independent-", "full-context-",
+        "naive-rag-", "no-memory-", "p2b0-",
+    }
+
+    files = {p.name for p in RESULTS.glob("*.json")}
+    unknown = {
+        n for n in files if not any(n.startswith(pre) for pre in KNOWN_PREFIXES)
+    }
+    assert not unknown, (
+        f"这些文件的前缀不在已知集合里：{sorted(unknown)}\n"
+        "若它们是新的评测产物，请确认是否应受指纹检查后加入 KNOWN_PREFIXES；"
+        "若是一次性探查，不该放进 results/。"
+    )
+
+
+def test_results_files_split_into_five_classes() -> None:
+    """**48 个结果的五类分布必须与 HANDOFF 写的一致。**
+
+    "15 份统一指纹"是子集，不是全部。这条把五类都数一遍，
+    任何一类数量变化都会红——包括新增一个无指纹文件。
+    """
+    import json
+
+    on_disk = sorted(RESULTS.glob("*.json"))
+    declared = set(CURRENT) | set(HISTORICAL)
+
+    current_n = sum(1 for p in on_disk if p.name in CURRENT)
+    historical_n = sum(1 for p in on_disk if p.name in HISTORICAL)
+
+    with_fp_unregistered = 0
+    version_only = 0
+    no_fp = 0
+    not_dict = 0
+
+    for p in on_disk:
+        if p.name in declared:
+            continue
+        try:
+            d = json.loads(p.read_text(encoding="utf-8"))
+        except json.JSONDecodeError:
+            not_dict += 1
+            continue
+        if not isinstance(d, dict):
+            not_dict += 1
+            continue
+        ver, h = d.get("code_version"), d.get("code_diff_hash")
+        if ver is not None and h is not None:
+            with_fp_unregistered += 1
+        elif ver is not None or h is not None:
+            version_only += 1
+        else:
+            no_fp += 1
+
+    actual = {
+        "当前批": current_n,
+        "历史批": historical_n,
+        "有指纹未登记": with_fp_unregistered,
+        "仅 version": version_only,
+        "完全无指纹": no_fp,
+        "非 dict": not_dict,
+    }
+    expected = {
+        "当前批": 15,
+        "历史批": 2,
+        "有指纹未登记": 4,
+        "仅 version": 1,
+        "完全无指纹": 25,
+        "非 dict": 1,
+    }
+
+    assert actual == expected, (
+        f"results/ 五类分布变了：\n实际 {actual}\n文档 {expected}\n"
+        "若新增了结果文件，同步更新 HANDOFF 的「结果目录的实际状态」。"
+    )
+    assert sum(actual.values()) == len(on_disk) == 48
+
+    # **必须把文档里的数字读回来比对**，否则 expected 只是测试里的字面量，
+    # 文档改了测试不会红——这正是本轮"测试不读被检查对象"的重复形态。
+    text = (ROOT / "docs" / "HANDOFF.md").read_text(encoding="utf-8")
+    if "### 结果目录的实际状态" not in text:
+        pytest.fail("HANDOFF 里找不到「结果目录的实际状态」一节")
+    section = text.split("### 结果目录的实际状态")[1].split("\n### ")[0]
+
+    assert "| A 当前批（`CURRENT`） | **15** |" in section
+    assert "| B 历史批（`HISTORICAL`） | **2** |" in section
+    assert "| C 有指纹但未登记 | **4** |" in section
+    assert "| D **有 version、无 hash** | **1** |" in section
+    assert "| E 完全无指纹 | **25** |" in section
+    assert "| F 非结果 dict | **1** |" in section
+    assert "**48 个 `.json`**" in section or "48 个" in section
+
+
+def test_version_without_hash_counts_as_untraceable() -> None:
+    """`code_version` 有、`code_diff_hash` 缺，**不算可追溯**。
+
+    它只能定位 commit，不知道当时工作区是否干净。
+    若把"有 version"当成"有指纹"，第 D 类会被误读成已受约束。
+    """
+    import json
+
+    path = RESULTS / "a3-with-dedup-rerun.json"
+    if not path.exists():
+        pytest.skip("样本文件缺失")
+    d = json.loads(path.read_text(encoding="utf-8"))
+
+    assert d.get("code_version") is not None
+    assert d.get("code_diff_hash") is None
+
+    # 判据：两个字段都齐才算可追溯
+    traceable = d.get("code_version") is not None and d.get("code_diff_hash") is not None
+    assert traceable is False
+
+
+def test_per_case_has_no_feature_scores() -> None:
+    """`per_case` 里没有四特征分——所以权重敏感性必须重跑检索。
+
+    **这是 v3 的前置缺口**：若 `per_case` 存了 `base`/`condition`/`authority`/`status`，
+    就能离线复算"改权重后某条 case 会怎样"。现在不能。
+    """
+    import json
+
+    path = RESULTS / "v2-sample-threeway.json"
+    if not path.exists():
+        pytest.skip("样本结果缺失")
+    d = json.loads(path.read_text(encoding="utf-8"))
+    first = d["per_case"][0]
+    assert isinstance(first, dict)
+
+    keys = set(first)
+    for feature in ("base", "condition", "authority", "status"):
+        assert feature not in keys, (
+            f"per_case 里出现了 {feature} 字段——若已存特征分，"
+            "请更新本条与 HANDOFF 的「v3 前置缺口」"
+        )
+
+    # 确认它存了什么（供后来者对照）
+    assert "rank_after_rerank" in keys
+    assert "rerank_order_tags" in keys
     """`results/` 下的文件前缀必须在一个已知集合里。
 
     **这条记录的是它现在**没有**解决的问题**：`results/` 里混着 4 代产物
