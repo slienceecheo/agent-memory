@@ -1147,6 +1147,38 @@ def test_section_0_8_has_the_fourth_bypass() -> None:
     assert "**而这次是我自己写的文件触发的。**" in section
 
 
+def test_section_0_9_records_the_four_missing_denominators() -> None:
+    """分母缺失 4 次必须完整记录。"""
+    section = _section_until_next_heading("0.9")
+
+    assert "分母缺失，这一轮出现了 4 次" in section
+    # 四次各一行
+    assert "`41`" in section
+    assert "`15 份统一指纹`" in section
+    assert "`5 种字段名`" in section
+    assert "`八类`" in section
+    # 核心判断
+    assert "一个数 + 一个范围，而两者不匹配" in section
+
+
+def test_section_0_9_says_checks_cause_relaxation() -> None:
+    """必须写明：检查的存在反而让人放松对分母的敏感度。"""
+    section = _section_until_next_heading("0.9")
+
+    assert "检查的存在反而让人放松了对分母的敏感度" in section
+    assert "**每当一个检查通过，要问：它检查了总数里的多少。**" in section
+    # 比三层判据更靠上
+    assert "流程层面" in section
+
+
+def test_section_0_9_records_that_sum_check_is_the_point() -> None:
+    """分类表与加总校验必须同时存在。"""
+    section = _section_until_next_heading("0.9")
+
+    assert "只写分类不写加总，等于不检查穷尽性" in section
+    assert "test_shape_counts_sum_to_total" in section
+
+
 def test_section_0_9_has_three_layers() -> None:
     """§0.9 必须是三层，不是一个原则。"""
     section = _section_until_next_heading("0.9")

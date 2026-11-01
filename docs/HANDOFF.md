@@ -1423,8 +1423,34 @@ tie_at_top1, tie_at_k_boundary, pool_tag_meta, ...
 | —— | —— | —— |
 | 顶层 list | **1** | `independent-variants.json` |
 | **账本**（键为文件名，值为次数） | **1** | `retrieval-run-count.json` |
+| **分节报告**（顶层键为分析维度，非逐条） | **1** | `c4-query-leak-ablation.json` |
 
-**6 + 1 + 1 = 8 类，覆盖 48 个文件。**
+**36 + 3 + 2 + 1 + 1 + 2 + 1 + 1 + 1 = 48**
+
+**九类，覆盖全部 48 个文件。** 实测九类之间**无重复命中**，
+所以这个加总是干净的分类计数，不是重复计数。
+
+#### 第 9 类是怎么被发现的
+
+我原先写的是「八类，覆盖 48 个文件」，而八类的数值加总是 **47**。
+
+**差的 1 个我是在被指出后才去查的**，而 `48 - 47 = 1` 这个减法我本可以自己做。
+
+`c4-query-leak-ablation.json` 的结构：
+
+```
+顶层键: caveat, purpose, k, generated,
+        variants                        (dict: dev/test/independent)
+        feature_variance_v0             (dict: dev/test/independent)
+        distractor_sampling             (dict: 指标)
+        condition_supplied_vs_extracted (dict: 指标)
+```
+
+**它的 `variants` 是 `{variant_name: {指标...}}`，不是 `{case_id: rank}`**，
+所以它既不落入第 6 类，也不落入顶层 list 或账本。
+
+**而它是缺陷 1（`query == gold` 原文）的消融数据来源**，存着
+抹掉 gold 原文后分数掉多少的三个数字。只认前 8 类的扫描脚本会漏掉它。
 
 #### 第 6 行最关键：消融的逐条名次存成嵌套 dict
 
@@ -1733,6 +1759,55 @@ assert not violations("该值是运行时算出的 d_base = 0.09（q4）。")  #
 **把两者混成一条规则，会让可自动化的部分被不可自动化的部分拖累**——
 人看到规则里有做不到的部分，就整体跳过了。
 
+#### 分母缺失，这一轮出现了 4 次
+
+| 次 | 报出的数 | 缺的分母 |
+|---|---|---|
+| 1 | `41` | 那是 6 个文件的条数，不是 `-m locked_defect` 的收集数（39） |
+| 2 | `15 份统一指纹` | 全部结果文件是 48 个 |
+| 3 | `5 种字段名` | 覆盖 43/48 |
+| 4 | `八类` | 相加 47，总数 48 |
+
+**四次都是"一个数 + 一个范围，而两者不匹配"。**
+
+#### 而这四次里有三次发生在"已经建立了检查"之后
+
+| 次 | 当时已有的检查 |
+|---|---|
+| 1 | `test_locked_defect_collected_count_matches_the_document` |
+| 2 | `test_unified_fingerprint`（只管 15 份） |
+| 3 | 无（新写扫描脚本，没有总数比对） |
+| 4 | `test_result_shapes` 之前 |
+
+**检查的存在反而让人放松了对分母的敏感度。**
+
+一个通过的检查会制造"这件事已经有人管了"的印象，
+而它管的往往只是总数的一部分。
+
+> **每当一个检查通过，要问：它检查了总数里的多少。**
+
+这条比 §0.9 的三层判据更靠上，因为它是**流程层面**的，
+而三层判据是**单条结论层面**的。
+
+#### 第 4 次是怎么被发现的
+
+我在 `§0.8` 写了"八类，覆盖 48 个文件"，然后确认那三条 §0.9 断言生效、测试全绿。
+**而八类的数值加总是 47。**
+
+`48 - 47 = 1` 这个减法我可以自己做，但**直到被指出才去做**。
+
+**所以"分类表"和"加总校验"必须是同一件事**：
+只写分类不写加总，等于不检查穷尽性。
+
+现在 `test_shape_counts_sum_to_total` 同时断言两件事：
+
+```python
+assert counts == expected            # 每一类的数量
+assert sum(counts.values()) == len(files) == 48   # 加总等于总数
+```
+
+**第二个断言是关键**：只写第一个，分类表可以"每类都对，但没有穷尽"。
+
 #### 可执行的部分
 
 三条可以现在就用的检查：
@@ -1770,7 +1845,7 @@ actionable = [d for d, reason in BLOCKED_BY.items() if reason is None]  # 12 条
 `needs-design` 只能是缺陷 23、三组之和必须等于 `DEFECT_TESTS` 的条数。
 
 ```
-pytest              -> 1435 passed, 1 skipped
+pytest              -> 1449 passed, 1 skipped
 ruff / mypy         -> clean
 locked_defect       -> 36 条收集（34 个标记，parametrize 展开 2 条）
 plan_check          -> 3 条（方案论证，不随修复变红）
