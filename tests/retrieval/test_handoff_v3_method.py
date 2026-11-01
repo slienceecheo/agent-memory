@@ -1147,6 +1147,71 @@ def test_section_0_8_has_the_fourth_bypass() -> None:
     assert "**而这次是我自己写的文件触发的。**" in section
 
 
+def test_section_0_9_has_three_layers() -> None:
+    """§0.9 必须是三层，不是一个原则。"""
+    section = _section_until_next_heading("0.9")
+
+    assert "层 1：数字必须有可复算载体" in section
+    assert "层 2：文档里的数字必须被读回比对" in section
+    assert "层 3：推导里的每个符号" in section
+
+
+def test_section_0_9_states_what_each_layer_misses() -> None:
+    """每层必须写明"抓不到什么"，否则读者会以为三层覆盖全部。"""
+    section = _section_until_next_heading("0.9")
+
+    assert "能不能被层 1 抓住" in section
+    # 41 vs 39 层 1 抓不到
+    assert "41 vs 39（口径）" in section
+    # 层 3 没有自动检查
+    assert "**这层没有自动检查，只能靠列清单——而它错得最多。**" in section
+
+
+def test_section_0_9_records_that_layer2_was_forgotten_three_times() -> None:
+    """层 2 做了三次，三次都是第一次忘了做——必须记录。"""
+    section = _section_until_next_heading("0.9")
+
+    assert "三次都是第一次忘了做" in section
+    assert "test_locked_defect_collected_count" in section
+    assert "算术可复算测试" in section
+    assert "五类分布测试" in section
+
+
+def test_section_0_9_records_the_d_cond_example() -> None:
+    """`d_cond = 1.0` 是层 3 的典型：数字"算对了"，但对手错了。"""
+    section = _section_until_next_heading("0.9")
+
+    assert "`d_cond = 1.0`" in section
+    assert "选错对手" in section
+    assert "**层 1 和层 2 都会通过，因为 1.0 与 1.0 一致。**" in section
+
+
+def test_section_0_9_lists_all_eight_class_errors() -> None:
+    """八次分类错误必须完整列出。"""
+    section = _section_until_next_heading("0.9")
+
+    for i in range(1, 9):
+        assert f"| {i} |" in section or f"| **{i}** |" in section, f"缺第 {i} 次"
+    assert "八次都是通过\"数一遍\"发现的" in section
+
+
+def test_section_0_9_says_what_passing_tests_means() -> None:
+    """"1421 条通过"这个说法的边界必须写明。"""
+    section = _section_until_next_heading("0.9")
+
+    assert "**它不覆盖层 3**" in section
+    assert "5 次是层 3" in section
+
+
+def test_section_0_9_has_actionable_checks() -> None:
+    """必须给出三条可执行的检查，而不是原则。"""
+    section = _section_until_next_heading("0.9")
+
+    assert "数字进文档前，先写测试" in section
+    assert "测试从文档读回数字" in section
+    assert "出现\"N 都是 X\"时" in section
+
+
 def test_section_0_8_arithmetic_numbers_are_recomputable() -> None:
     """文档里出现的每个算术数字都必须能从权重算出来。
 

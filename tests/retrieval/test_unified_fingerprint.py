@@ -132,6 +132,61 @@ def test_results_prefixes_are_documented() -> None:
     )
 
 
+def test_per_case_is_not_a_result_criterion() -> None:
+    """**`per_case` 是形状，不是性质。**
+
+    `v2-*-gates.json` 与 `v2-*-condition-ablation.json` 是真实评测产物，
+    却没有 `per_case`。所以"有没有 `per_case`"不能用来判定"是不是结果"。
+
+    而 `retrieval-run-count.json` 也没有 `per_case`——这一次它确实不是结果。
+
+    **同一形状同时覆盖了真结果和非结果，所以判据无效。**
+    """
+    import json
+
+    # 反例 1：真结果，但没有 per_case
+    for name in ("v2-sample-gates.json", "v2-sample-condition-ablation.json"):
+        p = RESULTS / name
+        if not p.exists():
+            pytest.skip(f"{name} 缺失")
+        d = json.loads(p.read_text(encoding="utf-8"))
+        assert "per_case" not in d, f"{name} 现在有 per_case 了，本条要重写"
+        # 但它是真结果：有 code_version 与 dataset
+        assert d.get("code_version") is not None
+        assert "dataset" in d or "checks" in d
+
+    # 反例 2：非结果，也没有 per_case
+    ledger = RESULTS / "retrieval-run-count.json"
+    if ledger.exists():
+        d = json.loads(ledger.read_text(encoding="utf-8"))
+        assert "per_case" not in d
+        # 值是次数，不是结果字段
+        assert all(isinstance(v, int) for v in d.values())
+
+
+def test_run_count_ledger_has_no_fingerprint_and_should_not() -> None:
+    """账本不该有指纹——它记录次数，不记录结果。
+
+    **若有人为了"统一指纹"给它加字段，3 处依赖会坏**：
+    `run_retrieval._bump_run_count`、`test_report_consistency`、
+    `test_archive_evidence`。
+    """
+    import json
+
+    path = RESULTS / "retrieval-run-count.json"
+    if not path.exists():
+        pytest.skip("账本缺失")
+    d = json.loads(path.read_text(encoding="utf-8"))
+
+    assert "code_version" not in d, (
+        "账本里出现了 code_version——它不该有指纹，见 HANDOFF「为什么账本必须单列」"
+    )
+    assert "code_diff_hash" not in d
+    # 它是 {文件名: 次数}
+    assert d and all(isinstance(v, int) for v in d.values())
+    assert all(k.endswith(".json") for k in d)
+
+
 def test_results_files_split_into_five_classes() -> None:
     """**48 个结果的五类分布必须与 HANDOFF 写的一致。**
 
