@@ -722,6 +722,24 @@ def test_section_0_6_says_exact_matching_kills_correct_behaviour() -> None:
     assert "区间占位" in section
 
 
+def _section_0_9() -> str:
+    """取 §0.9 全文：从标题到下一个 `### ` 或 `## `。
+
+    **不能用 `_section_until_next_heading("0.9")`**：那一版遇到第一个 `####`
+    就截断，而 §0.9 内部全是 `####` 子节，所以只能取到开头几段。
+    实测：10 条测试因此读不到各自要断言的子节内容。
+    """
+    import re
+
+    text = _text()
+    marker = "### 0.9 数字的三层防护"
+    start = text.find(marker)
+    assert start != -1, "找不到 §0.9"
+    rest = text[start + len(marker):]
+    match = re.search(r"^#{2,3} ", rest, re.M)
+    return rest[: match.start()] if match else rest
+
+
 def _section_by_title(prefix: str) -> str:
     """按小节标题前缀取内容，截到下一个同级或更高级标题。"""
     import re
@@ -1147,9 +1165,40 @@ def test_section_0_8_has_the_fourth_bypass() -> None:
     assert "**而这次是我自己写的文件触发的。**" in section
 
 
+def test_section_0_9_says_four_is_a_lower_bound() -> None:
+    """“4 次”必须是“至少 4”，并写明可穷尽分母是什么、为何未执行。"""
+    section = _section_by_title("#### 这个\"4\"的可穷尽分母是什么")
+
+    # 三段
+    assert "**4 次**" in section
+    assert "**≥ 4**" in section
+    assert "**这一类错误的全部**" in section
+    # 关键表述
+    assert "4 是「至少 4」，不是「恰好 4」" in section
+    # 若要做成恰好值，做法是明确的
+    assert "它没被执行，所以 4 保持为下界" in section
+
+
+def test_section_0_9_records_two_criteria_and_their_limit() -> None:
+    """两套判据必须写清能证明什么、不能证明什么。"""
+    section = _section_by_title("#### 两套独立判据")
+
+    assert "test_result_shapes_two_criteria" in section
+    # 四个差异点
+    assert "账本优先" in section
+    assert "只看值全 int" in section
+    assert "反序" in section
+
+    # 限制在下一个子节
+    limit = _section_by_title("### 但这不能证明")
+    assert "是否正确" in limit
+    assert "两套判据会一起错" in limit
+    assert "真正独立" in limit and "第三方" in limit
+
+
 def test_section_0_9_records_the_four_missing_denominators() -> None:
     """分母缺失 4 次必须完整记录。"""
-    section = _section_until_next_heading("0.9")
+    section = _section_0_9()
 
     assert "分母缺失，这一轮出现了 4 次" in section
     # 四次各一行
@@ -1163,7 +1212,7 @@ def test_section_0_9_records_the_four_missing_denominators() -> None:
 
 def test_section_0_9_says_checks_cause_relaxation() -> None:
     """必须写明：检查的存在反而让人放松对分母的敏感度。"""
-    section = _section_until_next_heading("0.9")
+    section = _section_0_9()
 
     assert "检查的存在反而让人放松了对分母的敏感度" in section
     assert "**每当一个检查通过，要问：它检查了总数里的多少。**" in section
@@ -1173,7 +1222,7 @@ def test_section_0_9_says_checks_cause_relaxation() -> None:
 
 def test_section_0_9_records_that_sum_check_is_the_point() -> None:
     """分类表与加总校验必须同时存在。"""
-    section = _section_until_next_heading("0.9")
+    section = _section_0_9()
 
     assert "只写分类不写加总，等于不检查穷尽性" in section
     assert "test_shape_counts_sum_to_total" in section
@@ -1181,7 +1230,7 @@ def test_section_0_9_records_that_sum_check_is_the_point() -> None:
 
 def test_section_0_9_has_three_layers() -> None:
     """§0.9 必须是三层，不是一个原则。"""
-    section = _section_until_next_heading("0.9")
+    section = _section_0_9()
 
     assert "层 1：数字必须有可复算载体" in section
     assert "层 2：文档里的数字必须被读回比对" in section
@@ -1190,7 +1239,7 @@ def test_section_0_9_has_three_layers() -> None:
 
 def test_section_0_9_states_what_each_layer_misses() -> None:
     """每层必须写明"抓不到什么"，否则读者会以为三层覆盖全部。"""
-    section = _section_until_next_heading("0.9")
+    section = _section_0_9()
 
     assert "能不能被层 1 抓住" in section
     # 41 vs 39 层 1 抓不到
@@ -1201,7 +1250,7 @@ def test_section_0_9_states_what_each_layer_misses() -> None:
 
 def test_section_0_9_records_that_layer2_was_forgotten_three_times() -> None:
     """层 2 做了三次，三次都是第一次忘了做——必须记录。"""
-    section = _section_until_next_heading("0.9")
+    section = _section_0_9()
 
     assert "三次都是第一次忘了做" in section
     assert "test_locked_defect_collected_count" in section
@@ -1211,7 +1260,7 @@ def test_section_0_9_records_that_layer2_was_forgotten_three_times() -> None:
 
 def test_section_0_9_records_the_d_cond_example() -> None:
     """`d_cond = 1.0` 是层 3 的典型：数字"算对了"，但对手错了。"""
-    section = _section_until_next_heading("0.9")
+    section = _section_0_9()
 
     assert "`d_cond = 1.0`" in section
     assert "选错对手" in section
@@ -1220,7 +1269,7 @@ def test_section_0_9_records_the_d_cond_example() -> None:
 
 def test_section_0_9_lists_all_eight_class_errors() -> None:
     """八次分类错误必须完整列出。"""
-    section = _section_until_next_heading("0.9")
+    section = _section_0_9()
 
     for i in range(1, 9):
         assert f"| {i} |" in section or f"| **{i}** |" in section, f"缺第 {i} 次"
@@ -1229,7 +1278,7 @@ def test_section_0_9_lists_all_eight_class_errors() -> None:
 
 def test_section_0_9_says_what_passing_tests_means() -> None:
     """"1421 条通过"这个说法的边界必须写明。"""
-    section = _section_until_next_heading("0.9")
+    section = _section_0_9()
 
     assert "**它不覆盖层 3**" in section
     assert "5 次是层 3" in section
@@ -1237,11 +1286,11 @@ def test_section_0_9_says_what_passing_tests_means() -> None:
 
 def test_section_0_9_has_actionable_checks() -> None:
     """必须给出三条可执行的检查，而不是原则。"""
-    section = _section_until_next_heading("0.9")
+    section = _section_by_title("#### 可执行的部分")
 
-    assert "数字进文档前，先写测试" in section
+    assert "数字进文档前" in section
     assert "测试从文档读回数字" in section
-    assert "出现\"N 都是 X\"时" in section
+    assert "时，先按" in section or "先按\"什么改动会让它变" in section
 
 
 def test_section_0_8_arithmetic_numbers_are_recomputable() -> None:
