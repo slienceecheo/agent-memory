@@ -215,7 +215,25 @@ def test_handoff_records_that_nine_is_derived_not_assumed() -> None:
 def test_handoff_records_the_two_new_file_cases() -> None:
     """必须写明两种新增情形的处置不同。"""
     text = HANDOFF.read_text(encoding="utf-8")
-    assert "签名新" in text and "签名旧" in text, "文档没区分两种情形"
+    # 文档用的是"签名与已有组相同 / 与所有组都不同"这种措辞
+    assert "签名与已有组相同" in text
+    assert "签名与所有组都不同" in text
+    assert "签名组数" in text
+
+
+def test_handoff_says_nine_depends_on_the_field_list() -> None:
+    """**必须写明"九"依赖预设的字段清单，不是数据的自然结构。**
+
+    这是对上一轮说法（"九来自签名自然分组"）的修正：
+    换一种签名写法，分组数是 12 或 5，不是 9。
+    """
+    text = HANDOFF.read_text(encoding="utf-8")
+
+    assert "它也依赖一份预设的字段清单" in text
+    # 三种签名的实测
+    assert "**9**" in text and "**12**" in text and "**5**" in text
+    # 核心判断
+    assert "自洽 ≠ 有依据" in text or "自洽" in text
 
 
 # ---------- 代表文件 ----------
