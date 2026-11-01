@@ -978,18 +978,50 @@ def test_section_0_8_records_the_direction_of_d_base() -> None:
 
 
 def test_section_0_8_records_the_three_split_scenarios() -> None:
-    """"降 authority 要分给别人"，分给谁决定边界——三情形必须列出。"""
-    section = _section_by_title("### 但\"降 authority\"必须把权重分给别人")
+    """"降 authority 要分给别人"，分给谁决定边界——三档 + 前提自洽性。"""
+    section = _section_by_title("### \"降 authority\"必须把权重分给别人")
 
-    assert "情形 A" in section
-    assert "情形 B" in section
-    assert "情形 C" in section
-    # 三者在 d_base=0 时的边界——断言整行
-    assert "| A（给 status） | 0.1250 |" in section
-    assert "| B（平分） | 0.1500 |" in section
-    assert "| **C（condition 归零）** | **0.0000** |" in section
-    # 情形 C 的前提与 q4 不自洽
-    assert "与 q4 的算式不自洽" in section
+    assert "**A** 给 `status`" in section
+    assert "**B** 平分" in section
+    assert "**C** `condition` 归零" in section
+    # 两个 d_base 下的值（下界 + q4 实测）
+    assert "**0.1250**" in section and "**0.1475**" in section
+    assert "**0.1500**" in section and "**0.1708**" in section
+    # 对手是 pkg-1 不是 oncall-3
+    assert "ledger-pkg-1" in section
+    assert "**竞争者不是 `oncall-3`" in section
+
+
+def test_section_0_8_says_only_two_scenarios_are_candidates() -> None:
+    """C 不是"更保守"，是前提不自洽——必须写明这是循环论证。"""
+    section = _section_by_title("### 结论：只有 A 和 B 是候选")
+
+    assert "C 不是\"更保守的方案\"，是错的方案" in section
+    assert "循环论证" in section
+    # 下确界
+    assert "0.125（A）" in section and "0.150（B）" in section
+
+
+def test_section_0_8_records_billing_cannot_trigger() -> None:
+    """billing 的 c1/c2/c3 永久失败，因为 auth_gap ≡ 0。"""
+    section = _section_by_title("### 但 `billing` 永久失败")
+
+    assert "auth_gap ≡ 0" in section
+    assert "不可触发" in section
+    assert "0/9" in section
+
+
+def test_section_0_8_records_the_d_cond_arithmetic_error() -> None:
+    """必须记录：选错对手 + 漏乘 w_condition 系数。"""
+    section = _section_by_title("### 一次算术错误的记录")
+
+    # 错误 1：选错对手
+    assert "选错对手" in section
+    # 错误 2：漏乘系数
+    assert "漏乘系数" in section
+    assert "把 `w_condition` 当成了 1" in section
+    # 反身性：漏掉的正是这一轮讨论的东西
+    assert "正是这一整轮在讨论的东西" in section
 
 
 def test_section_0_8_records_the_exhaustive_rate() -> None:
@@ -1020,6 +1052,99 @@ def test_section_0_8_compares_the_two_missed_variables() -> None:
     assert "在产品里有对应物" in section
     assert "在产品里没有对应物" in section
     assert "两个方向都能漏" in section
+
+
+def test_section_0_8_records_the_wrong_feature_count() -> None:
+    """"4 个有效特征"是错的：字段数 ≠ 有效特征数。"""
+    section = _section_by_title("### 报告里的\"4 个有效特征\"是错的")
+
+    # 实测的三个数
+    assert "**3**" in section and "**2**" in section
+    assert "恒为 `1.0`" in section and "`ACTIVE`" in section
+    # 来源
+    assert "字段" in section and "从未被按池实际算过" in section
+
+
+def test_section_0_8_records_the_impact_scope() -> None:
+    """影响面必须逐条说明，尤其"缺陷 19 不用重算"的理由。"""
+    section = _section_by_title("### 影响面")
+
+    assert "两轴分数不可直接比较" in section
+    assert "1/4" in section and "1/3" in section
+    assert "缺陷 19 的临界点" in section
+    assert "抵消" in section
+
+
+def test_section_0_8_lists_the_three_shape_errors() -> None:
+    """同一形状的第三次：用表示的形状代替具体语境下的取值。"""
+    section = _section_by_title("### 这已经是同一形状的第三次")
+
+    assert "`SEH@5`" in section
+    assert "`RerankWeights` 的字段数" in section
+    assert "20 个 subject" in section
+    assert "用一个表示的形状" in section
+
+
+def test_section_0_8_explains_why_the_wrong_count_survived() -> None:
+    """测试通过而报告写错，必须解释三个原因。"""
+    section = _section_by_title("### 为什么它能活这么久")
+
+    # 1. 查的是旧数据
+    assert "conflict-set" in section
+    # 2. 断言 >= 3
+    assert "counted >= 3" in section
+    # 3. 枚举 Status 常量而非池内实际值
+    assert "枚举全部 `Status` 常量" in section
+    assert "永远为 `True`" in section
+
+
+def test_section_0_8_records_why_not_locked_defect() -> None:
+    """报告错误不进 locked_defect——它不是行为缺陷。"""
+    section = _section_by_title("### 为什么这次没进 `locked_defect`")
+
+    assert "报告统计错误" in section
+    assert "不是行为缺陷" in section
+    # 引用 locked_defect 的语义定义
+    assert "修复那刻变红" in section
+
+
+def test_section_0_8_records_the_naming_bypass() -> None:
+    """绕过检查的文件名比失败的检查更难发现。"""
+    section = _section_by_title("### 一个绕过检查的文件名")
+
+    # 三条问题
+    assert "未经说明写入" in section
+    assert "没有 `code_version`" in section
+    # 第三条最危险
+    assert "**显式文件名白名单**" in section
+    assert "任何新名字默认**不受任何指纹检查**" in section
+    # 结果对不能抵消流程错
+    assert "\"结果对\"不能抵消\"流程错\"" in section
+    assert "没走流程的一律不进仓库" in section
+
+
+def test_section_0_8_records_the_new_results_guards() -> None:
+    """两条新防线必须写明，包括它们**没有**解决的问题。"""
+    section = _section_by_title("### 已补的防线")
+
+    assert "test_every_result_file_is_classified" in section
+    assert "test_results_prefixes_are_documented" in section
+    # 补登的两个 gates
+    assert "v2-sample-gates.json" in section
+    # 承认未解决
+    assert "**这条不声称解决了分层问题**" in section
+    assert "26 个没有指纹" in section
+    # 三个变异
+    assert "zzz-probe.json" in section
+
+
+def test_section_0_8_has_the_fourth_bypass() -> None:
+    """第四次"检查范围小于声称范围"，且是自己触发的。"""
+    section = _section_by_title("### 这是\"检查范围小于声称范围\"的第四次")
+
+    assert "| **本次** | **文件名不在显式清单里** |" in section
+    assert "**新增项默认通过**" in section
+    assert "**而这次是我自己写的文件触发的。**" in section
 
 
 def test_section_0_8_arithmetic_numbers_are_recomputable() -> None:

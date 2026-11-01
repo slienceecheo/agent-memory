@@ -46,6 +46,10 @@ CURRENT = [
     "v2-billing-lexical-vector-adjacency.json",
     "v2-sample-condition-ablation.json",
     "v2-billing-condition-ablation.json",
+    # 两个 gates 产物：带统一指纹，但原先未登记，因此从未被本测试检查。
+    # 实测它们与其余 13 份同指纹（47e4785-dirty / 36e9c16517）。
+    "v2-sample-gates.json",
+    "v2-billing-gates.json",
 ]
 
 # 历史证据，不参与统一
@@ -60,6 +64,71 @@ def _load(name: str) -> dict[str, object]:
     if not path.exists():
         pytest.skip(f"{name} 缺失")
     return json.loads(path.read_text(encoding="utf-8"))
+
+
+def test_every_result_file_is_classified() -> None:
+    """**v2-* 的每个 json 必须落在 CURRENT / HISTORICAL 之一。**
+
+    为什么这条必须存在：上面两个清单是**显式文件名白名单**，不是 glob。
+    所以任何新加的 `v2-*.json` 默认**不受任何指纹检查**。
+
+    实测事故：有人把 `v3-authority-threshold-scan.json` 直接写进 `results/`，
+    它没有 `code_version` / `code_diff_hash`，而所有测试都是绿的。
+
+    **这是"检查存在，但范围小于它声称的范围"的第四次**：
+
+    | # | 绕过方式 |
+    |---|---|
+    | L7 | 断言写"不是 uuid"，而传的是 tag |
+    | F17 | 查"被任意轴指向"，本意是"被 A 轴指向" |
+    | 无依据模块表 | 白名单只有两个条目 |
+    | **本次** | **文件名不在显式清单里** |
+
+    **为什么只约束 `v2-*` 而不约束全部**：`results/` 里还有 33 个 C4 时期的
+    历史产物（`conflict-*`、`retrieval-*`、`a3-*`），它们不是 v2 评测，
+    强行登记等于把"未受检查"合法化。所以这里的判据收窄为"**v2 前缀必须登记**"，
+    而"整个 results/ 是否该分目录"是独立问题，见
+    `test_results_contains_only_documented_prefixes`。
+    """
+    v2_on_disk = {p.name for p in RESULTS.glob("v2-*.json")}
+    declared = set(CURRENT) | set(HISTORICAL)
+
+    unclassified = v2_on_disk - declared
+    assert not unclassified, (
+        f"这些 v2-*.json 未登记，因此不受任何指纹检查：{sorted(unclassified)}\n"
+        "把它们加进 CURRENT（需带统一指纹）或 HISTORICAL（需说明为何不统一）。"
+    )
+
+    missing = declared - v2_on_disk
+    assert not missing, f"清单里登记但文件不存在：{sorted(missing)}"
+
+
+def test_results_prefixes_are_documented() -> None:
+    """`results/` 下的文件前缀必须在一个已知集合里。
+
+    **这条记录的是它现在**没有**解决的问题**：`results/` 里混着 4 代产物
+    （`conflict-*`、`retrieval-*`、`a3-*`、`v2-*`），只有 `v2-*` 受指纹检查。
+
+    实测：33 个未登记文件中 26 个**没有 `code_version` / `code_diff_hash`**。
+    它们大多是 C4 时期的产物，而 v2 报告引用的数字现在必须能追溯到
+    `results/v2-*.json`——这一点仍是成立的，但"未登记即可绕过"是真实缺口。
+
+    **本条只做一件事**：把前缀集合写死，让新增一个陌生前缀时有人被提醒，
+    而不是静默通过。它不声称已解决分层问题。
+    """
+    KNOWN_PREFIXES = {"v2-", "conflict-", "retrieval-", "a3-", "c4-",
+                      "equivalence-", "independent-", "full-context-",
+                      "naive-rag-", "no-memory-", "p2b0-"}
+
+    files = {p.name for p in RESULTS.glob("*.json")}
+    unknown = {
+        n for n in files if not any(n.startswith(pre) for pre in KNOWN_PREFIXES)
+    }
+    assert not unknown, (
+        f"这些文件的前缀不在已知集合里：{sorted(unknown)}\n"
+        "若它们是新的评测产物，请确认是否应受指纹检查后加入 KNOWN_PREFIXES；"
+        "若是一次性探查，不该放进 results/。"
+    )
 
 
 def test_all_current_results_share_one_fingerprint() -> None:

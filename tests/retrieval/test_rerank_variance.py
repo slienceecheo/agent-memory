@@ -79,6 +79,28 @@ def test_status_feature_has_variance() -> None:
     assert len(values) > 1
 
 
+def test_declared_feature_count_matches_the_pool_not_the_dataclass() -> None:
+    """**字段数不是有效特征数。**
+
+    这条记录了一次真实的报告错误：`RerankWeights` 有四个字段，
+    报告因此写"A 轴 4 个有效特征"，而实际池内 `status` 恒为 1.0
+    （所有记忆都是 `ACTIVE`），所以只有 3 个。
+
+    **本测试只断言两者可以不相等**，具体数字由
+    `tests/retrieval/test_effective_feature_count.py` 按 v2 数据实算。
+    放在这里是因为这个反转最容易在 C4 旧数据上被忘掉。
+    """
+    from memory.retrieval.rerank import RerankWeights
+
+    declared = len(RerankWeights.__dataclass_fields__)
+    assert declared == 4, f"字段数变成 {declared}"
+
+    # status 在 ACTIVE-only 池里恒为常数，所以有效特征数 < 字段数
+    active_only = {status_score(Status.ACTIVE)}
+    assert len(active_only) == 1, "ACTIVE-only 池里 status 应当只有一个取值"
+    assert len(active_only) < declared
+
+
 def test_at_least_three_features_have_variance() -> None:
     """四个特征里至少三个有方差，重排才可能改变排序。
 
