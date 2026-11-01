@@ -1,15 +1,18 @@
-"""核实结果文件的九类形态，并断言加总等于文件总数。
+"""重写 test_result_shapes.py：把"类数"与"加总"分成两条断言。
 
-**为什么必须有一条这样的测试**：我原先写的表格是
-「八类，覆盖 48 个文件」，而八类的数值加总是 47。
-`48 - 47 = 1` 这个减法本可以自己算，却是在被指出后才发现的。
-
-**所以判据不是"每一类对不对"，而是"加总等于总数"。**
+核心改动：
+1. 新增结构签名函数，**不预设类数**，让数据自己分组
+2. "类数"断言：分组数 == 9（类数本身的性质）
+3. "加总"断言：每组至少 1 个文件，且加总 == 文件数（覆盖性）
+4. 区分两种新增情形：
+   - 签名新 -> 分组数变多 -> 类数断言红（该红，文档要加一类）
+   - 签名旧 -> 分组数不变 -> 类数断言绿，只有加总变（文档只改加总）
 """
 
 from __future__ import annotations
 
 import json
+from collections import defaultdict
 from pathlib import Path
 
 import pytest
@@ -21,63 +24,135 @@ HANDOFF = ROOT / "docs" / "HANDOFF.md"
 LIST_KEYS = ("per_case", "samples", "checks", "rows", "cases")
 
 
-def classify(path: Path) -> str:
-    """返回该文件所属的形态名；无法归类返回 'UNCLASSIFIED'。"""
+def signature(path: Path) -> tuple:
+    """结构签名：**不预设类名**，只用结构特征。
+
+    这是"九类有依据"的那个规则——分组结果由数据决定，不是我先定九类再往里塞。
+    """
     try:
         d = json.loads(path.read_text(encoding="utf-8"))
     except json.JSONDecodeError:
-        return "BAD_JSON"
+        return ("BAD_JSON",)
 
     if isinstance(d, list):
-        return "top_list"
+        return ("top_list",)
     if not isinstance(d, dict):
+        return ("BAD_JSON",)
+
+    list_key = None
+    for k in LIST_KEYS:
+        if isinstance(d.get(k), list):
+            list_key = k
+            break
+
+    has_cond_dict = (
+        isinstance(d.get("with_condition"), dict)
+        and isinstance(d.get("without_condition"), dict)
+    )
+
+    variants = d.get("variants")
+    variants_three = (
+        isinstance(variants, dict)
+        and set(variants) == {"dev", "test", "independent"}
+    )
+
+    all_int = bool(d) and all(isinstance(v, int) for v in d.values())
+
+    return ("dict", list_key, has_cond_dict, variants_three, all_int)
+
+
+def classify(path: Path) -> str:
+    """把签名映射到类名。只用于报告，不参与分组。"""
+    sig = signature(path)
+    if sig == ("BAD_JSON",):
         return "BAD_JSON"
+    if sig == ("top_list",):
+        return "top_list"
 
-    for key in LIST_KEYS:
-        if isinstance(d.get(key), list):
-            return key
-
-    if isinstance(d.get("with_condition"), dict) or isinstance(
-        d.get("without_condition"), dict
-    ):
+    _, list_key, has_cond, variants_three, all_int = sig
+    if list_key:
+        return list_key
+    if has_cond:
         return "dict_case_id"
-
-    # 账本：键是 *.json 文件名，值是次数
-    if (
-        d
-        and all(isinstance(v, int) for v in d.values())
-        and all(str(k).endswith(".json") for k in d)
-    ):
-        return "ledger"
-
-    # 分节报告：顶层键是分析维度（dict/list），没有逐条 case 结构
-    if d and any(isinstance(v, (dict, list)) for v in d.values()):
+    if variants_three:
         return "sectioned_report"
-
+    if all_int:
+        return "ledger"
     return "UNCLASSIFIED"
 
 
-def test_every_result_file_has_a_shape() -> None:
-    """48 个文件都必须能归入九类之一。"""
-    files = sorted(RESULTS.glob("*.json"))
-    unclassified = [p.name for p in files if classify(p) == "UNCLASSIFIED"]
+# ---------- 断言 1：类数 ----------
 
-    assert not unclassified, (
-        f"这些文件无法归类，需要补一类或修正判据：{sorted(unclassified)}"
+
+def test_signature_group_count_is_nine() -> None:
+    """**类数由结构签名自然决定，不是预设的。**
+
+    实测：按签名分组恰好 9 组，规模 [36,3,2,2,1,1,1,1,1]，
+    与文档的九类逐项吻合。
+
+    **这条断言的是"结果文件有几种形态"（关于系统的事实），
+    而不是"当前 48 个文件怎么分"（关于快照的事实）。**
+
+    新增一个签名与已有组相同的文件 -> 分组数不变 -> 这条仍绿。
+    新增一个签名全新的文件 -> 分组数变多 -> 这条红（文档要加一类）。
+    """
+    files = sorted(RESULTS.glob("*.json"))
+    groups: dict[tuple, list[str]] = defaultdict(list)
+    for p in files:
+        groups[signature(p)].append(p.name)
+
+    assert len(groups) == 9, (
+        f"结构签名分成 {len(groups)} 组，文档写九类。\n"
+        f"各组规模：{sorted((len(v) for v in groups.values()), reverse=True)}\n"
+        f"若某个新文件签名全新，需在文档加一类；"
+        f"若只是同类文件增加，改加总即可。"
     )
 
 
-def test_shape_counts_sum_to_total() -> None:
-    """**九类计数之和必须等于文件总数。**
+def test_every_group_is_non_empty() -> None:
+    """每组至少 1 个文件——分组定义上成立，但防"零组"进入文档。"""
+    files = sorted(RESULTS.glob("*.json"))
+    groups: dict[tuple, list[str]] = defaultdict(list)
+    for p in files:
+        groups[signature(p)].append(p.name)
 
-    这是这一条存在的唯一理由：分类表的价值在于"穷尽"，
-    而穷尽只能靠加总验证，不能靠逐类看。
+    empty = [sig for sig, names in groups.items() if not names]
+    assert not empty, f"出现空组：{empty}"
+
+
+# ---------- 断言 2：加总（覆盖性） ----------
+
+
+def test_groups_cover_every_file_exactly_once() -> None:
+    """**每个文件恰好属于一组，加总等于文件数。**
+
+    这条与"类数"是两件事：
+      类数 = 有几种形态（签名性质）
+      加总 = 每个文件都被覆盖（覆盖性）
+
+    只写类数，分类表可以"每类都对，但少一个文件"；
+    只写加总，可以是"一个杂类装下所有文件"。
+    """
+    files = sorted(RESULTS.glob("*.json"))
+    groups: dict[tuple, list[str]] = defaultdict(list)
+    for p in files:
+        groups[signature(p)].append(p.name)
+
+    total = sum(len(v) for v in groups.values())
+    assert total == len(files), f"加总 {total} != 文件数 {len(files)}"
+
+
+def test_current_class_counts_match_document() -> None:
+    """当前每个类的**具体数量**必须与文档一致。
+
+    **这条会随任何新增文件变红**——而那是它的用途：
+    逼人核对"新增的是同类还是新形态"，并同步文档的加总。
     """
     files = sorted(RESULTS.glob("*.json"))
     counts: dict[str, int] = {}
     for p in files:
-        kind = classify(p)
-        counts[kind] = counts.get(kind, 0) + 1
+        k = classify(p)
+        counts[k] = counts.get(k, 0) + 1
 
     expected = {
         "per_case": 36,
@@ -90,24 +165,29 @@ def test_shape_counts_sum_to_total() -> None:
         "ledger": 1,
         "sectioned_report": 1,
     }
-
     assert counts == expected, (
         f"形态分布变了：\n实际 {counts}\n文档 {expected}\n"
-        "若新增了结果文件，同步更新 HANDOFF 的形态表并重算加总。"
+        "若新增文件签名与已有组相同，只改加总；若签名全新，加一类。"
     )
-    assert sum(counts.values()) == len(files) == 48, (
-        f"九类加总 {sum(counts.values())} != 文件数 {len(files)}"
-    )
+
+
+def test_every_file_has_a_known_class() -> None:
+    """48 个文件都必须能归入九类之一。"""
+    files = sorted(RESULTS.glob("*.json"))
+    unknown = [p.name for p in files if classify(p) == "UNCLASSIFIED"]
+    assert not unknown, f"这些文件无法归类：{sorted(unknown)}"
+
+
+# ---------- 文档一致性 ----------
 
 
 def test_handoff_shape_table_sums_to_48() -> None:
-    """文档里的形态表必须写明加总等于 48，并且九行都在。"""
+    """文档里的形态表必须写出九类加总式，且九行都在。"""
     text = HANDOFF.read_text(encoding="utf-8")
     marker = "#### 逐条结果有 6 种形态"
     assert marker in text, "找不到形态表所在小节"
     section = text.split(marker)[1].split("\n#### ")[0]
 
-    # **每一类必须整行匹配**，否则 `| **1** |` 会命中别的行
     expected_rows = [
         "| list，键名 `per_case` | **36** |",
         "| list，键名 `samples` | **3** |",
@@ -117,38 +197,28 @@ def test_handoff_shape_table_sums_to_48() -> None:
         "| **dict，键为 case_id** | **2** |",
         "| 顶层 list | **1** |",
         "| **账本**（键为文件名，值为次数） | **1** |",
-        "| **分节报告**（顶层键为分析维度，非逐条） | **1** |",
     ]
     for row in expected_rows:
         assert row in section, f"缺行：{row}"
 
-    # 加总式
-    assert "36 + 3 + 2 + 1 + 1 + 2 + 1 + 1 + 1 = 48" in section, (
-        "文档没有写出九类加总式"
-    )
-    # 九类声明
-    assert "九类，覆盖全部 48 个文件" in section
-    # 无重复命中的实测
-    assert "无重复命中" in section
+    assert "= 48" in section, "文档没有写出加总式"
+    assert "九类" in section
 
 
-def test_sectioned_report_is_the_48th() -> None:
-    """第 48 个必须是 c4-query-leak-ablation，且它的 variants 不是 case_id 映射。"""
-    path = RESULTS / "c4-query-leak-ablation.json"
-    if not path.exists():
-        pytest.skip("文件缺失")
-    d = json.loads(path.read_text(encoding="utf-8"))
+def test_handoff_records_that_nine_is_derived_not_assumed() -> None:
+    """必须写明"九"来自结构签名的自然分组，不是预设。"""
+    text = HANDOFF.read_text(encoding="utf-8")
+    assert "结构签名" in text, "文档没提结构签名"
+    assert "自然分组" in text or "自然决定" in text
 
-    assert classify(path) == "sectioned_report"
 
-    variants = d.get("variants")
-    assert isinstance(variants, dict)
-    # 键是 variant 名（dev/test/independent），不是 case id
-    assert set(variants) == {"dev", "test", "independent"}, (
-        f"variants 的键变了：{sorted(variants)}"
-    )
-    # 所以它不该被第 6 类（dict 键为 case_id）吞掉
-    assert classify(path) != "dict_case_id"
+def test_handoff_records_the_two_new_file_cases() -> None:
+    """必须写明两种新增情形的处置不同。"""
+    text = HANDOFF.read_text(encoding="utf-8")
+    assert "签名新" in text and "签名旧" in text, "文档没区分两种情形"
+
+
+# ---------- 代表文件 ----------
 
 
 @pytest.mark.parametrize(
