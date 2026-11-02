@@ -259,28 +259,43 @@ F24 的 detail 在 tag **之后**改进过：现在分两段写
 | 能力 | 含 `MUST`/`SHALL` 的行 |
 |---|---|
 | `conflict-resolution` | 9 |
-| `evaluation-harness` | 15 |
+| `evaluation-harness` | **40** |
 | `llm-and-embedding-io` | 12 |
-| `memory-retrieval` | 23 |
+| `memory-retrieval` | **27** |
 | `memory-store` | 24 |
-| **合计** | **83** |
+| **`retrieval-apparatus`** | **30** |
+| **合计** | **142** |
 
-**其中含反引号内容的只有 10 行，而按"能验证什么"细分**：
+> **统计时点**：2026-11-02 归档 `retrieval-v3-apparatus` 之后。归档前合计 83 行。
+
+**其中含反引号内容的只有 36 行，而按"能验证什么"细分**：
 
 | 分类 | 行数 | 占比 |
 |---|---|---|
-| **无反引号** | **73** | **88.0%** |
-| **有函数名**（`def` 存在） | **1**（`substring_exact_match`） | **1.2%** |
-| 有字符串常量（字面量存在） | 4 | 4.8% |
-| 有反引号但非字面量（元组、索引键） | 5 | 6.0% |
-| 合计 | 83 | |
+| **无反引号** | **106** | **74.6%** |
+| **有函数名**（`def` 存在） | **1**（`substring_exact_match`） | **0.7%** |
+| 有字符串常量（字面量存在） | 3 | 2.1% |
+| 有反引号但非字面量（元组、索引键、字段名、枚举值） | 32 | 22.5% |
+| 合计 | 142 | |
 
-**可机械提取符号的是 10/83 = 12%，但其中"exists 检查有意义"的只有 1 条。**
+**可机械提取符号的是 36/142 = 25%，但其中"exists 检查有意义"的只有 1 条。**
+
+> **统计时点**：2026-11-02 归档 `retrieval-v3-apparatus` 之后。
+> 归档前是 10/83（12%），其中"exists 有意义"1 条——**这个结论没变**。
+> 反引号占比上升，是因为 v3 的 spec 大量点名数据字段
+> （`features` / `n_competitors` / `condition_score`）与枚举值
+> （`merged` / `single_axis` / `relation_within`）——
+> **它们都不是可 exists 检查的符号。**
 
 > **"有反引号"不等于"有可检查的符号"。**
 > `(owner, scope, subject, relation, condition)` 是索引键的结构描述，
 > 在源码里不是字面量——它无法被 "exists" 检查覆盖。
 > 而 `value` / `valid_from` 这类字段名虽然字面量存在，但 exists 通过也无信息。
+
+> **判据本身的教训**：这张表初版用"反引号内的小写标识符"判函数，
+> 于是 `base` / `features` / `merged` 全被当成函数名，
+> 把"1 条"算成了"17 条"。**改用"动词 + 标识符"（实现/调用/导出/定义）
+> 才对**——白名单式的"排除已知字段名"永远不全，这次就是活例子。
 
 ### 三层，不是两层
 
@@ -298,18 +313,24 @@ F24 的 detail 在 tag **之后**改进过：现在分两段写
 
 **所以不是"98.8% 需要人工"，而是 100% 的"行为符合性"需要人工。**
 
-### 真正该看的数字：229 个 Scenario 只有 3 个有映射测试
+### 真正该看的数字：258 个 Scenario 只有 3 个有映射测试
 
 | 能力 | Scenario 数 |
 |---|---|
 | `conflict-resolution` | 35 |
-| `evaluation-harness` | 44 |
+| `evaluation-harness` | **57** |
 | `llm-and-embedding-io` | 26 |
-| `memory-retrieval` | 62 |
+| `memory-retrieval` | **63** |
 | `memory-store` | 62 |
-| **合计** | **229** |
+| **`retrieval-apparatus`** | **15** |
+| **合计** | **258** |
 
-**而手工映射表覆盖 3 条 = 1.3%。**
+> **统计时点**：归档 `retrieval-v3-apparatus` 之后（2026-11-02）。
+> 归档前是 5 个能力 / 229 个 Scenario；
+> 归档新增 `retrieval-apparatus`（15 个）并给 `evaluation-harness` +13、
+> `memory-retrieval` +1。**这个数字每次归档都会变，改它之前先跑一遍复算。**
+
+**而手工映射表覆盖 3 条 = 1.2%。**
 
 **这比"MUST 没点名函数"更准确**：`#### Scenario:` 本来就是可测试的场景描述，
 它天生该对应一个测试。缺的不是"spec 写法不够符号化"，而是
@@ -610,13 +631,13 @@ Test: test_llm_cache.py::test_corrupt_row_is_treated_as_miss
 > 引用列能保证"有引用"，不能保证"引用覆盖了该 scenario"。
 > 一个测试填给多个 scenario 时，引用检查仍会全绿。
 >
-> 所以 **"229 → 229 有引用"这个目标，不等于"229 条行为都有验证"**。
+> 所以 **"258 → 258 有引用"这个目标，不等于"258 条行为都有验证"**。
 > 前者是记录问题，后者是工程问题。
 
 ### 更根本的：这个项目的测试是"问题驱动"的，不是"spec 驱动"的
 
 ```
-229 个 scenario    vs    1322 个测试
+258 个 scenario    vs    1322 个测试
 ```
 
 测试比 scenario 多得多。所以**问题不是"没有测试"，而是"测试和 scenario 之间没有映射关系"**。
@@ -650,11 +671,14 @@ Test: test_llm_cache.py::test_corrupt_row_is_treated_as_miss
 | "MUST 记录各召回路径的返回条数" | `run_retrieval.py` 的 `path_returns` | L6a / L6c | ❌ 无符号 |
 | "SHALL 实现 `substring_exact_match`" | `src/memory/eval/metrics.py` | `tests/test_metrics.py` | ✅ **有函数名** |
 
-**这张表只能人工维护，且必须随每次归档更新。当前它只覆盖 3 条，而 spec 里有 83 条 MUST/SHALL、229 个 Scenario。**
+**这张表只能人工维护，且必须随每次归档更新。当前它只覆盖 3 条，而 spec 里有 142 条 MUST/SHALL、258 个 Scenario。**
+
+> **统计时点**：2026-11-02 归档 `retrieval-v3-apparatus` 之后。
+> 归档前是 83 条 MUST/SHALL、229 个 Scenario。
 
 > **危险在于**："我们有 1300+ 个测试"这句话会给人虚假的安全感。
 > 实测：`exists` 检查能覆盖 **1.2%**，而"行为符合"**0%** 可自动验证；
-> 229 个 Scenario 里只有 3 个（1.3%）有映射测试。
+> 258 个 Scenario 里只有 3 个（1.2%）有映射测试。
 > 绿的测试可能只是没测到。
 
 **加这张表的时机**：下一次归档前。空表从来不会被维护，
@@ -2513,15 +2537,22 @@ v3 若按 §8 把 C 轴扩到每 subject 20–60 条，再定判据。
 > 运行态数字与未通过门禁见 **§0 当前状态**，不在此处重复——
 > 历史上这两个地方各写过一份，结果数字对不上。
 
-### 五个能力
+### 六个能力
 
 | 能力 | 要求数 |
 |---|---|
 | `conflict-resolution` | 7 |
-| `evaluation-harness` | 9 |
+| `evaluation-harness` | **11** |
 | `llm-and-embedding-io` | 7 |
 | `memory-retrieval` | 11 |
 | `memory-store` | 12 |
+| **`retrieval-apparatus`** | **4** |
+| **合计** | **52** |
+
+> **统计时点**：2026-11-02 归档 `retrieval-v3-apparatus` 之后。
+> 归档前是 5 个能力 / 46 条要求。
+> `evaluation-harness` 从 9 变 11（+结果文件记录逐条特征分、+结果产物的分区），
+> `memory-retrieval` 两条 MODIFIED 不改总数。
 
 ## 下一步：先修尺子，再造数据
 
@@ -2828,9 +2859,13 @@ uv run --no-sync pytest -m integrity_check -q                      # 1 条，检
 该 requirement 陈述句用 `SHALL`，scenario 内用**中文规范词**"不得"（2 处），
 不是英文 `MUST`。
 
-**这不是缺陷，是全仓库的书写习惯**：229 条 scenario 里有 **175 条（76%）**
-不含任何规范词——`conflict-resolution` 29/35、`evaluation-harness` 34/44、
-`llm-and-embedding-io` 20/26、`memory-retrieval` 44/62、`memory-store` 48/62。
+**这不是缺陷，是全仓库的书写习惯**：258 条 scenario 里有 **183 条（71%）**
+不含任何规范词——`conflict-resolution` 29/35、`evaluation-harness` 35/57、
+`llm-and-embedding-io` 20/26、`memory-retrieval` 45/63、`memory-store` 48/62、
+`retrieval-apparatus` 6/15。
+
+> **统计时点**：2026-11-02 归档 `retrieval-v3-apparatus` 之后。
+> 归档前是 **175/229（76%）**。
 
 `openspec validate --strict` 接受这种写法。若将来要统一规范词，
 应作为独立的一致性整理，不与能力变更混做。

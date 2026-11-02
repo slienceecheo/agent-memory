@@ -326,38 +326,60 @@ def test_section_0_6_records_the_three_layer_split() -> None:
 
 
 def test_section_0_6_has_the_four_way_split() -> None:
-    """四种分类的数字都要在。"""
+    """四种分类的数字都要在，且**合计等于总数 142**。
+
+    **只断言百分比不够**：四个百分比加起来可以等于 100%，
+    而每一项的绝对值与总数脱节（这次就发生过：总数从 83 改成 142，
+    而四类仍是 73/1/4/5）。所以这里同时断言合计。
+    """
     text = _text()
     section = text.split("### 0.6 自动检查的边界")[1].split("### 0.7")[0]
 
-    assert "88.0%" in section   # 无反引号
-    assert "1.2%" in section    # 函数名
-    assert "4.8%" in section    # 字符串常量
-    assert "6.0%" in section    # 非字面量
+    assert "74.6%" in section   # 无反引号
+    assert "0.7%" in section    # 函数名
+    assert "2.1%" in section    # 字符串常量
+    assert "22.5%" in section   # 非字面量
+
+    # 合计必须与 §0.7 的 142 一致
+    assert "| 合计 | 142 | |" in section, (
+        "四类合计与总数 142 对不上。"
+        "改总数时必须重算这四类，改百分比也一样。"
+    )
 
 
 def test_section_0_6_records_scenario_gap() -> None:
-    """**真正的缺口**：229 个 Scenario 只有 3 个有映射测试。"""
+    """**真正的缺口**：258 个 Scenario 只有 3 个有映射测试。"""
     text = _text()
     section = text.split("### 0.6 自动检查的边界")[1].split("### 0.7")[0]
 
-    assert "229" in section
+    assert "258" in section
     assert "Scenario" in section
-    assert "1.3%" in section
+    assert "1.2%" in section
     # 修复成本更低
     assert "Test:" in section or "引用的测试名" in section
 
 
 def test_scenario_count_is_real() -> None:
-    """229 这个数必须能从 spec 复算。"""
+    """258 这个数必须能从 spec 复算。
+
+    **这个数字每次归档都会变**（新增能力、新增 scenario）。
+    变的时候要同时改 HANDOFF 的那张能力表与"统计时点"说明，
+    而不是只改这个常量——否则表里的分项加起来对不上总数。
+    """
     import re
 
     total = 0
+    per_capability: dict[str, int] = {}
     for path in (ROOT / "openspec" / "specs").rglob("spec.md"):
-        total += len(
+        n = len(
             re.findall(r"^#### Scenario:", path.read_text(encoding="utf-8"), re.M)
         )
-    assert total == 229, f"Scenario 数变成 {total}"
+        per_capability[path.parent.name] = n
+        total += n
+    assert total == 258, (
+        f"Scenario 数变成 {total}。分项：{per_capability}\n"
+        "改这个常量时，HANDOFF 的能力表也要跟着改。"
+    )
 
 
 # ---------- 0.6 抽样与 Test: 列的边界 ----------
@@ -1692,20 +1714,32 @@ def test_section_0_6_warns_about_false_assurance() -> None:
 
 
 def test_must_coverage_numbers_are_real() -> None:
-    """83 与"1 条函数名"必须能从 spec 复算。"""
+    """142 与"只有 1 条点名了函数"必须能从 spec 复算。
+
+    **归档后会变**（新增 requirement 带来新的 MUST/SHALL 行）。
+    改数字时同时改 HANDOFF 的"统计时点"说明。
+
+    **判据不能是"反引号内的小写标识符"**：初版只排除一份硬编码字段表，
+    于是 `base` / `features` / `merged` / `single_axis` 这些**字段与枚举值**
+    被当成函数名，把"1 条"算成了"17 条"。
+
+    实测（归档后）：142 条里反引号内的小写标识符绝大多数是
+    **数据字段名**（`features` / `base` / `n_competitors` / `condition_score`）
+    或**枚举值**（`merged` / `single_axis` / `relation_within`），
+    真正点名「实现函数」的只有 `substring_exact_match`。
+
+    **改用"动词 + 标识符"判定**：函数是被实现/被调用的动作，字段是被读写的名词。
+    这比维护一份"哪些标识符不是函数"的白名单可靠——白名单每加一个字段就要改，
+    而它永远不全（这次就是活例子）。
+    """
     import re
 
     specs = ROOT / "openspec" / "specs"
     total = 0
     function_lines = 0
+    detail: list[str] = []
 
-    fields = {
-        "valid_from", "valid_to", "recorded_at", "value", "condition",
-        "subject", "relation", "owner", "scope",
-    }
-    constants = {"no-memory", "full-context", "naive-rag"}
-    # 参数名不是函数
-    params = {"gold_item_id"}
+    verb_pattern = re.compile(r"(实现|调用|导出|定义)\s*`([a-z_][a-z0-9_]*)`")
 
     for path in specs.rglob("spec.md"):
         for line in path.read_text(encoding="utf-8").splitlines():
@@ -1713,19 +1747,14 @@ def test_must_coverage_numbers_are_real() -> None:
             if "MUST" not in stripped and "SHALL" not in stripped:
                 continue
             total += 1
-            syms = re.findall(r"`([^`]+)`", stripped)
-            real_functions = [
-                s
-                for s in syms
-                if re.fullmatch(r"[a-z_][a-z0-9_]*", s)
-                and s not in fields
-                and s not in constants
-                and s not in params
-            ]
-            if real_functions:
+            m = verb_pattern.search(stripped)
+            if m:
                 function_lines += 1
+                detail.append(f"{path.parent.name}: {m.group(2)}")
 
-    assert total == 83, f"含 MUST/SHALL 的行变成 {total}"
+    assert total == 142, f"含 MUST/SHALL 的行变成 {total}（归档前是 83）"
     assert function_lines == 1, (
-        f"能验证函数实现的行变成 {function_lines}——文档里的 1.2% 要更新"
+        f"点名函数实现的行变成 {function_lines}：{detail}。\n"
+        "若这条变了，覆盖率这个数要重算，不是只改常量。"
     )
+    assert "substring_exact_match" in detail[0]
