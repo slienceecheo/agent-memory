@@ -27,8 +27,6 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-import pytest
-
 ROOT = Path(__file__).resolve().parents[2]
 # 归档后 delta 在 archive 下；正式 spec 是唯一权威
 ARCHIVED = (
@@ -130,8 +128,9 @@ def test_spec_claim_about_v2_products_is_verifiable() -> None:
     那正是 v3 才加的。有了它，说明这批结果是新格式，spec 的说明要重核。
     """
     sample = RESULTS / "v2-billing-lexical.json"
-    if not sample.exists():
-        pytest.skip("v2 结果缺失")
+    # **不用 skip**：v2 结果是冻结档案，`results/` 顶层 48 个有红线。
+    # 它缺失只有一种解释——仓库坏了。而 skip 会把"仓库坏了"变成一片绿。
+    assert sample.exists(), f"v2 冻结结果缺失：{sample}"
 
     data = json.loads(sample.read_text(encoding="utf-8"))
     per_case = data.get("per_case") or []

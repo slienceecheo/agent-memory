@@ -20,8 +20,6 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
-import pytest
-
 ROOT = Path(__file__).resolve().parents[2]
 ARCHIVE = ROOT / "openspec" / "changes" / "archive"
 ACTIVE = ROOT / "openspec" / "changes"
@@ -42,8 +40,9 @@ def test_archived_changes_have_no_unchecked_tasks() -> None:
 
     **这条会在 `--yes` 跳过未完成任务的那次归档上立刻红。**
     """
-    if not ARCHIVE.exists():
-        pytest.skip("还没有归档变更")
+    # **不用 skip**：本项目已有 7 个归档变更，"还没有归档"这个前提不成立。
+    # 若它真的不存在，说明仓库结构坏了——那应该红，而不是跳过。
+    assert ARCHIVE.exists(), f"归档目录不存在：{ARCHIVE}"
 
     offenders: dict[str, list[str]] = {}
     for change in sorted(ARCHIVE.iterdir()):
@@ -91,8 +90,7 @@ def test_check_counts_are_real() -> None:
 
     # 且它对真实文件有效：取一个已归档变更，确认能读到它的勾选数
     archived = sorted(ARCHIVE.glob("*/tasks.md"))
-    if not archived:
-        pytest.skip("还没有归档变更")
+    assert archived, f"没有找到任何归档的 tasks.md：{ARCHIVE}"
     text = archived[0].read_text(encoding="utf-8")
     done = len(re.findall(r"^\s*-\s*\[x\]", text, re.M))
     assert done > 0, f"{archived[0]} 读不到任何已勾任务——正则或文件格式变了"
@@ -104,23 +102,27 @@ def test_active_changes_are_not_checked_by_this_gate() -> None:
     若把判据套到 `changes/`（进行中）上，任何刚建的变更都会红，
     于是人会去加 `xfail` 或放宽断言——**门禁就消失了**。
 
-    **这条用"行为"验证边界，不扫描源码**：
-    上一版扫描自身源码找 `_unchecked(ACTIVE`，而那段字符串就写在测试自己文件里，
-    **自指**——它永远红。改为直接断言"归档集与活动集不相交"，且活动集当前为空。
+    **这条只断言"归档集与活动集不相交"，不断言"活动集为空"。**
+
+    上一版写了 `assert active == set()`，而它正是本条 docstring 批评的那个反模式：
+    **下一次开工建了变更目录，这条测试立刻红**，于是会被放宽或删掉。
+    实测：建一个 `openspec/changes/zz-probe-in-progress/` 就红了。
+
+    "归档后不许留活动变更"这件事由 `tests/test_handoff.py::test_no_active_changes_after_archive`
+    负责，且它用的是 **skip** 而非 fail——同一状态两个测试给相反处置，
+    这件事本身就该避免。
+
+    **剩下这条判据仍然有效**：同名目录不能同时出现在 `changes/` 与
+    `changes/archive/` 下——那说明归档只复制没删除。
     """
     archived = {d.name for d in ARCHIVE.iterdir() if d.is_dir()} if ARCHIVE.exists() else set()
-    # `archive/` 自身是归档根，不是活动变更
     active = {
         d.name
         for d in ACTIVE.iterdir()
         if d.is_dir() and d.name != "archive"
     } if ACTIVE.exists() else set()
 
-    # 两个集合不相交：归档是"完成"，活动是"进行中"
-    assert not (archived & active), f"同名目录同时在活动与归档里：{archived & active}"
-
-    # 活动集当前为空——本门禁只对归档成立，所以此刻它不约束任何东西
-    assert active == set(), (
-        f"有进行中的变更：{sorted(active)}。"
-        "本门禁只查归档目录，不查它们——这是设计边界，不是遗漏。"
+    assert not (archived & active), (
+        f"同名目录同时在活动与归档里：{sorted(archived & active)}。"
+        "归档应当把目录移走，而不是复制一份留下。"
     )
