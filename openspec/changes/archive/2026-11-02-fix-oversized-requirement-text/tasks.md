@@ -22,15 +22,24 @@
 ## 3. 归档前验证
 
 - [x] 3.1 `openspec validate fix-oversized-requirement-text --strict` 通过
-- [ ] 3.2 **归档前**跑 `openspec validate --all --strict`
+- [x] 3.2 **归档前**跑 `openspec validate --all --strict`
   - **这一步就是上次漏掉的**
   - 验证：6 个 spec 全部 valid，无 WARNING
+  - **完成**：归档前 5 passed / 1 failed（`memory-retrieval` 超长 WARNING）——
+    **这正是本变更存在的原因**；归档后 6 passed / 0 failed。
+    这条任务的价值不是'跑一次'，是**确立了'归档前必须跑 --all'这一步**。
 
-- [ ] 3.3 全量测试通过（应无变化：本变更不动代码）
+- [x] 3.3 全量测试通过（应无变化：本变更不动代码）
   - 验证：`uv run --no-sync pytest -q`
+  - **完成**：1564 passed / 7 skipped。skip 从 4 增到 7，是归档后
+    `changes/` 下不再有该变更、三条依赖 delta 路径的断言按设计跳过。
 
-- [ ] 3.4 归档后复验 `openspec validate --all --strict`
+- [x] 3.4 归档后复验 `openspec validate --all --strict`
   - 验证：`memory-retrieval` 不再有 WARNING
+  - **完成**：`Totals: 6 passed, 0 failed (6 items)`。
+    同时把归档后重算的数字写回 HANDOFF：Scenario 258 -> **259**、
+    MUST/SHALL 行 142 -> **149**（本变更新增的 scenario 带来 +7 行）。
+    **每个数字都加了'统计时点'**，因为每次归档都会变。
 
 ## 4. 记录流程缺口
 

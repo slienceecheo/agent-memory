@@ -335,13 +335,13 @@ def test_section_0_6_has_the_four_way_split() -> None:
     text = _text()
     section = text.split("### 0.6 自动检查的边界")[1].split("### 0.7")[0]
 
-    assert "74.6%" in section   # 无反引号
+    assert "73.8%" in section   # 无反引号
     assert "0.7%" in section    # 函数名
-    assert "2.1%" in section    # 字符串常量
-    assert "22.5%" in section   # 非字面量
+    assert "2.0%" in section    # 字符串常量
+    assert "23.5%" in section   # 非字面量
 
     # 合计必须与 §0.7 的 142 一致
-    assert "| 合计 | 142 | |" in section, (
+    assert "| 合计 | 149 | |" in section, (
         "四类合计与总数 142 对不上。"
         "改总数时必须重算这四类，改百分比也一样。"
     )
@@ -352,7 +352,7 @@ def test_section_0_6_records_scenario_gap() -> None:
     text = _text()
     section = text.split("### 0.6 自动检查的边界")[1].split("### 0.7")[0]
 
-    assert "258" in section
+    assert "259" in section
     assert "Scenario" in section
     assert "1.2%" in section
     # 修复成本更低
@@ -376,7 +376,7 @@ def test_scenario_count_is_real() -> None:
         )
         per_capability[path.parent.name] = n
         total += n
-    assert total == 258, (
+    assert total == 259, (
         f"Scenario 数变成 {total}。分项：{per_capability}\n"
         "改这个常量时，HANDOFF 的能力表也要跟着改。"
     )
@@ -1752,7 +1752,7 @@ def test_must_coverage_numbers_are_real() -> None:
                 function_lines += 1
                 detail.append(f"{path.parent.name}: {m.group(2)}")
 
-    assert total == 142, f"含 MUST/SHALL 的行变成 {total}（归档前是 83）"
+    assert total == 149, f"含 MUST/SHALL 的行变成 {total}（归档前是 83）"
     assert function_lines == 1, (
         f"点名函数实现的行变成 {function_lines}：{detail}。\n"
         "若这条变了，覆盖率这个数要重算，不是只改常量。"

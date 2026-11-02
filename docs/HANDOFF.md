@@ -261,27 +261,29 @@ F24 的 detail 在 tag **之后**改进过：现在分两段写
 | `conflict-resolution` | 9 |
 | `evaluation-harness` | **40** |
 | `llm-and-embedding-io` | 12 |
-| `memory-retrieval` | **27** |
+| `memory-retrieval` | **34** |
 | `memory-store` | 24 |
 | **`retrieval-apparatus`** | **30** |
-| **合计** | **142** |
+| **合计** | **149** |
 
-> **统计时点**：2026-11-02 归档 `retrieval-v3-apparatus` 之后。归档前合计 83 行。
+> **统计时点**：2026-11-02，`retrieval-v3-apparatus` 与 `fix-oversized-requirement-text`
+> 两次归档之后。首次归档后是 142 行；修正变更把 `全部特征关闭` 场景改写、
+> 并新增一条 scenario，共 +7 行。
 
-**其中含反引号内容的只有 36 行，而按"能验证什么"细分**：
+**其中含反引号内容的只有 39 行，而按"能验证什么"细分**：
 
 | 分类 | 行数 | 占比 |
 |---|---|---|
-| **无反引号** | **106** | **74.6%** |
+| **无反引号** | **110** | **73.8%** |
 | **有函数名**（`def` 存在） | **1**（`substring_exact_match`） | **0.7%** |
-| 有字符串常量（字面量存在） | 3 | 2.1% |
-| 有反引号但非字面量（元组、索引键、字段名、枚举值） | 32 | 22.5% |
-| 合计 | 142 | |
+| 有字符串常量（字面量存在） | 3 | 2.0% |
+| 有反引号但非字面量（元组、索引键、字段名、枚举值） | 35 | 23.5% |
+| 合计 | 149 | |
 
-**可机械提取符号的是 36/142 = 25%，但其中"exists 检查有意义"的只有 1 条。**
+**可机械提取符号的是 39/149 = 26%，但其中"exists 检查有意义"的只有 1 条。**
 
-> **统计时点**：2026-11-02 归档 `retrieval-v3-apparatus` 之后。
-> 归档前是 10/83（12%），其中"exists 有意义"1 条——**这个结论没变**。
+> **统计时点**：2026-11-02，两次归档之后。归档前是 10/83（12%），
+> 其中"exists 有意义"1 条——**这个结论没变**。
 > 反引号占比上升，是因为 v3 的 spec 大量点名数据字段
 > （`features` / `n_competitors` / `condition_score`）与枚举值
 > （`merged` / `single_axis` / `relation_within`）——
@@ -313,22 +315,21 @@ F24 的 detail 在 tag **之后**改进过：现在分两段写
 
 **所以不是"98.8% 需要人工"，而是 100% 的"行为符合性"需要人工。**
 
-### 真正该看的数字：258 个 Scenario 只有 3 个有映射测试
+### 真正该看的数字：259 个 Scenario 只有 3 个有映射测试
 
 | 能力 | Scenario 数 |
 |---|---|
 | `conflict-resolution` | 35 |
 | `evaluation-harness` | **57** |
 | `llm-and-embedding-io` | 26 |
-| `memory-retrieval` | **63** |
+| `memory-retrieval` | **64** |
 | `memory-store` | 62 |
 | **`retrieval-apparatus`** | **15** |
-| **合计** | **258** |
+| **合计** | **259** |
 
-> **统计时点**：归档 `retrieval-v3-apparatus` 之后（2026-11-02）。
-> 归档前是 5 个能力 / 229 个 Scenario；
-> 归档新增 `retrieval-apparatus`（15 个）并给 `evaluation-harness` +13、
-> `memory-retrieval` +1。**这个数字每次归档都会变，改它之前先跑一遍复算。**
+> **统计时点**：2026-11-02，`retrieval-v3-apparatus` 与 `fix-oversized-requirement-text`
+> 两次归档之后。首次归档后是 258；修正变更新增一条 scenario（+1）。
+> **这个数字每次归档都会变，改它之前先跑一遍复算。**
 
 **而手工映射表覆盖 3 条 = 1.2%。**
 
@@ -631,13 +632,13 @@ Test: test_llm_cache.py::test_corrupt_row_is_treated_as_miss
 > 引用列能保证"有引用"，不能保证"引用覆盖了该 scenario"。
 > 一个测试填给多个 scenario 时，引用检查仍会全绿。
 >
-> 所以 **"258 → 258 有引用"这个目标，不等于"258 条行为都有验证"**。
+> 所以 **"259 → 259 有引用"这个目标，不等于"259 条行为都有验证"**。
 > 前者是记录问题，后者是工程问题。
 
 ### 更根本的：这个项目的测试是"问题驱动"的，不是"spec 驱动"的
 
 ```
-258 个 scenario    vs    1322 个测试
+259 个 scenario    vs    1322 个测试
 ```
 
 测试比 scenario 多得多。所以**问题不是"没有测试"，而是"测试和 scenario 之间没有映射关系"**。
@@ -671,14 +672,13 @@ Test: test_llm_cache.py::test_corrupt_row_is_treated_as_miss
 | "MUST 记录各召回路径的返回条数" | `run_retrieval.py` 的 `path_returns` | L6a / L6c | ❌ 无符号 |
 | "SHALL 实现 `substring_exact_match`" | `src/memory/eval/metrics.py` | `tests/test_metrics.py` | ✅ **有函数名** |
 
-**这张表只能人工维护，且必须随每次归档更新。当前它只覆盖 3 条，而 spec 里有 142 条 MUST/SHALL、258 个 Scenario。**
+**这张表只能人工维护，且必须随每次归档更新。当前它只覆盖 3 条，而 spec 里有 149 条 MUST/SHALL、259 个 Scenario。**
 
-> **统计时点**：2026-11-02 归档 `retrieval-v3-apparatus` 之后。
-> 归档前是 83 条 MUST/SHALL、229 个 Scenario。
+> **统计时点**：2026-11-02，两次归档之后。归档前是 83 条 MUST/SHALL、229 个 Scenario。
 
 > **危险在于**："我们有 1300+ 个测试"这句话会给人虚假的安全感。
 > 实测：`exists` 检查能覆盖 **1.2%**，而"行为符合"**0%** 可自动验证；
-> 258 个 Scenario 里只有 3 个（1.2%）有映射测试。
+> 259 个 Scenario 里只有 3 个（1.2%）有映射测试。
 > 绿的测试可能只是没测到。
 
 **加这张表的时机**：下一次归档前。空表从来不会被维护，
@@ -2859,13 +2859,12 @@ uv run --no-sync pytest -m integrity_check -q                      # 1 条，检
 该 requirement 陈述句用 `SHALL`，scenario 内用**中文规范词**"不得"（2 处），
 不是英文 `MUST`。
 
-**这不是缺陷，是全仓库的书写习惯**：258 条 scenario 里有 **183 条（71%）**
+**这不是缺陷，是全仓库的书写习惯**：259 条 scenario 里有 **183 条（71%）**
 不含任何规范词——`conflict-resolution` 29/35、`evaluation-harness` 35/57、
-`llm-and-embedding-io` 20/26、`memory-retrieval` 45/63、`memory-store` 48/62、
+`llm-and-embedding-io` 20/26、`memory-retrieval` 45/64、`memory-store` 48/62、
 `retrieval-apparatus` 6/15。
 
-> **统计时点**：2026-11-02 归档 `retrieval-v3-apparatus` 之后。
-> 归档前是 **175/229（76%）**。
+> **统计时点**：2026-11-02，两次归档之后。归档前是 **175/229（76%）**。
 
 `openspec validate --strict` 接受这种写法。若将来要统一规范词，
 应作为独立的一致性整理，不与能力变更混做。
