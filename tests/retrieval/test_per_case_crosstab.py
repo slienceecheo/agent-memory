@@ -263,6 +263,152 @@ def test_handoff_records_the_overturned_claims() -> None:
     assert "两个来源产生同一个形状" in section
 
 
+def _per_file_kind() -> dict[str, str]:
+    """每个有 per_case 的文件 -> full_fp / version_only / none。"""
+    out: dict[str, str] = {}
+    for p in sorted(RESULTS.glob("*.json")):
+        try:
+            d = json.loads(p.read_text(encoding="utf-8"))
+        except json.JSONDecodeError:
+            continue
+        if not isinstance(d, dict):
+            continue
+        if not isinstance(d.get("per_case"), list):
+            continue
+        ver, h = d.get("code_version"), d.get("code_diff_hash")
+        if ver is not None and h is not None:
+            out[p.name] = "full_fp"
+        elif ver is not None or h is not None:
+            out[p.name] = "version_only"
+        else:
+            out[p.name] = "none"
+    return out
+
+
+def test_two_coverage_rates() -> None:
+    """**格式分析 18/36 = 50%，数字复算 17/36 = 47%。**
+
+    差异只有 1 个文件（有 version 无 hash）——它能证明 commit，不能证明工作区干净。
+    """
+    kinds = _per_file_kind()
+    total = len(kinds)
+    assert total == 36, f"有 per_case 的文件数变成 {total}"
+
+    from collections import Counter
+
+    c = Counter(kinds.values())
+    assert c["full_fp"] == 17, f"full_fp 变成 {c['full_fp']}"
+    assert c["version_only"] == 1
+    assert c["none"] == 18
+
+    # 两个覆盖率
+    format_cov = (c["full_fp"] + c["version_only"]) / total
+    numeric_cov = c["full_fp"] / total
+    assert format_cov == pytest.approx(0.50, abs=0.01)
+    assert numeric_cov == pytest.approx(0.472, abs=0.01)
+
+
+def test_equation_is_one_to_one_on_fingerprinted_files() -> None:
+    """`(code_version, branch) -> 键数` 在指纹可用文件上必须 1:1（0 例外）。"""
+    kinds = _per_file_kind()
+    table: dict[tuple[str, str], dict[int, int]] = defaultdict(lambda: defaultdict(int))
+
+    for p in sorted(RESULTS.glob("*.json")):
+        if kinds.get(p.name) not in ("full_fp", "version_only"):
+            continue
+        d = json.loads(p.read_text(encoding="utf-8"))
+        ver = d["code_version"]
+        for r in d["per_case"]:
+            if not isinstance(r, dict):
+                continue
+            hg, sk = r.get("has_gold"), r.get("skipped")
+            br = "no_gold" if hg is False else ("skipped" if sk is True else "normal")
+            table[(ver, br)][len(r)] += 1
+
+    multi = {k: dict(v) for k, v in table.items() if len(v) != 1}
+    assert not multi, f"出现多值组合：{multi}"
+
+    # 六个组合：**含 `5e8a3d6`（version_only）**——
+    # 键数只依赖 commit，所以它能为格式分析作证，分 2 个分支。
+    assert set(table) == {
+        ("47e4785-dirty", "normal"),
+        ("5e8a3d6", "no_gold"),
+        ("5e8a3d6", "normal"),
+        ("899e2b6-dirty", "no_gold"),
+        ("899e2b6-dirty", "normal"),
+        ("8b1b600-dirty", "normal"),
+    }, f"组合集变了：{sorted(table)}"
+
+    # 而"数字复算"口径（只算 full_fp）是 4 个组合
+    full_only = {k for k in table if k[0] != "5e8a3d6"}
+    assert len(full_only) == 4, f"full_fp 下的组合数变成 {len(full_only)}"
+
+
+def test_skipped_is_attributable_even_without_fingerprint() -> None:
+    """**`skipped` 分支在 `<none>` 下仍是单一键数**——因为它是硬编码的。
+
+    所以"无指纹 = 不可归因"过强：只有依赖版本的属性才失去归因能力。
+    """
+    kinds = _per_file_kind()
+    by_branch: dict[str, dict[int, int]] = defaultdict(lambda: defaultdict(int))
+
+    for p in sorted(RESULTS.glob("*.json")):
+        if kinds.get(p.name) != "none":
+            continue
+        d = json.loads(p.read_text(encoding="utf-8"))
+        for r in d["per_case"]:
+            if not isinstance(r, dict):
+                continue
+            hg, sk = r.get("has_gold"), r.get("skipped")
+            br = "no_gold" if hg is False else ("skipped" if sk is True else "normal")
+            by_branch[br][len(r)] += 1
+
+    assert dict(by_branch["skipped"]) == {10: 52}, (
+        f"skipped 不再单一：{dict(by_branch['skipped'])}"
+    )
+    # 另两个分支是多值
+    assert len(by_branch["no_gold"]) > 1, "no_gold 变成单一了，结论要更新"
+    assert len(by_branch["normal"]) > 1, "normal 变成单一了，结论要更新"
+
+    # 具体分布（这一轮我报错过一次：8 键 63 / 20 键 66 是错的）
+    assert dict(by_branch["no_gold"]) == {7: 4, 8: 56}
+    assert dict(by_branch["normal"]) == {
+        6: 120, 7: 26, 8: 206, 12: 30, 13: 33, 20: 33
+    }
+
+
+def test_handoff_records_two_coverage_rates() -> None:
+    """文档必须写两个覆盖率，并说明差异只有 1 个文件。"""
+    text = HANDOFF.read_text(encoding="utf-8")
+    marker = "#### 键数的等式"
+    assert marker in text
+    section = text.split(marker)[1].split("\n#### ")[0]
+
+    assert "**18**" in section and "**17**" in section
+    assert "50%" in section and "47%" in section
+    assert "`5e8a3d6`" in section
+    # 用途区分——整行匹配，避免只命中数字
+    assert "| **格式分析**（键数） | 只需 commit | **18** | **50%** |" in section
+    numeric_row = "| **数字复算**（指标准确） | commit **+** 工作区是否干净 | **17** | **47%** |"
+    assert numeric_row in section
+    # 六个组合（含 5e8a3d6 的两行）
+    assert "**6 个组合，0 例外**" in section
+    assert "| `5e8a3d6` | `no_gold` | 8 | 7 | **仅格式分析** |" in section
+    assert "| `5e8a3d6` | `normal` | 20 | 33 | **仅格式分析** |" in section
+    assert "**6 个组合里有 2 个只对\"格式分析\"可归因**" in section
+
+
+def test_handoff_records_attributability_depends_on_constant() -> None:
+    """必须写明"可归因取决于是否常量"，并给出 skipped 的反例。"""
+    text = HANDOFF.read_text(encoding="utf-8")
+    marker = "#### 键数的等式"
+    section = text.split(marker)[1].split("\n#### ")[0]
+
+    assert "无指纹" in section and "不可归因" in section
+    assert "**硬编码 10**" in section
+    assert "`{10: 52}` 单一" in section
+
+
 @pytest.mark.parametrize("key_count", [7, 8, 13, 20, 25])
 def test_backbone_key_counts_have_records(key_count: int) -> None:
     """主干每个键数都必须至少有一条记录。"""
