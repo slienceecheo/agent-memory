@@ -296,19 +296,54 @@ def test_dual_interval_gap_numbers_are_real() -> None:
 
 
 def test_section_0_6_records_the_coverage_limit() -> None:
-    """必须写明"能自动检查的只有一部分"及其真实比例。"""
+    """必须写明"能自动检查的只有一部分"及其真实比例。
+
+    **不能只断言 `"1.2%" in section`**：§0.6 里有两个 1.2%，
+    分母不同（Scenario 3/259 vs MUST/SHALL 曾是 1/83）。
+    只断言字符串时，它同时锁住了"对的"和"错的"——
+    这次就是：分母从 83 改成 149 后，`1.2%` 那三个 assert 仍然全绿。
+
+    所以每条断言都必须带**分子/分母**，让两种语境无法互相顶替。
+    """
     text = _text()
     section = text.split("### 0.6 自动检查的边界")[1].split("### 0.7")[0]
 
-    assert "83" in section, "未写 MUST/SHALL 总行数"
-    # 按可验证性细分
-    assert "1.2%" in section, "未写函数实现可验证率"
-    assert "3.6%" in section, "未写字段可验证率"
+    # MUST/SHALL 分母
+    assert "149 条含 `MUST`/`SHALL` 的行" in section, "未写 MUST/SHALL 总行数"
+    # 三层表：每层都必须写全"分子/分母 = 百分比"
+    assert "1/149 = 0.7%" in section, "未写函数实现可验证率（带分母）"
+    assert "0/149 = 0.0%" in section, "未写行为符合率（带分母）"
+    assert "3/149 = 2.0%" in section, "未写人工映射率（带分母）"
     # 关键区分
     assert "有反引号" in section and "不等于" in section
     # 能力分组
     assert "conflict-resolution" in section
     assert "memory-store" in section
+
+
+def test_section_0_6_distinguishes_the_two_1_2_percent() -> None:
+    """**两个 1.2% 必须被显式区分**，否则字符串断言没有判别力。
+
+    | 数字 | 式子 | 分母 |
+    |---|---|---|
+    | 1.2% | 3/**259** | Scenario 数 |
+    | 0.7% | 1/**149** | MUST/SHALL 行数 |
+
+    这条防的是：有人把 MUST 的 0.7% 误写成 1.2%（那是 Scenario 分母的数），
+    而所有"`1.2%` in section"式的断言仍然全绿。
+    """
+    text = _text()
+    section = text.split("### 0.6 自动检查的边界")[1].split("### 0.7")[0]
+
+    assert "本节有两个 1.2%" in section, (
+        "缺少'两个 1.2% 分母不同'的显式说明。"
+        "有它，读者才知道 1.2% 在本节不能脱离分母使用。"
+    )
+    # 两个分母都必须出现，且各自绑定正确的百分比
+    assert "3/**259**" in section
+    assert "1/**149**" in section
+    # 且 MUST 侧不能是 1.2%
+    assert "1/83 = 1.2%" not in section, "MUST 侧还在用旧分母 83"
 
 
 def test_section_0_6_records_the_three_layer_split() -> None:
@@ -319,8 +354,8 @@ def test_section_0_6_records_the_three_layer_split() -> None:
     assert "三层，不是两层" in section
     assert "符号存在" in section
     assert "行为符合" in section
-    # 关键：行为符合是 0%
-    assert "0/83 = 0%" in section or "0%" in section
+    # 关键：行为符合是 0%（带分母）
+    assert "0/149 = 0.0%" in section
     # 关键：不是 98.8%
     assert "100% 的" in section
 
