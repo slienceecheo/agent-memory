@@ -308,10 +308,22 @@ def test_two_coverage_rates() -> None:
     assert numeric_cov == pytest.approx(0.472, abs=0.01)
 
 
-def test_equation_is_one_to_one_on_fingerprinted_files() -> None:
-    """`(code_version, branch) -> 键数` 在指纹可用文件上必须 1:1（0 例外）。"""
+def test_key_count_is_a_function_of_version_and_branch() -> None:
+    """**等式断言：每个 (version, branch) 组内键数必须唯一。**
+
+    这条只断言"组内唯一"这个性质，**不绑定任何具体数字**。
+
+    与"枚举式"的区别（这一轮反复出现的错误）：
+
+    | 类型 | 数据变但等式成立 | 等式被破坏但分布恰好不变 |
+    |---|---|---|
+    | 枚举式 `== {25: 132}` | ❌ 红（误报） | ✅ 绿（漏报） |
+    | **等式 `len(kinds) == 1`** | ✅ 绿（正确） | ❌ 红（正确） |
+
+    用枚举式守一个等式，等于用"某一个具体值"代表"一个函数关系"。
+    """
     kinds = _per_file_kind()
-    table: dict[tuple[str, str], dict[int, int]] = defaultdict(lambda: defaultdict(int))
+    table: dict[tuple[str, str], set[int]] = defaultdict(set)
 
     for p in sorted(RESULTS.glob("*.json")):
         if kinds.get(p.name) not in ("full_fp", "version_only"):
@@ -323,25 +335,51 @@ def test_equation_is_one_to_one_on_fingerprinted_files() -> None:
                 continue
             hg, sk = r.get("has_gold"), r.get("skipped")
             br = "no_gold" if hg is False else ("skipped" if sk is True else "normal")
-            table[(ver, br)][len(r)] += 1
+            table[(ver, br)].add(len(r))
 
-    multi = {k: dict(v) for k, v in table.items() if len(v) != 1}
-    assert not multi, f"出现多值组合：{multi}"
+    violations = {k: sorted(v) for k, v in table.items() if len(v) != 1}
+    assert not violations, (
+        "这些 (版本, 分支) 组内键数不唯一，等式被破坏：\n"
+        + "\n".join(f"  {k[0]} / {k[1]}: 键数 {v}" for k, v in violations.items())
+    )
 
-    # 六个组合：**含 `5e8a3d6`（version_only）**——
-    # 键数只依赖 commit，所以它能为格式分析作证，分 2 个分支。
-    assert set(table) == {
+    # 至少要有组合被检验，否则这条断言空转
+    assert len(table) >= 4, f"可检验的 (版本, 分支) 组合只有 {len(table)} 个"
+
+
+def test_equation_covers_six_combinations() -> None:
+    """**当前这批数据恰好 6 个组合**——这是对数据的描述，不是对等式的检验。
+
+    与上一条分开：那条管"等式是否成立"，这条管"当前数据长什么样"。
+    数据变了只该让这条红。
+    """
+    kinds = _per_file_kind()
+    combos: set[tuple[str, str]] = set()
+
+    for p in sorted(RESULTS.glob("*.json")):
+        if kinds.get(p.name) not in ("full_fp", "version_only"):
+            continue
+        d = json.loads(p.read_text(encoding="utf-8"))
+        ver = d["code_version"]
+        for r in d["per_case"]:
+            if not isinstance(r, dict):
+                continue
+            hg, sk = r.get("has_gold"), r.get("skipped")
+            br = "no_gold" if hg is False else ("skipped" if sk is True else "normal")
+            combos.add((ver, br))
+
+    assert combos == {
         ("47e4785-dirty", "normal"),
         ("5e8a3d6", "no_gold"),
         ("5e8a3d6", "normal"),
         ("899e2b6-dirty", "no_gold"),
         ("899e2b6-dirty", "normal"),
         ("8b1b600-dirty", "normal"),
-    }, f"组合集变了：{sorted(table)}"
+    }, f"组合集变了：{sorted(combos)}"
 
-    # 而"数字复算"口径（只算 full_fp）是 4 个组合
-    full_only = {k for k in table if k[0] != "5e8a3d6"}
-    assert len(full_only) == 4, f"full_fp 下的组合数变成 {len(full_only)}"
+    # 其中两个只对"格式分析"可归因
+    version_only_combos = {c for c in combos if c[0] == "5e8a3d6"}
+    assert len(version_only_combos) == 2
 
 
 def test_skipped_is_attributable_even_without_fingerprint() -> None:
