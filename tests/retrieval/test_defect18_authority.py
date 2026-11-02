@@ -123,20 +123,19 @@ def test_q4_loses_to_unrelated_entries_on_authority() -> None:
 
     w = PREREGISTERED_WEIGHTS["uniform"]
     d_base = 1.000 - 0.910
-    d_cond = 1.00 - 0.50
+    # v3：condition 退出加权，优势只剩 base 项
     auth_penalty = w.authority * (1.00 - 0.00)
 
-    advantage = w.base * d_base + w.condition * d_cond
-    assert advantage == pytest.approx(0.1475, abs=1e-4), (
-        f"base+cond 优势 {advantage} 不再是 0.1475——"
-        "`uniform` 权重变了，缺陷 19 的算术需要重新评估"
+    advantage = w.base * d_base
+    assert advantage == pytest.approx(0.0360, abs=1e-4), (
+        f"base 优势 {advantage} 不再是 0.036——"
+        "`uniform` 权重或 d_base 变了，缺陷 19 的算术需要重新评估"
     )
-    assert auth_penalty == pytest.approx(0.25)
-    assert auth_penalty > advantage, "auth 罚分不再能推翻 base+cond 双优，缺陷 19 可能已修"
+    assert auth_penalty == pytest.approx(0.30)
+    assert auth_penalty > advantage, "auth 罚分不再能推翻 base 优势，缺陷 19 可能已修"
 
-    # 量化判据：推翻条件等价于 w.authority > w.base*d_base + w.condition*d_cond
-    assert d_base + d_cond < 1.0
-    assert auth_penalty - advantage == pytest.approx(0.1025, abs=1e-4), (
+    # 量化判据：推翻条件等价于 w.authority > w.base * d_base
+    assert auth_penalty - advantage == pytest.approx(0.2640, abs=1e-4), (
         f"净差变成 {auth_penalty - advantage:.4f}，不再是 0.1025。\n"
         "先分清两件事再动手：\n"
         "  - 若 authority **没降**、只是 base/condition 重新分配 —— 缺陷 19 还在，\n"

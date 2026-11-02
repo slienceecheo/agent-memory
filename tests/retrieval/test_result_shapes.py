@@ -7,6 +7,17 @@
 4. 区分两种新增情形：
    - 签名新 -> 分组数变多 -> 类数断言红（该红，文档要加一类）
    - 签名旧 -> 分组数不变 -> 类数断言绿，只有加总变（文档只改加总）
+
+**扫描范围是"v2 档案"，即 `results/*.json` 顶层，不含子目录。**
+
+本文件的每条 `RESULTS.glob(...)` 都带 `p.parent == RESULTS`。
+那条件是**冗余的**（`glob` 本来就不递归），但它是**声明**：
+它把"只看顶层"从"碰巧用了 glob"变成"有意只看顶层"。
+
+v3 的产物流在 `results/v3/`、历史对照物在 `results/archive/`。
+若有人把这里改成 `rglob`，这些"9 类 / 48"的断言会立刻看到 v3 文件——
+**红的原因不是数据变了，是扫描范围变了而断言没跟着分区。**
+那时该做的是按 `parent` 分区，不是改 `48`。
 """
 
 from __future__ import annotations
@@ -96,7 +107,7 @@ def test_signature_group_count_is_nine() -> None:
     新增一个签名与已有组相同的文件 -> 分组数不变 -> 这条仍绿。
     新增一个签名全新的文件 -> 分组数变多 -> 这条红（文档要加一类）。
     """
-    files = sorted(RESULTS.glob("*.json"))
+    files = sorted(p for p in RESULTS.glob("*.json") if p.parent == RESULTS)
     groups: dict[tuple, list[str]] = defaultdict(list)
     for p in files:
         groups[signature(p)].append(p.name)
@@ -111,7 +122,7 @@ def test_signature_group_count_is_nine() -> None:
 
 def test_every_group_is_non_empty() -> None:
     """每组至少 1 个文件——分组定义上成立，但防"零组"进入文档。"""
-    files = sorted(RESULTS.glob("*.json"))
+    files = sorted(p for p in RESULTS.glob("*.json") if p.parent == RESULTS)
     groups: dict[tuple, list[str]] = defaultdict(list)
     for p in files:
         groups[signature(p)].append(p.name)
@@ -133,7 +144,7 @@ def test_groups_cover_every_file_exactly_once() -> None:
     只写类数，分类表可以"每类都对，但少一个文件"；
     只写加总，可以是"一个杂类装下所有文件"。
     """
-    files = sorted(RESULTS.glob("*.json"))
+    files = sorted(p for p in RESULTS.glob("*.json") if p.parent == RESULTS)
     groups: dict[tuple, list[str]] = defaultdict(list)
     for p in files:
         groups[signature(p)].append(p.name)
@@ -148,7 +159,7 @@ def test_current_class_counts_match_document() -> None:
     **这条会随任何新增文件变红**——而那是它的用途：
     逼人核对"新增的是同类还是新形态"，并同步文档的加总。
     """
-    files = sorted(RESULTS.glob("*.json"))
+    files = sorted(p for p in RESULTS.glob("*.json") if p.parent == RESULTS)
     counts: dict[str, int] = {}
     for p in files:
         k = classify(p)
@@ -173,7 +184,7 @@ def test_current_class_counts_match_document() -> None:
 
 def test_every_file_has_a_known_class() -> None:
     """48 个文件都必须能归入九类之一。"""
-    files = sorted(RESULTS.glob("*.json"))
+    files = sorted(p for p in RESULTS.glob("*.json") if p.parent == RESULTS)
     unknown = [p.name for p in files if classify(p) == "UNCLASSIFIED"]
     assert not unknown, f"这些文件无法归类：{sorted(unknown)}"
 

@@ -1596,6 +1596,16 @@ def test_product_code_matches_head() -> None:
 
     实测事故：变异脚本用 `write_text` 把三个产品文件写成 CRLF，
     内容与 HEAD 一致但字节不同，`git status` 显示 M，靠人工排查才还原。
+
+    **v3 apply 期间的豁免判据**：`src/` 本来就应该被改。
+    所以要区分两种情况：
+
+    | 情况 | `git diff HEAD` 有内容变化吗 | 判定 |
+    |---|---|---|
+    | 有意的代码改动（v3 实现） | 有 | **豁免**（这是 apply 的产物） |
+    | 纯字节污染（CRLF 等） | 没有（只有行尾差异） | **红**（这是事故） |
+
+    判据用 `git diff --numstat`：它统计**行级内容差异**，EOL 差异不计入。
     """
     import subprocess
 
@@ -1609,7 +1619,7 @@ def test_product_code_matches_head() -> None:
         "evals/run_retrieval.py",
     ]
 
-    diffs = []
+    byte_diffs = []
     for rel in watch:
         disk = subprocess.run(
             # `--no-filters` 必须加：否则 `hash-object` 会按 `.gitattributes`
@@ -1621,12 +1631,24 @@ def test_product_code_matches_head() -> None:
             ["git", "rev-parse", f"HEAD:{rel}"],
             cwd=ROOT, capture_output=True, text=True, encoding="utf-8",
         ).stdout.strip()
-        if disk != head:
-            diffs.append(rel)
+        if disk == head:
+            continue
 
-    assert not diffs, (
-        f"这些产品文件与 HEAD 的 blob 不同：{diffs}\n"
-        f"若只是行尾差异（CRLF），用 git cat-file -p 落盘还原。"
+        # 字节不同——判断是否有真实的内容改动
+        numstat = subprocess.run(
+            ["git", "diff", "--numstat", "HEAD", "--", rel],
+            cwd=ROOT, capture_output=True, text=True, encoding="utf-8",
+        ).stdout.strip()
+
+        # `--numstat` 有输出 = 有内容改动（新增/删除行） -> 豁免
+        if not numstat:
+            byte_diffs.append(rel)
+
+    assert not byte_diffs, (
+        f"这些产品文件与 HEAD 的 blob 不同，但 `git diff --numstat` 没有内容差异："
+        f"{byte_diffs}\n"
+        "这说明只有行尾/编码变化，不是有意的代码改动。"
+        "用 git cat-file -p 落盘还原。"
     )
 
 

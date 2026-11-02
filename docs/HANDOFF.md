@@ -15,11 +15,69 @@ v2 数据集   2 个 subject：project:ledger（12 记忆）、project:billing�
             由 test_unified_fingerprint 的显式清单强制——**只强制这 15 份**。
             另有 33 个文件不在该清单内，见下方"结果目录的实际状态"
 门禁        ledger 21/27、billing 24/27
+            **混合口径**：27 条里 21 条跑在当前装置上，**6 条读的是历史产物**
+            （L6b / L8 / L6c 读 `899e2b6-dirty` 的 `a3-*.json`；
+             F19b / F20 / F24 读 `47e4785-dirty` 的 `v2-*.json`）。
+            当前代码是 `0fbc3d2-dirty`——**没有一条 result-side 门禁读过当前装置的产物**。
+            这是"适用域"，不是"缺陷"；由 `test_result_side_gates.py` 锁定。
 结论        docs/reports/v2-what-it-measures.md（四条，每条带复算命令）
 冻结        tag dataset-v2-frozen（5a55620）= 数据最终版，带 5 处已登记缺陷
 协议        tag dataset-v2-protocol-r2（cb9c77f）= 当前有效
             旧 tag dataset-v2-protocol（e6a795a）保留，6 次修订见协议 §0.1
+
+v3 装置     **排序特征 = 3**（base / authority / status），condition 退出加权。
+            `FeatureScores` 仍是四字段——它记录观测事实，不是排序策略。
+            `RerankWeights` 只有三个权重；`PREREGISTERED_WEIGHTS` 四组，各组和为 1。
+v3 产物     `results/v3/`（独立子目录）。`results/*.json` 顶层**永远 48 个**。
+            分区清单：`.` / `v3` / `archive` / `features`（后者预留，尚不存在）。
+v3 轴判定   `ledger` = two_axes；`billing` = **single_axis**（不是 merged）。
 ```
+
+### v3 的轴判定与 F21a 约束（写在这里，因为它们决定数据怎么造）
+
+**轴的判据是"取值集合"，不是中位数、不是有序列表、不是标签集合**：
+
+```
+n_competitors(query) = 池中与 gold 同 relation 的候选数（不含 gold）
+policy = set(within) == set(cross) ? merged : two_axes
+         只有一轴有查询 -> single_axis；两轴都空 -> no_axis
+```
+
+| 判据 | 失效处 |
+|---|---|
+| 中位数 | 1（尾部不同但中位数相同） |
+| 有序列表（含长度） | 2（混入样本量） |
+| 标签集合（within/cross） | 2（`{1}` 与 `{7}` 都判 merged） |
+| **取值集合 `set`** | **0** |
+
+**实测（v2 数据，可复算）**：
+
+| subject | 派生 within 取值 | 派生 cross 取值 | policy |
+|---|---|---|---|
+| `ledger` | `{2,3}` | `{0}` | `two_axes` |
+| `billing` | `{2}` | **不存在**（0 条） | **`single_axis`** |
+
+**`billing` 那 3 条 C 标注是错的**：它们的 gold relation 在池中各有 2 个对手，
+池结构上是 `relation_within`。标注与派生不一致 **3/12**（`ledger` 是 0/12）。
+
+**`single_axis` 与 `merged` 必须分开**：两者报告轴数都是 1，
+但前者是"只有一轴存在"，后者是"两轴同构、合并后仍代表两轴"。
+用同一个值会让报告写出"两轴合并"，而事实是没有第二轴可合并。
+
+**F21a 约束下的数据形状**（这是造数据前必须知道的）：
+
+> `cross` 查询存在 <=> 该 subject 至少有一个"池中只有 gold 一条"的 relation。
+> 而 F21a 要求 relation 数 ∈ [2, 3]。
+> **所以有 cross 轴的 subject，形状必须是"1 个单值 relation + 1–2 个多分支"，
+> 总数 ≤ 3。**
+
+| 操作 | 结果 |
+|---|---|
+| `billing` 新增第 4 个单值 relation | relation 3 → 4 -> **F21a 由绿变红** |
+| `billing` 把 3 个多分支中的 1 个改成单值 | 仍是 3 个 -> F21a 保持绿，且产生 cross 轴 |
+
+**v3 走"允许 subject 无 cross 轴"（路 2）**，不为凑 cross 去改 F21a 的上界——
+F21a 正是在 v2 里抓到 `ledger` 5 个 relation 的那条门禁。
 
 ### 0.1 为什么结果指纹（`47e4785-dirty`）与 frozen tag（`5a55620`）不同
 
@@ -2552,7 +2610,7 @@ A 轴易满分是已知的，第三个只会重复它——那是流程价值，
 |---|---|
 | `docs/store.md` | 四个 SQLite 坑的实测复现 |
 | `docs/resolver.md` | 六类定义、规则顺序依据、CONFLICT 构造纪律 |
-| `docs/retrieval.md` | 三路召回、RRF、四特征、指标定义 |
+| `docs/retrieval.md` | 三路召回、RRF、三特征、指标定义 |
 | `docs/embedding.md` / `docs/llm-gateway.md` | 环境陷阱 |
 | `AGENTS.md` | 7 个环境坑（每次会话都会读） |
 

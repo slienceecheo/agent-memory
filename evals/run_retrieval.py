@@ -49,6 +49,7 @@ from memory.retrieval.rerank import (
     PREREGISTERED_WEIGHTS,
     FeatureScores,
     Ranked,
+    RerankWeights,
     authority_score,
     rerank,
     rrf_norm,
@@ -336,6 +337,190 @@ def select_pool_distractors(
     ][:limit]
 
 
+def count_competitors(*, pool, gold) -> int:
+    """池中与 gold 同 `relation` 的候选数（**不含 gold 自己**）。
+
+    **这是 `axis` 与 `n_competitors` 的单一实现**：`derive_axis` 只判断
+    `> 0`，`evaluate_case` 既要数也要标签——两处都调这里，
+    避免"结果文件里的 `n_competitors`"与"派生 axis 用的计数"是两份代码。
+    """
+    def _mid(m: object) -> object:
+        if isinstance(m, dict):
+            return m.get("memory_id")
+        return getattr(m, "memory_id", None)
+
+    def _rel(m: object) -> object:
+        if isinstance(m, dict):
+            return m.get("relation")
+        return getattr(m, "relation", None)
+
+    gold_id = _mid(gold)
+    gold_rel = _rel(gold)
+
+    # **无法识别 gold 时必须报错，不能静默退化。**
+    # 实测：所有候选都没有 `memory_id` 时，`mid == gold_id` 恒真（None == None），
+    # 每个候选都被当成 gold 跳过，`within` 恒返回 `cross`——一个 0 竞争者的假象。
+    if gold_id is None:
+        raise ValueError(
+            "无法从 gold 取到 memory_id，不能派生轴。"
+            "若用 dict，必须提供 memory_id 键；否则所有候选都会被误判为 gold。"
+        )
+
+    n = 0
+    for m in pool:
+        if _mid(m) == gold_id:
+            continue
+        if _rel(m) == gold_rel:
+            n += 1
+    return n
+
+
+def derive_axis(*, pool, gold) -> str:
+    """由池结构派生轴（design D2）。
+
+    `n_competitors` = 池中与 gold 同 `relation` 的候选数（**不含 gold 自己**）。
+
+    - `n_competitors > 0` -> `relation_within`
+    - 否则               -> `relation_cross`
+
+    **为什么要派生而不是读数据集的 `axis` 字段**：
+    v2 的 `axis` 是人工标注，与池的实际结构脱钩。
+    实测 `billing` 的 3 条 C 标注查询在池结构上都是 `relation_within`
+    （gold relation 各有 3 分支 -> 每条都有 2 个同 relation 对手），
+    即标注与派生不一致 **3/12**；`ledger` 则是 0/12。
+    而 `billing` 的 A 与 C 两轴 `n_competitors` 取值集合都是 `{2}`，
+    在去掉 condition 加权后完全同构——标注字段看不出这一点。
+    """
+    n = count_competitors(pool=pool, gold=gold)
+    return "relation_within" if n > 0 else "relation_cross"
+
+
+def derive_axis_policy(cases: dict[str, list[int]]) -> str:
+    """按 subject 判定两轴的关系（design D2）。
+
+    参数 `cases` 形如 `{"A": [2, 2, 2], "C": [0, 0]}`，值是逐条查询的
+    `n_competitors`。
+
+    返回三个值之一：
+
+    | 情形 | 返回 | 报告处置 |
+    |---|---|---|
+    | 两轴都有查询，`set(A) == set(C)` | `merged` | 只报一个轴的分数 |
+    | 两轴都有查询，`set(A) != set(C)` | `two_axes` | 两轴分别报 |
+    | **只有一轴有查询** | `single_axis` | 报该轴；说明另一轴不存在 |
+    | **两轴都没有查询** | `no_axis` | 不报轴分数，并说明不可判定 |
+
+    **为什么 `single_axis` 与 `merged` 必须分开**：两者的报告轴数都是 1，
+    数字上看不出差别。但 `merged` 是"两轴同构，合并后仍代表两轴"，
+    `single_axis` 是"只有一轴存在"。用同一个值会让报告写出
+    "两轴合并"而实际只有一轴——**同"数字相同所以看不出错"的形态。**
+
+    实测这一情形**必然出现**：proposal 的路 2 允许 subject 没有 cross 轴，
+    而 `billing` 三个 relation 全多分支，永远产生不了 cross 查询。
+
+    **判据用取值集合，不用中位数 / 有序列表 / 标签集合**：
+
+    | 判据 | 问题 |
+    |---|---|
+    | 中位数 | 漏掉尾部：`[1,1,1,1,9]` 与 `[1,1,1,1,1]` 中位数都是 1 |
+    | 有序列表 | **混入样本量**：`[2]*9 != [2]*3`，那只是查询条数不同 |
+    | 标签集合 | 太粗：`{1}` 与 `{7}` 都是 within，但难度不同 |
+    | **取值集合** | ✅ 忽略样本量，保留结构差异与尾部 |
+
+    实测：`billing` 的 `set(A) == set(C) == {2}` -> `merged`；
+    `ledger` 的 `{2,3}` vs `{0}` -> `two_axes`。
+    """
+    a = set(cases.get("A") or [])
+    c = set(cases.get("C") or [])
+    if not a and not c:
+        return "no_axis"
+    if not a or not c:
+        return "single_axis"
+    return "merged" if a == c else "two_axes"
+
+
+def axis_policy_from_per_case(
+    per_case: list[dict[str, object]],
+) -> tuple[str, dict[str, dict[str, object]]]:
+    """由 `per_case` 的**派生轴**汇总 subject 级 policy 与证据。
+
+    返回 `(policy, evidence)`，`evidence` 形如：
+
+    ```python
+    {
+        "relation_within": {"n": 10, "values": [2, 3]},
+        "relation_cross":  {"n": 2,  "values": [0]},
+    }
+    ```
+
+    **必须按派生轴分组，不能按数据集标注分组**：`billing` 的 3 条 C 标注
+    在池结构上都是 `within`。按标注分组会得 `merged`（A={2}、C={2}），
+    而正确答案是 `single_axis`（没有 cross 查询）。两者报告轴数都是 1，
+    **数字上看不出差别，语义相反。**
+
+    `values` 是**去重后排序**的取值集合——样本量不进证据，
+    因为判定不看样本量（见 `derive_axis_policy`）。
+    """
+    grouped: dict[str, list[int]] = {"relation_within": [], "relation_cross": []}
+    for case in per_case:
+        if not case.get("has_gold") or case.get("skipped"):
+            continue
+        axis = str(case.get("axis"))
+        if axis not in grouped:
+            continue
+        grouped[axis].append(int(case["n_competitors"]))  # type: ignore[arg-type]
+
+    evidence: dict[str, dict[str, object]] = {
+        axis: {"n": len(values), "values": sorted(set(values))}
+        for axis, values in grouped.items()
+    }
+
+    # **显式映射到 `derive_axis_policy` 的键名**，不能依赖"名字碰巧对上"。
+    # 若直接把 `{"relation_within": [...], "relation_cross": []}` 传进去，
+    # `cases.get("A")` 恒为 None -> 两轴都空 -> `no_axis`。
+    # 这是个**静默错误**：policy 仍是一个合法值，只是与数据无关。
+    policy = derive_axis_policy(
+        {
+            "A": grouped["relation_within"],
+            "C": grouped["relation_cross"],
+        }
+    )
+    return policy, evidence
+
+
+def recompute_order(
+    candidates,
+    *,
+    weights: RerankWeights,
+    fusion_tags: list[str] | None,
+) -> list[str]:
+    """按 `evaluate_case` 的两步裁决复算名次（离线，不碰 store、不调模型）。
+
+    **两步缺一不可**：
+
+    1. `rerank(candidates, weights)`：按三项加权得分排
+    2. 按 `fusion_tags` 的位置破并列
+
+    **第 2 步不是可选的**：`rerank` 内部的并列判据是 `item_id`，
+    而这里的 `item_id` 是 tag。tag 字典序会让 `d-<case>-0` 恒排在
+    `gold-<case>` 之前（`"d" < "g"`），于是每个并列都以 gold 输给干扰项告终——
+    一个固定偏向，看起来却像"排序结果"。
+
+    `fusion_tags=None` 时退回第 1 步的结果（tag 字典序）。
+    **那个返回值是错的**，保留它只是为了能演示"缺输入会静默给出另一个名次"。
+    """
+    ranked = rerank(candidates, weights=weights)
+    if fusion_tags is None:
+        return [r.item_id for r in ranked]
+
+    position = {tag: i for i, tag in enumerate(fusion_tags)}
+    ordered = sorted(
+        ranked,
+        key=lambda r: (-r.score, position.get(r.item_id, len(fusion_tags))),
+    )
+    return [r.item_id for r in ordered]
+
+
 def evaluate_case(
     row: dict[str, object],
     *,
@@ -561,19 +746,34 @@ def evaluate_case(
                 fused_after_dedup = fused_order
 
             candidates = []
+            features_by_tag: dict[str, dict[str, float]] = {}
+            condition_by_tag: dict[str, float] = {}
             for tag in fused_after_dedup:
                 item = store.get(id_by_tag[tag])
+                cond = condition_match(
+                    str(query_condition) if query_condition else None,
+                    item.condition,
+                )
+                base = rrf_norm(score_by_id[tag], max_score=max_score)
+                authority = authority_score(item.authority)
+                status = status_score(item.status)
+                # 记整池（融合后、去重后的全部候选）的三项特征。
+                # **必须记整池**：只记 gold 的分，无法复算"gold 排第几"——
+                # 名次是相对于其他候选的，缺别人的分就无从比较。
+                features_by_tag[tag] = {
+                    "base": base,
+                    "authority": authority,
+                    "status": status,
+                }
+                condition_by_tag[tag] = cond
                 candidates.append(
                     _RerankCandidate(
                         item_id=tag,
                         features=FeatureScores(
-                            base=rrf_norm(score_by_id[tag], max_score=max_score),
-                            condition=condition_match(
-                                str(query_condition) if query_condition else None,
-                                item.condition,
-                            ),
-                            authority=authority_score(item.authority),
-                            status=status_score(item.status),
+                            base=base,
+                            condition=cond,
+                            authority=authority,
+                            status=status,
                         ),
                     )
                 )
@@ -640,10 +840,50 @@ def evaluate_case(
         k=k,
     )
 
+    # 轴的定义量：池中与 gold 同 relation 的候选数（不含 gold）。
+    #
+    # **必须进结果文件，不能只是中间变量**：`pool_tag_meta` + `rerank_order_tags`
+    # 能算"竞争集内名次"，但算不出"每条查询面对几个同 relation 对手"。
+    # 缺它则报告只能给"两轴同构/不同构"的结论，不能复算。
+    #
+    # 复用 `count_competitors`（与 `derive_axis` 同一实现），
+    # 避免"结果里的 n"与"派生 axis 用的 n"是两份代码。
+    n_competitors = count_competitors(
+        pool=(
+            {"memory_id": entry.id, "relation": str(entry.relation)}
+            for entry in pool.items
+        ),
+        gold={
+            "memory_id": gold_tag,
+            "relation": str(gold_spec["relation"]),
+        },
+    )
+
     return {
         "case_id": row["id"],
         "has_gold": True,
         "pool_size": len(pool.items),
+        "n_competitors": n_competitors,
+        # 逐条派生轴（二元，用于报告分类）；subject 级合并由 `derive_axis_policy` 决定。
+        "axis": "relation_within" if n_competitors > 0 else "relation_cross",
+        # 排序用的三项特征（**只含参与加权的三项**）。
+        # `condition` 不在这里——它不参与排序，见下方 condition_score。
+        #
+        # **gold 未被召回时是 `None`，不是 `{}`**：
+        # `{}` 是一个"存在但没有键"的对象，与"不存在"无法区分；
+        # 而 `features=None` 与 `features_by_tag` 里没有 gold tag 是**同一事实的两种表达**，
+        # 两者必须同时成立（`test_unretrieved_gold_is_declared_by_both_sides`）。
+        "features": features_by_tag.get(gold_tag),
+        # 整池每条候选的三项特征。**必须整池**：只记 gold 的分无法复算名次。
+        "features_by_tag": features_by_tag,
+        # 查询侧无条件 -> `None`（null）；有条件但不匹配 -> `0.0`。
+        #
+        # **两者不可合并成 0.0**：`null` 是"这个量不存在"，
+        # `0.0` 是"量存在且为零"。合并后无法回答
+        # "条件为什么没起作用"——是查询没带条件，还是带了但没匹配上。
+        "condition_score": (
+            condition_by_tag.get(gold_tag) if query_condition else None
+        ),
         "rank_after_fusion": rank_fusion,
         "rank_after_rerank": rank_rerank,
         # 以下两项用**稳定 tag**，不是 uuid4：A5 要做跨运行逐位比较，
@@ -745,6 +985,9 @@ def evaluate(
     seh_values = [bool(item["seh"]) for item in scored]
     srs_values = [float(item["srs"]) for item in scored]
 
+    # subject 级轴判定：**按派生轴分组**，不按数据集标注（见函数 docstring）。
+    axis_policy, axis_policy_evidence = axis_policy_from_per_case(per_case)
+
     # 路径返回值按整批汇总：启用但没接上的记 None，跑了的记总条数。
     path_totals: dict[str, int | None] = {}
     for name in ALL_PATHS:
@@ -768,6 +1011,10 @@ def evaluate(
         "with_gold": len(scored),
         "without_gold": len(per_case) - len([i for i in per_case if i["has_gold"]]),
         "skipped_small_pool": len(skipped),
+        # subject 级轴判定。报告必须逐 subject 报这个值；
+        # `merged` 只报一个轴的分数，`single_axis` 要说明另一轴不存在。
+        "axis_policy": axis_policy,
+        "axis_policy_evidence": axis_policy_evidence,
         "paths_enabled": list(paths),
         # 只有"启用了但代码里还没有调用点"才算未接线。
         # 未启用的路径是"没开"，不是"没接上"——两者诊断方向不同。
@@ -787,6 +1034,61 @@ def evaluate(
         ),
         "per_case": per_case,
     }
+
+
+def assert_result_is_complete(result: dict[str, object]) -> None:
+    """**写结果前**检查每条 case 的特征字段齐全；不齐则抛错、不写出。
+
+    spec 承诺"缺字段时拒绝写结果"。没有这道检查时，某个诊断脚本或新分支
+    构造 `per_case` 漏了 `features`，结果文件照样写出、所有形状检查照样绿——
+    **缺的字段没人要，因为没人读它**。
+
+    三种缺失各自报错，不合并成一条：
+
+    | 缺失 | 为什么单独报 |
+    |---|---|
+    | 没有 `features` 键 | 构造时整个漏了 |
+    | `features` 少一个子键 | 抄了一个不完整的三元组 |
+    | 没有 `condition_score` 键 | 与"值为 null"不同——前者是漏，后者是事实 |
+
+    `features` 为 `None` 是**合法**的（gold 未召回），不在此处报错；
+    它与 `features_by_tag` 的一致性由测试约束。
+    """
+    cases = result.get("per_case")
+    if not isinstance(cases, list):
+        return
+
+    required = ("base", "authority", "status")
+    for case in cases:
+        if not isinstance(case, dict):
+            continue
+        if not case.get("has_gold") or case.get("skipped"):
+            continue
+        case_id = case.get("case_id")
+
+        if "features" not in case:
+            raise ValueError(
+                f"{case_id}: 缺 features 键。结果不得在缺字段的情况下写出——"
+                "缺的字段没有读者，也就永远不会被发现。"
+            )
+
+        features = case["features"]
+        if features is not None:
+            if not isinstance(features, dict):
+                raise ValueError(f"{case_id}: features 不是 dict")
+            missing = [k for k in required if k not in features]
+            if missing:
+                raise ValueError(
+                    f"{case_id}: features 缺 {missing}。"
+                    "三项排序特征必须齐全，否则复算名次会静默少一项。"
+                )
+
+        if "condition_score" not in case:
+            raise ValueError(
+                f"{case_id}: 缺 condition_score 键。"
+                "查询侧无条件时该字段应为 null，但字段本身必须存在——"
+                "'没有这个键'与'值为 null'不是同一件事。"
+            )
 
 
 def _assert_writable(out: Path, result: dict[str, object], *, overwrite: bool) -> None:
@@ -983,6 +1285,7 @@ def main(argv: list[str] | None = None) -> int:
         OUT_DIR / f"retrieval-{args.split}-{args.weights}{suffix}{paths_tag}.json"
     )
     _assert_writable(out, result, overwrite=args.overwrite)
+    assert_result_is_complete(result)
     previous = _previous_provenance(out)
     run_count = _bump_run_count(out)
     result["run_count"] = run_count

@@ -109,10 +109,18 @@ def test_condition_ablation_is_deterministic(sample_rows) -> None:  # type: igno
 
 
 def test_ablation_drop_is_stable_at_060(sample_rows) -> None:  # type: ignore[no-untyped-def]
-    """修好确定性之后，掉幅稳定在 0.6000。
+    """**v2 历史事实：条件消融掉幅稳定在 0.600。v3 之后该掉幅必须为 0。**
 
-    **这条不只是记录数字**：0.60 是 F20 的依据（阈值 0.3 是它的一半）。
-    若它其实在 0.50 与 0.60 之间随机，那"0.60 的一半"这个说法就没有基础。
+    v2：`condition` 参与加权，所以抹掉条件会让 10 条 A 轴查询里 6 条掉出第 1。
+    而 0.60 是 F20 阈值的依据（0.3 = 它的一半）。
+
+    **v3：`condition` 退出加权，消融不改变任何得分——掉幅必须是 0。**
+    这不是"缺陷被修了"，是**这个消融实验在 v3 不再有对象**。
+
+    所以本条断言两件事：
+
+    1. 消融前后名次**完全相同**（drop == 0）
+    2. 若有人把 `condition` 权重加回去，drop 会变正——那时本条会红
     """
     with_cond = _run_once(sample_rows)
     without_cond = _run_once(_ablate(sample_rows))
@@ -121,35 +129,74 @@ def test_ablation_drop_is_stable_at_060(sample_rows) -> None:  # type: ignore[no
         qid for qid in with_cond if qid.startswith("ledger-q") and qid not in
         ("ledger-q11", "ledger-q12")
     ]
+    assert len(a_ids) == 10
+
     hit_with = sum(1 for qid in a_ids if with_cond[qid] == 1)
     hit_without = sum(1 for qid in a_ids if without_cond[qid] == 1)
     drop = (hit_with - hit_without) / len(a_ids)
 
-    assert len(a_ids) == 10
-    assert hit_with == 9, f"有 condition 时命中 {hit_with}/10"
-    assert hit_without == 3, f"消融后命中 {hit_without}/10"
-    assert drop == pytest.approx(0.6, abs=1e-6)
+    # v3：condition 不参与加权，消融无影响
+    assert drop == pytest.approx(0.0, abs=1e-9), (
+        f"消融掉幅 {drop} 不为 0——说明 condition 又参与了加权（v3 的 BREAKING 被回退）。"
+        f" v2 的历史值是 0.600，见 HANDOFF §0.9。"
+    )
+    assert hit_with == hit_without, (
+        f"有/无 condition 命中数不同：{hit_with} vs {hit_without}"
+    )
 
 
 def test_result_file_records_the_same_ranks_as_a_fresh_run(sample_rows) -> None:  # type: ignore[no-untyped-def]
-    """入库的结果文件必须与现在重跑一致。
+    """**跨装置不可比**：v2 的存档结果与 v3 重跑必然不同。
 
-    否则报告里的数字与代码不再对应——而那是"装置没接上"的一种形态。
+    这条测试原来的判据是"入库结果必须与现在重跑一致"，
+    它防的是"代码与结果脱节"。
+
+    **但 v3 改了排序装置（4 特征 → 3 特征），所以 v2 的存档在原理上不可能被复现。**
+    这不是脱节，是版本边界。
+
+    替换判据：**只对同装置的结果做比对**。
+    - v2 存档（`weights` 含 `condition`）-> 与 v3 重跑不可比，断言"确实不同"
+    - v3 新产物（`weights` 无 `condition`）-> 与重跑可比，断言"相同"
+
+    这样"脱节"仍然会被抓到：一旦 v3 产物与重跑不符，第二条断言就红。
     """
     path = ROOT / "results" / "v2-sample-threeway.json"
     if not path.exists():
         pytest.skip("结果文件缺失")
 
     stored = json.loads(path.read_text(encoding="utf-8"))
+    stored_weights = stored.get("weights") or stored.get("weights_name")
     stored_ranks = {
         c["case_id"]: c["rank_after_rerank"] for c in stored["per_case"]
     }
     fresh = _run_once(sample_rows)
 
-    assert stored_ranks == fresh, (
-        "结果文件与重跑不一致："
-        f"{ {k: (v, fresh.get(k)) for k, v in stored_ranks.items() if v != fresh.get(k)} }"
-    )
+    # 判断存档是哪个装置产生的
+    is_v2_apparatus = (
+        isinstance(stored_weights, dict) and "condition" in stored_weights
+    ) or stored_weights == "uniform"
+
+    if is_v2_apparatus:
+        # v2 存档：与 v3 重跑必然不同——这正是 BREAKING 的证据
+        different = {
+            k: (stored_ranks[k], fresh.get(k))
+            for k in stored_ranks
+            if stored_ranks[k] != fresh.get(k)
+        }
+        assert different, (
+            "v2 存档与 v3 重跑竟然完全一致——"
+            "说明 condition 仍参与加权（v3 的 BREAKING 未生效）"
+        )
+        # 而差异必须覆盖关键 case（q4 是 condition 起决定作用的那条）
+        assert "ledger-q4" in different, (
+            "q4 的名次没变——condition 退出加权后它应当掉出前列"
+        )
+    else:
+        # v3 产物：必须与重跑一致
+        assert stored_ranks == fresh, (
+            "v3 结果文件与重跑不一致（装置脱节）："
+            f"{ {k: (v, fresh.get(k)) for k, v in stored_ranks.items() if v != fresh.get(k)} }"
+        )
 
 
 def test_tiebreak_uses_fusion_order_not_tag_alphabet() -> None:

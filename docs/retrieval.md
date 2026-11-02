@@ -23,23 +23,34 @@ RRF 只用排名，跨数据集稳定。
 **边界**：多路命中不一定总赢——当一路列表很长时，它在尾部的贡献很小，
 可能输给另一路头部。条件是列表长度 < k+2。
 
-## 四特征重排
+## 三特征重排
 
 ```
-final = w_base·base + w_cond·condition + w_auth·authority + w_status·status
+final = w_base·base + w_auth·authority + w_status·status
 ```
 
 | 特征 | 计算 | 值域 |
 |---|---|---|
 | `base` | RRF 分数 / 最大分数 | [0,1] |
-| `condition` | 槽位集合 Jaccard；一方缺失取 0.5 | [0,1] |
 | `authority` | third_party 0.0 → user_direct 1.0 | [0,1] |
 | `status` | ACTIVE 1.0 > CONFLICTED 0.5 > SUPERSEDED 0.2 > RETRACTED 0.0 | [0,1] |
 
 **每个特征必须落在 [0,1]，越界即报错。** 未限定值域时，`recorded_at` 这类
 大数会压过任何 [0,1] 的权重，权重搜索失去意义。
 
-**全部特征关闭时**退化为 `base` 排序，且不触发权重校验（走独立分支）。
+**`condition` 不再参与加权**（v3 的 BREAKING 变更）。
+`FeatureScores` 仍保留该字段作为**审计值**——它记录"候选与查询条件匹配到什么程度"，
+但 `RerankWeights` 没有对应权重，`rerank()` 也不加它。
+
+为什么退出：v2 的消融实测显示，去掉 condition 后 A 轴 `SEH@1` 从 0.900 掉到 0.300。
+**但那 0.600 的"贡献"混着"查询侧能不能拿到条件"这个上游问题**，
+不是排序能力差异。把权重留着，等于让一个测不准的量继续影响排序。
+
+**权重之和必须为 1**（容差 1e-6），`RerankWeights(0, 0, 0)` 会被拒绝——
+所以不存在"三个特征全部关闭"这个状态。
+
+**只开 `base` 时**退化为融合分排序（`disabled_weights()` 返回 `base=1, authority=0, status=0`）。
+注意它的语义是"只开融合分"，不是"全关"。
 
 ### 被删掉的两个特征
 

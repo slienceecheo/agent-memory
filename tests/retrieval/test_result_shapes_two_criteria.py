@@ -119,7 +119,7 @@ def test_both_criteria_agree_on_every_file() -> None:
     这是本文件的核心断言。它们不一致时，说明分类依赖于判据写法，
     而不是文件本身的性质。
     """
-    files = sorted(RESULTS.glob("*.json"))
+    files = sorted(p for p in RESULTS.glob("*.json") if p.parent == RESULTS)
     assert len(files) == 48, f"文件数变成 {len(files)}"
 
     disagreements = [
@@ -136,7 +136,7 @@ def test_both_criteria_agree_on_every_file() -> None:
 
 def test_both_criteria_sum_to_48() -> None:
     """两套判据的加总都必须等于文件数。"""
-    files = sorted(RESULTS.glob("*.json"))
+    files = sorted(p for p in RESULTS.glob("*.json") if p.parent == RESULTS)
 
     for name, fn in (("A", classify_a), ("B", classify_b)):
         counts: dict[str, int] = {}
@@ -188,7 +188,7 @@ def test_criteria_never_diverge_on_real_files() -> None:
     **真正独立于"分类逻辑"的验证只有一种**：拿一个第三方（人或另一个模型）
     不看本文档、自己数一遍。而那不是测试能做的。
     """
-    files = sorted(RESULTS.glob("*.json"))
+    files = sorted(p for p in RESULTS.glob("*.json") if p.parent == RESULTS)
     diverged = [p.name for p in files if classify_a(p) != classify_b(p)]
 
     assert not diverged, (

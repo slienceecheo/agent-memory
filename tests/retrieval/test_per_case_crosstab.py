@@ -32,7 +32,7 @@ def crosstab() -> dict[tuple[str, str, int], dict]:
         lambda: {"records": 0, "files": set()}
     )
 
-    for p in sorted(RESULTS.glob("*.json")):
+    for p in sorted(p for p in RESULTS.glob("*.json") if p.parent == RESULTS):
         try:
             d = json.loads(p.read_text(encoding="utf-8"))
         except json.JSONDecodeError:
@@ -194,7 +194,7 @@ def test_backbone_is_subset_chain() -> None:
     keysets: dict[int, set[str]] = {}
 
     # 取每个"主干"键数的实际键集合（用一条记录还原）
-    for p in sorted(RESULTS.glob("*.json")):
+    for p in sorted(p for p in RESULTS.glob("*.json") if p.parent == RESULTS):
         try:
             d = json.loads(p.read_text(encoding="utf-8"))
         except json.JSONDecodeError:
@@ -216,7 +216,7 @@ def test_backbone_is_subset_chain() -> None:
 
     # 旁支：8 ⊂ 10
     ten = None
-    for p in sorted(RESULTS.glob("*.json")):
+    for p in sorted(p for p in RESULTS.glob("*.json") if p.parent == RESULTS):
         try:
             d = json.loads(p.read_text(encoding="utf-8"))
         except json.JSONDecodeError:
@@ -266,7 +266,7 @@ def test_handoff_records_the_overturned_claims() -> None:
 def _per_file_kind() -> dict[str, str]:
     """每个有 per_case 的文件 -> full_fp / version_only / none。"""
     out: dict[str, str] = {}
-    for p in sorted(RESULTS.glob("*.json")):
+    for p in sorted(p for p in RESULTS.glob("*.json") if p.parent == RESULTS):
         try:
             d = json.loads(p.read_text(encoding="utf-8"))
         except json.JSONDecodeError:
@@ -325,7 +325,7 @@ def test_key_count_is_a_function_of_version_and_branch() -> None:
     kinds = _per_file_kind()
     table: dict[tuple[str, str], set[int]] = defaultdict(set)
 
-    for p in sorted(RESULTS.glob("*.json")):
+    for p in sorted(p for p in RESULTS.glob("*.json") if p.parent == RESULTS):
         if kinds.get(p.name) not in ("full_fp", "version_only"):
             continue
         d = json.loads(p.read_text(encoding="utf-8"))
@@ -356,7 +356,7 @@ def test_equation_covers_six_combinations() -> None:
     kinds = _per_file_kind()
     combos: set[tuple[str, str]] = set()
 
-    for p in sorted(RESULTS.glob("*.json")):
+    for p in sorted(p for p in RESULTS.glob("*.json") if p.parent == RESULTS):
         if kinds.get(p.name) not in ("full_fp", "version_only"):
             continue
         d = json.loads(p.read_text(encoding="utf-8"))
@@ -390,7 +390,7 @@ def test_skipped_is_attributable_even_without_fingerprint() -> None:
     kinds = _per_file_kind()
     by_branch: dict[str, dict[int, int]] = defaultdict(lambda: defaultdict(int))
 
-    for p in sorted(RESULTS.glob("*.json")):
+    for p in sorted(p for p in RESULTS.glob("*.json") if p.parent == RESULTS):
         if kinds.get(p.name) != "none":
             continue
         d = json.loads(p.read_text(encoding="utf-8"))

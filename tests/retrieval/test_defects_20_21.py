@@ -92,30 +92,53 @@ def test_condition_match_degenerates_to_string_equality(
 
 @pytest.mark.locked_defect
 def test_authority_penalty_equals_condition_bonus() -> None:
-    """缺陷 21：`third_party` 的罚分恰好等于 condition 的全部加成。
+    """缺陷 21 的**前提在 v3 已消失**，但观察保留。
 
-    两者都是 `w × 1.00`（特征差），但**用的不是同一个权重字段**：
+    v2 的等式是：
 
         penalty = w.authority  × (1.0 − _AUTHORITY_SCORE[THIRD_PARTY])
         bonus   = w.condition  × 1.0
 
-    在 `uniform` 下（各 0.25）它们相等，所以一条 `third_party` 的 gold
+    两式在 `uniform`（各 0.25）下相等，所以一条 `third_party` 的 gold
     会失去全部条件优势，胜负完全由 base 决定。
 
-    **`w` 必须从 `PREREGISTERED_WEIGHTS` 读，不能抄 0.25。**
-    抄常量会让"改产品权重"不触发这条测试——实测把 `uniform` 改成
-    base 0.24 / condition 0.26 时，抄常量的版本仍然全绿。
+    **v3 之后 `condition` 没有权重，"加成"这个概念不存在**——
+    所以原等式**不能成立也不该成立**。这不是"修好了缺陷 21"，
+    是"这个比较本身失去了对象"。
 
-    **修复后这条会红**：修法是调权重，或要求降级必须有场景依据（缺陷 18 的判据）。
+    **保留下来的观察**：`third_party` 的 authority 罚分是否还会
+    压倒 base 优势。若会，那缺陷 19 的机制在 v3 仍在（事实如此，见
+    `test_q4_loses_to_unrelated_entries_on_authority`）。
+
+    **`w` 必须从 `PREREGISTERED_WEIGHTS` 读，不能抄常量。**
     """
-    from memory.retrieval.rerank import PREREGISTERED_WEIGHTS
+    from memory.retrieval.rerank import PREREGISTERED_WEIGHTS, FeatureScores, rerank
 
     w = PREREGISTERED_WEIGHTS["uniform"]
-    penalty = (1.0 - _AUTHORITY_SCORE[Authority.THIRD_PARTY]) * w.authority
-    bonus = 1.0 * w.condition
 
-    assert penalty == pytest.approx(bonus), (
-        f"罚分 {penalty} 不等于加成 {bonus}——缺陷 21 可能已修复"
+    # condition 不再是权重字段——这正是本条要锁的事实
+    assert not hasattr(w, "condition"), (
+        "`RerankWeights` 又有 condition 字段了——v3 的 BREAKING 被回退"
+    )
+
+    # 原等式无定义：把 condition 从 0 改到 1，得分不变
+    class _C:
+        def __init__(self, f: FeatureScores) -> None:
+            self.item_id = "x"
+            self.features = f
+
+    lo = FeatureScores(base=0.5, condition=0.0, authority=1.0, status=1.0)
+    hi = FeatureScores(base=0.5, condition=1.0, authority=1.0, status=1.0)
+    assert rerank([_C(lo)], weights=w)[0].score == pytest.approx(
+        rerank([_C(hi)], weights=w)[0].score
+    ), "condition 又影响了得分"
+
+    # 保留观察：third_party 罚分仍压倒 base 优势
+    penalty = (1.0 - _AUTHORITY_SCORE[Authority.THIRD_PARTY]) * w.authority
+    base_advantage = w.base * (1.0 - 0.910)
+    assert penalty > base_advantage, (
+        f"罚分 {penalty} 不再压倒 base 优势 {base_advantage}——"
+        "缺陷 19 的机制可能已变，需重估"
     )
 
 

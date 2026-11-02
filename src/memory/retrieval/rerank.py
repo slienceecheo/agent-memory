@@ -1,15 +1,22 @@
-"""四特征重排。
+"""三特征重排。
 
-`final = w_base·base + w_cond·condition + w_auth·authority + w_status·status`
+`final = w_base·base + w_auth·authority + w_status·status`
 
-四个特征的定义与值域（**每个都必须落在 [0,1]**，越界即报错）：
+三个特征的定义与值域（**每个都必须落在 [0,1]**，越界即报错）：
 
 | 特征 | 含义 | 为什么有方差 |
 |---|---|---|
 | `base` | RRF 分数按最大值归一 | 融合分数天然不同 |
-| `condition` | 查询条件与候选条件的槽位匹配度 | 30/90 条有条件，其余中性 0.5 |
 | `authority` | 来源权威归一 | 独立集里 9 条 third_party、2 条 system_inferred |
 | `status` | ACTIVE > CONFLICTED > SUPERSEDED | 冲突候选进池时有差异 |
+
+**`condition` 是审计字段，不参与加权。**
+`FeatureScores` 仍保留 `condition` 字段（**结构即事实**：它记录了"这条候选与查询条件
+匹配到什么程度"），但 `RerankWeights` 没有对应权重，`rerank()` 也不加它。
+
+为什么退出加权：v2 的消融实测显示，去掉 condition 后 A 轴 `SEH@1` 从 0.900 掉到 0.300
+——**那个 0.600 的"贡献"里混着"查询侧能不能拿到条件"这个上游问题**，
+而不是排序本身的能力差异。把权重留着等于让一个测不准的量继续影响排序。
 
 **已删除的两个特征**（审查实测它们在 ACTIVE-only 上恒为常数）：
 
@@ -35,41 +42,41 @@ _UNIT_TOLERANCE = 1e-6
 @dataclass(frozen=True, slots=True)
 class RerankWeights:
     base: float
-    condition: float
     authority: float
     status: float
 
     def __post_init__(self) -> None:
-        values = (self.base, self.condition, self.authority, self.status)
+        values = (self.base, self.authority, self.status)
         if any(value < 0.0 for value in values):
             raise ValueError(f"权重不能为负：{values}")
         total = sum(values)
         if abs(total - 1.0) > _UNIT_TOLERANCE:
             raise ValueError(
-                f"权重之和必须为 1，当前为 {total:.6f}。"
+                f"权重之和必须为 1（当前为 {total:.6f}）。"
                 "和为 1 才能让'全关'与'全开'的分数可比。"
             )
 
     def total(self) -> float:
-        return self.base + self.condition + self.authority + self.status
+        return self.base + self.authority + self.status
 
 
 def disabled_weights() -> RerankWeights:
-    """全特征关闭：只剩基础项。
+    """关闭除融合分外的全部特征。
 
-    走独立分支而不是 `RerankWeights(1,0,0,0)`，
-    因为后者会让人误以为"只开 base"是特殊情况，
-    而实际上它是消融的一个端点。
+    极端权重在构造函数里合法（`RerankWeights(1,0,0)`），
+    因为消融实验需要"只有 base"这类情形。
     """
-    return RerankWeights(base=1.0, condition=0.0, authority=0.0, status=0.0)
+    return RerankWeights(base=1.0, authority=0.0, status=0.0)
 
 
 PREREGISTERED_WEIGHTS: dict[str, RerankWeights] = {
-    "uniform": RerankWeights(base=0.25, condition=0.25, authority=0.25, status=0.25),
-    "base_heavy": RerankWeights(base=0.7, condition=0.1, authority=0.1, status=0.1),
-    "cond_heavy": RerankWeights(base=0.2, condition=0.6, authority=0.1, status=0.1),
-    "auth_heavy": RerankWeights(base=0.2, condition=0.1, authority=0.6, status=0.1),
-    "status_only": RerankWeights(base=0.2, condition=0.1, authority=0.1, status=0.6),
+    # condition 退出排序后，原先的 cond_heavy 无意义，已移除。
+    # uniform 从「四特征各 0.25」重算为「三特征 0.4/0.3/0.3」，
+    # 保持 base 相对最高（融合分是主信号）。
+    "uniform": RerankWeights(base=0.4, authority=0.3, status=0.3),
+    "base_heavy": RerankWeights(base=0.8, authority=0.1, status=0.1),
+    "auth_heavy": RerankWeights(base=0.2, authority=0.7, status=0.1),
+    "status_only": RerankWeights(base=0.2, authority=0.1, status=0.7),
 }
 
 
@@ -170,9 +177,9 @@ def rerank(
     for candidate in candidates:
         features = candidate.features
         _validate(features)
+        # condition 不参与加权：它是审计字段，不是排序策略（见 design D1）。
         total = (
             weights.base * features.base
-            + weights.condition * features.condition
             + weights.authority * features.authority
             + weights.status * features.status
         )

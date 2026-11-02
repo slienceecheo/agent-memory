@@ -90,7 +90,7 @@ def test_every_result_file_is_classified() -> None:
     而"整个 results/ 是否该分目录"是独立问题，见
     `test_results_contains_only_documented_prefixes`。
     """
-    v2_on_disk = {p.name for p in RESULTS.glob("v2-*.json")}
+    v2_on_disk = {p.name for p in RESULTS.glob("v2-*.json") if p.parent == RESULTS}
     declared = set(CURRENT) | set(HISTORICAL)
 
     unclassified = v2_on_disk - declared
@@ -121,7 +121,7 @@ def test_results_prefixes_are_documented() -> None:
         "naive-rag-", "no-memory-", "p2b0-",
     }
 
-    files = {p.name for p in RESULTS.glob("*.json")}
+    files = {p.name for p in RESULTS.glob("*.json") if p.parent == RESULTS}
     unknown = {
         n for n in files if not any(n.startswith(pre) for pre in KNOWN_PREFIXES)
     }
@@ -195,7 +195,7 @@ def test_results_files_split_into_five_classes() -> None:
     """
     import json
 
-    on_disk = sorted(RESULTS.glob("*.json"))
+    on_disk = sorted(p for p in RESULTS.glob("*.json") if p.parent == RESULTS)
     declared = set(CURRENT) | set(HISTORICAL)
 
     current_n = sum(1 for p in on_disk if p.name in CURRENT)
@@ -326,7 +326,7 @@ def test_per_case_has_no_feature_scores() -> None:
                       "equivalence-", "independent-", "full-context-",
                       "naive-rag-", "no-memory-", "p2b0-"}
 
-    files = {p.name for p in RESULTS.glob("*.json")}
+    files = {p.name for p in RESULTS.glob("*.json") if p.parent == RESULTS}
     unknown = {
         n for n in files if not any(n.startswith(pre) for pre in KNOWN_PREFIXES)
     }

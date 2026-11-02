@@ -80,25 +80,35 @@ def test_status_feature_has_variance() -> None:
 
 
 def test_declared_feature_count_matches_the_pool_not_the_dataclass() -> None:
-    """**字段数不是有效特征数。**
+    """**字段数不是有效特征数**——这个区分在 v3 之后仍然成立。
 
-    这条记录了一次真实的报告错误：`RerankWeights` 有四个字段，
-    报告因此写"A 轴 4 个有效特征"，而实际池内 `status` 恒为 1.0
-    （所有记忆都是 `ACTIVE`），所以只有 3 个。
+    两次不同的"数错"，同一个根源：
 
-    **本测试只断言两者可以不相等**，具体数字由
+    | 版本 | 错误 | 实情 |
+    |---|---|---|
+    | v2 | 报告写"A 轴 4 个有效特征" | 池内 `status` 恒为 1.0，只有 3 个 |
+    | v3 | —— | `RerankWeights` 3 个权重，而 `FeatureScores` 仍 4 个字段 |
+
+    **v3 之后要区分的是两个结构**：
+    `FeatureScores` 是**观测**（4 字段，含 `condition` 审计值），
+    `RerankWeights` 是**策略**（3 权重）。两者数量不等是职责分离，不是 bug。
+
+    **本测试只断言"不等"这个事实**，具体有效特征数由
     `tests/retrieval/test_effective_feature_count.py` 按 v2 数据实算。
-    放在这里是因为这个反转最容易在 C4 旧数据上被忘掉。
     """
-    from memory.retrieval.rerank import RerankWeights
+    from memory.retrieval.rerank import FeatureScores, RerankWeights
 
-    declared = len(RerankWeights.__dataclass_fields__)
-    assert declared == 4, f"字段数变成 {declared}"
+    observed = len(FeatureScores.__dataclass_fields__)
+    weights = len(RerankWeights.__dataclass_fields__)
 
-    # status 在 ACTIVE-only 池里恒为常数，所以有效特征数 < 字段数
+    assert observed == 4, f"FeatureScores 字段数变成 {observed}"
+    assert weights == 3, f"RerankWeights 字段数变成 {weights}"
+    assert weights < observed, "策略字段数应少于观测字段数（condition 退出加权）"
+
+    # status 在 ACTIVE-only 池里恒为常数 -> 有效特征数比观测数又少一个
     active_only = {status_score(Status.ACTIVE)}
     assert len(active_only) == 1, "ACTIVE-only 池里 status 应当只有一个取值"
-    assert len(active_only) < declared
+    assert len(active_only) < observed
 
 
 def test_at_least_three_features_have_variance() -> None:

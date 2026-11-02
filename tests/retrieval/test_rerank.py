@@ -72,18 +72,18 @@ def test_condition_score_full_match() -> None:
 
 def test_weights_must_sum_to_one() -> None:
     with pytest.raises(ValueError, match="和"):
-        RerankWeights(base=0.5, condition=0.5, authority=0.5, status=0.5)
+        RerankWeights(base=0.5, authority=0.5, status=0.5)
 
 
 def test_weights_accept_valid_set() -> None:
-    weights = RerankWeights(base=0.4, condition=0.2, authority=0.2, status=0.2)
+    weights = RerankWeights(base=0.4, authority=0.4, status=0.2)
 
     assert weights.total() == pytest.approx(1.0)
 
 
 def test_weights_reject_negative() -> None:
     with pytest.raises(ValueError):
-        RerankWeights(base=1.2, condition=-0.2, authority=0.0, status=0.0)
+        RerankWeights(base=1.2, authority=-0.2, status=0.0)
 
 
 def test_preregistered_weights_exist_and_sum_to_one() -> None:
@@ -118,10 +118,10 @@ def test_uniform_weights_are_the_preregistered_values() -> None:
 
     w = PREREGISTERED_WEIGHTS["uniform"]
 
-    assert w.base == pytest.approx(0.25)
-    assert w.condition == pytest.approx(0.25)
-    assert w.authority == pytest.approx(0.25)
-    assert w.status == pytest.approx(0.25)
+    assert w.base == pytest.approx(0.4)
+    assert w.authority == pytest.approx(0.3)
+    assert w.status == pytest.approx(0.3)
+    assert not hasattr(w, "condition")
 
 
 # ---------- 组合与消融 ----------
@@ -149,7 +149,7 @@ def test_base_only_reproduces_fusion_order() -> None:
         _Candidate("a", base=1.0, condition=0.0, authority=0.0, status=1.0),
         _Candidate("b", base=0.5, condition=1.0, authority=1.0, status=1.0),
     ]
-    weights = RerankWeights(base=1.0, condition=0.0, authority=0.0, status=0.0)
+    weights = RerankWeights(base=1.0, authority=0.0, status=0.0)
 
     ranked = rerank(candidates, weights=weights)
 
@@ -161,18 +161,30 @@ def test_feature_can_override_base_when_heavy() -> None:
         _Candidate("a", base=1.0, condition=0.0, authority=0.0, status=0.0),
         _Candidate("b", base=0.9, condition=1.0, authority=1.0, status=1.0),
     ]
-    weights = RerankWeights(base=0.1, condition=0.3, authority=0.3, status=0.3)
+    weights = RerankWeights(base=0.2, authority=0.4, status=0.4)
 
     ranked = rerank(candidates, weights=weights)
 
     assert ranked[0].item_id == "b"
 
 
-def test_all_off_falls_back_to_base() -> None:
-    """全关时退化为融合分排序，且不因权重校验失败。"""
+def test_base_only_falls_back_to_fusion_order() -> None:
+    """**只开融合分**时，排序退化为融合分顺序。
+
+    **这条原来的名字是 `test_all_off_falls_back_to_base`，而那个名字是错的**：
+    `disabled_weights()` 返回 `base=1, authority=0, status=0`，
+    语义是"只开融合分"，不是"全部关闭"。
+
+    而"全部关闭"**根本不可构造**：`RerankWeights` 要求权重和为 1，
+    三个都关意味着和为 0，会直接被拒。这条测试改名的同时补了那个断言，
+    否则"全部关闭"这个场景会继续留在 spec 里而没有对应实现。
+    """
     from memory.retrieval.rerank import disabled_weights
 
     weights = disabled_weights()
+    # 语义明确的断言：它不是"全关"
+    assert (weights.base, weights.authority, weights.status) == (1.0, 0.0, 0.0)
+
     candidates = [
         _Candidate("a", base=1.0, condition=0.0, authority=0.0, status=0.0),
         _Candidate("b", base=0.5, condition=1.0, authority=1.0, status=1.0),
@@ -183,12 +195,24 @@ def test_all_off_falls_back_to_base() -> None:
     assert [item.item_id for item in ranked] == ["a", "b"]
 
 
+def test_all_zero_weights_are_rejected() -> None:
+    """**全零权重不可构造**——所以"三个特征全部关闭"这个状态不存在。
+
+    这条是 spec 场景「全零权重被拒绝」的实体，
+    也是删掉旧场景「全部特征关闭」的依据。
+    """
+    from memory.retrieval.rerank import RerankWeights
+
+    with pytest.raises(ValueError, match="权重之和必须为 1"):
+        RerankWeights(base=0.0, authority=0.0, status=0.0)
+
+
 def test_scores_stay_in_unit_interval() -> None:
     candidates = [
         _Candidate("a", base=1.0, condition=1.0, authority=1.0, status=1.0),
         _Candidate("b", base=0.0, condition=0.0, authority=0.0, status=0.0),
     ]
-    weights = RerankWeights(base=0.25, condition=0.25, authority=0.25, status=0.25)
+    weights = RerankWeights(base=0.4, authority=0.3, status=0.3)
 
     ranked = rerank(candidates, weights=weights)
 
@@ -199,7 +223,7 @@ def test_scores_stay_in_unit_interval() -> None:
 def test_feature_value_out_of_range_raises() -> None:
     """特征越界必须报错：未限定值域时大数会压过权重，搜索失去意义。"""
     candidates = [_Candidate("a", base=2.0, condition=0.0, authority=0.0, status=0.0)]
-    weights = RerankWeights(base=1.0, condition=0.0, authority=0.0, status=0.0)
+    weights = RerankWeights(base=1.0, authority=0.0, status=0.0)
 
     with pytest.raises(ValueError, match="\\[0,1\\]"):
         rerank(candidates, weights=weights)
@@ -222,7 +246,7 @@ def test_ties_keep_input_order() -> None:
         _Candidate("b", base=0.5, condition=0.5, authority=0.5, status=0.5),
         _Candidate("a", base=0.5, condition=0.5, authority=0.5, status=0.5),
     ]
-    weights = RerankWeights(base=0.25, condition=0.25, authority=0.25, status=0.25)
+    weights = RerankWeights(base=0.4, authority=0.3, status=0.3)
 
     ranked = rerank(candidates, weights=weights)
 
@@ -240,7 +264,7 @@ def test_ties_are_deterministic_given_the_same_input() -> None:
         _Candidate("y", base=0.5, condition=0.5, authority=0.5, status=0.5),
         _Candidate("z", base=0.5, condition=0.5, authority=0.5, status=0.5),
     ]
-    weights = RerankWeights(base=0.25, condition=0.25, authority=0.25, status=0.25)
+    weights = RerankWeights(base=0.4, authority=0.3, status=0.3)
 
     first = [item.item_id for item in rerank(candidates, weights=weights)]
     second = [item.item_id for item in rerank(candidates, weights=weights)]
