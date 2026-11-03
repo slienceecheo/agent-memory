@@ -165,13 +165,19 @@ def test_f24_is_not_applicable_on_v3() -> None:
 
 
 def test_f24_marks_result_side_as_not_run_when_no_file(tmp_path: Path) -> None:
-    """没有结果文件时，结果侧必须写「未跑」而不是「通过」。
+    """没有结果文件时，**不能算通过**。
 
-    「通过」与「未跑」的区别就是"测了得 0"与"没测"的区别——
-    与本项目 `path_returns` 用 null 而非 0 是同一条原则。
+    **这条改动了一个旧断言**：旧版最后一行是 `assert result.passed`，
+    理由当时是"没跑结果侧不等于失败"。
 
-    **做法**：把 `results/` 临时指向一个不含 F24 结果文件的目录。
-    这里不能真删仓库文件，所以用 `monkeypatch` 把 ROOT 换掉。
+    **那个理由混淆了两件事**：
+    - "数据侧通过、结果侧没跑" 与 "两侧都通过"，旧实现都得到 `passed=True`
+    - 于是"门禁没跑"伪装成"执行过"
+
+    实测过：v3 产物按 spec 放进 `results/v3/` 时，旧实现因 glob 写死顶层
+    而读不到，于是 `passed=True`——**数据造好了，门禁却报告通过**。
+
+    现在的判据：`applicable=False` + `passed=False`，并写明"这代还没有数据"。
     """
     if not SAMPLE.exists():
         pytest.skip("样例数据集缺失")
@@ -187,9 +193,59 @@ def test_f24_marks_result_side_as_not_run_when_no_file(tmp_path: Path) -> None:
         result = mod.check_f24_axis_a_not_saturated(dataset)
 
     assert "[数据侧通过]" in result.detail
-    assert "[结果侧未跑]" in result.detail
-    # 未跑不等于失败——数据侧通过时整条仍应通过
-    assert result.passed
+    assert "结果目录里没有任何三路产物" in result.detail
+    assert "还没有数据" in result.detail
+
+    # **不能算通过**
+    assert not result.passed, (
+        f"没有结果文件却 passed=True：{result.detail}。"
+        "'门禁没跑'与'执行过并通过'必须分开。"
+    )
+    # 也不是"失败"——"这代没数据"是"不适用"
+    assert not result.applicable
+
+
+def test_f24_ran_but_no_scorable_case_is_not_passed(
+    tmp_path: Path, monkeypatch
+) -> None:
+    """有文件、匹配本数据集，但 A 轴一条都没评分 -> 仍不算通过。
+
+    这是第三态：`matched_subject=True` 但 `result_side_ran=False`。
+    """
+    import json
+
+    import evals.tools.check_v2_dataset as mod
+    from evals.datasets.retrieval_v2 import Axis
+
+    dataset = load_dataset(SAMPLE)
+    a_ids = {q.query_id for q in dataset.queries if q.axis is Axis.A}
+
+    payload = {
+        "per_case": [
+            {
+                "case_id": qid,
+                "has_gold": True,
+                "features": {"base": 1.0, "authority": 1.0, "status": 1.0},
+                "condition_score": None,
+                "rank_after_rerank": None,  # 全部未评分
+            }
+            for qid in a_ids
+        ],
+        "code_version": "9999999-dirty",
+        "code_diff_hash": "a" * 64,
+    }
+    results = tmp_path / "results"
+    results.mkdir()
+    (results / "v3-sample-lexical-vector-adjacency.json").write_text(
+        json.dumps(payload, ensure_ascii=False), encoding="utf-8"
+    )
+
+    monkeypatch.setattr(mod, "ROOT", tmp_path)
+    check = mod.check_f24_axis_a_not_saturated(dataset)
+
+    assert check.applicable, "这不是跨装置，也不是无数据"
+    assert not check.passed, f"全部 A 轴未评分却 passed=True：{check.detail}"
+    assert "未跑" in check.detail
 
 
 def test_billing_axis_a_has_no_ties() -> None:

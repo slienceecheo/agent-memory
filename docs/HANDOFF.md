@@ -32,7 +32,10 @@ v2 数据集   2 个 subject：project:ledger（12 记忆）、project:billing�
             `47e4785-dirty` 的 `v2-*.json`），当前代码是 `0fbc3d2-dirty`。
             但这不等于 6 条都该关——**判据是否依赖装置**才是该不该跑的理由：
             4 条照跑（判据不依赖装置），2 条不适用（跨装置）。
-            由 `test_gate_applicability.py` 与 `test_gate_apparatus_binding.py` 锁定。
+            **门禁的文件发现扫顶层 + `results/v3/`，且不按 `v2-` 前缀匹配**：
+            前缀是历史命名约定，不该成为"能不能被发现"的条件。
+            由 `test_gate_applicability.py` / `test_gate_apparatus_binding.py` /
+            `test_gate_discovers_zones.py` 锁定。
 结论        docs/reports/v2-what-it-measures.md（四条，每条带复算命令）
 冻结        tag dataset-v2-frozen（5a55620）= 数据最终版，带 5 处已登记缺陷
 协议        tag dataset-v2-protocol-r2（cb9c77f）= 当前有效
@@ -43,6 +46,8 @@ v3 装置     **排序特征 = 3**（base / authority / status），condition �
             `RerankWeights` 只有三个权重；`PREREGISTERED_WEIGHTS` 四组，各组和为 1。
 v3 产物     `results/v3/`（独立子目录）。`results/*.json` 顶层**永远 48 个**。
             分区清单：`.` / `v3` / `archive` / `features`（后者预留，尚不存在）。
+            **门禁扫顶层 + `v3`**（不扫 `archive`）；
+            `check_v2_dataset.ZONE_NAMES` 与 `test_results_zones.ZONES` 由测试断言一致。
 v3 轴判定   `ledger` = two_axes；`billing` = **single_axis**（不是 merged）。
 ```
 

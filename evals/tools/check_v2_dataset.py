@@ -78,6 +78,42 @@ class Check:
 # 与 `evals/run_retrieval.py` 的三特征装置对应：v3 里 `condition` 不参与加权。
 CURRENT_APPARATUS = "v3"
 
+# 结果产物的分区清单（**不含 `archive`**：那是历史对照物，故意不参与）。
+#
+# **为什么不直接 import 测试里的 `ZONES`**：生产代码不该依赖测试。
+# 但两份清单会漂移，所以 `test_zone_lists_match` 断言它们一致。
+#
+# **为什么不用 `rglob`**：`rglob` 会扫到 `results/archive/`，
+# 那是故意不参与的分区。按清单扫，范围是显式的。
+ZONE_NAMES: tuple[str, ...] = ("v3",)
+
+
+def result_files(pattern: str, *, root: Path | None = None) -> list[Path]:
+    """扫 `results/` 顶层与所有已登记分区，返回匹配的文件。
+
+    **不能只扫顶层**：spec 规定 v3 产物放 `results/v3/`，
+    而旧的 `glob("v2-*")` 写死顶层 + 文件名前缀——
+    **违反分区反而能读到，遵守分区反而读不到。**
+
+    **也不按文件名前缀判断装置归属**：`v2-` 是历史命名约定。
+    v3 产物若叫 `v3-sample-*.json`，按 `v2-*` glob 永远匹配不到。
+    装置归属由 `apparatus_signature` 判断。
+
+    **`pattern` 里不含版本前缀**：调用方传 `*-condition-ablation.json`。
+    前缀是装置的事，交给签名判；文件发现只看"这是什么类型的产物"。
+    """
+    base = root if root is not None else ROOT
+    results = base / "results"
+    if not results.exists():
+        return []
+
+    found: list[Path] = list(results.glob(pattern))
+    for zone in ZONE_NAMES:
+        zone_dir = results / zone
+        if zone_dir.exists():
+            found.extend(zone_dir.glob(pattern))
+    return sorted(found)
+
 
 def _not_applicable(code: str, title: str, *, source: str, reason: str) -> Check:
     """构造"不适用"的 Check。
@@ -968,20 +1004,31 @@ def _ablation_for_subjects(dataset: Dataset) -> tuple[dict[str, object], str, st
     做法：按 subject 集合匹配。文件名约定 `v2-<subject>-condition-ablation.json`，
     而样例期用的是 `v2-sample-condition-ablation.json`。
 
-    **返回三元组**（payload, 文件名, 装置签名）：签名让调用方判断适用域，
-    而不是把"读到文件了"当成"文件适用于当前装置"。
-    """
-    candidates = sorted(ROOT.joinpath("results").glob("v2-*-condition-ablation.json"))
+    **返回四元组**（payload, 文件名, 装置签名, 诊断）：
 
+    | 情形 | payload | 诊断 |
+    |---|---|---|
+    | 找到匹配文件 | 有 | `"ok"` |
+    | **完全没有文件** | `{}` | `"empty"` |
+    | **有文件但都不含本数据集的查询** | `{}` | `"mismatch"` |
+
+    诊断必须区分后两者：**"这代还没数据"与"数据放错地方"是两件事**，
+    处置方向相反（去造数据 vs 去查路径）。旧的实现把它们压成同一句
+    "没有覆盖本数据集的消融结果"，人只能猜。
+    """
+    candidates = result_files("*-condition-ablation.json")
+
+    dataset_ids = {q.query_id for q in dataset.queries}
     for path in candidates:
         payload = json.loads(path.read_text(encoding="utf-8"))
         ranked_ids = set((payload.get("with_condition") or {}).keys())
-        dataset_ids = {q.query_id for q in dataset.queries}
         # 全覆盖：该文件包含本数据集的每条查询
         if dataset_ids and dataset_ids <= ranked_ids:
-            return payload, path.name, apparatus_signature(payload)
+            return payload, path.name, apparatus_signature(payload), "ok"
 
-    return {}, "", "unknown"
+    if not candidates:
+        return {}, "", "unknown", "empty"
+    return {}, "", "unknown", "mismatch"
 
 
 def check_f19b_implicit_gold_recalled(dataset: Dataset) -> Check:
@@ -1000,13 +1047,23 @@ def check_f19b_implicit_gold_recalled(dataset: Dataset) -> Check:
     一个 C 轴 case 召回失败时它红（与 implicit 无关），
     而 implicit 的失败被别处抵消时它绿（正是要防的情况）。
     """
-    payload, source, _ = _ablation_for_subjects(dataset)
+    payload, source, _, diag = _ablation_for_subjects(dataset)
     if not payload:
+        if diag == "empty":
+            return Check(
+                "F19b",
+                "implicit 的 gold 真的被召回",
+                False,
+                f"结果目录里没有任何消融产物（分区 {ZONE_NAMES} 与顶层都为空）；"
+                "先跑 evals.tools.ablate_condition --dataset <目录>",
+                applicable=False,
+            )
         return Check(
             "F19b",
             "implicit 的 gold 真的被召回",
             False,
-            "没有覆盖本数据集的消融结果；先跑 evals.tools.ablate_condition --dataset <目录>",
+            "找到了消融产物，但都不含本数据集的查询——"
+            "这是配置问题（路径或数据集选错了），不是'还没有产物'。",
         )
 
     # **不判适用域**：判据是"implicit 的 gold 被召回"，
@@ -1054,13 +1111,23 @@ def check_f20_condition_contributes(dataset: Dataset) -> Check:
 
     **按 subject 匹配结果文件**，理由同 `_ablation_for_subjects`。
     """
-    payload, source, signature = _ablation_for_subjects(dataset)
+    payload, source, signature, diag = _ablation_for_subjects(dataset)
     if not payload:
+        if diag == "empty":
+            return Check(
+                "F20",
+                "condition 对 A 轴有贡献",
+                False,
+                f"结果目录里没有任何消融产物（分区 {ZONE_NAMES} 与顶层都为空）；"
+                "这代还没有数据，不是配置错。",
+                applicable=False,
+            )
         return Check(
             "F20",
             "condition 对 A 轴有贡献",
             False,
-            "没有覆盖本数据集的消融结果；先跑 evals.tools.ablate_condition --dataset <目录>",
+            "找到了消融产物，但都不含本数据集的查询——"
+            "这是配置问题（路径或数据集选错了），不是'还没有产物'。",
         )
 
     # **这条的判据依赖装置**，所以要比对两件事：
@@ -1177,9 +1244,17 @@ def check_f24_axis_a_not_saturated(dataset: Dataset, *, ceiling: float = 0.9999)
 
     result_side_problem: str | None = None
     result_side_note = "未跑（无结果文件）"
+    # **结果侧是否真的跑过**——必须显式记录。
+    #
+    # 旧实现用 `result_side_problem is None` 同时表达"跑过且没问题"与"没跑"，
+    # 于是"没找到文件"得到 `passed=True`——**门禁没跑却报告通过**。
+    # 用布尔量与文案解耦：不靠"detail 里有没有'未跑'"这种字符串匹配。
+    result_side_ran = False
     dataset_a = {q.query_id for q in dataset.queries if q.axis is _Axis.A}
 
-    for path in sorted((ROOT / "results").glob("v2-*-lexical-vector-adjacency.json")):
+    candidates = result_files("*-lexical-vector-adjacency.json")
+    matched_subject = False
+    for path in candidates:
         payload = json.loads(path.read_text(encoding="utf-8"))
         cases = payload.get("per_case") or []
         if not cases:
@@ -1195,6 +1270,9 @@ def check_f24_axis_a_not_saturated(dataset: Dataset, *, ceiling: float = 0.9999)
         # `v2-billing-lexical-vector-adjacency.json`。
         if not dataset_a <= case_ids:
             continue
+
+        # 找到了匹配本数据集的文件（无论装置是否相同）
+        matched_subject = True
 
         # **这条的判据依赖装置**：阈值 `< 0.9999` 的意义随装置变。
         #
@@ -1240,6 +1318,7 @@ def check_f24_axis_a_not_saturated(dataset: Dataset, *, ceiling: float = 0.9999)
         ratio = hit_scored / len(scored_a)
         skipped = len(dataset_a) - len(scored_a)
         skip_note = f"，跳过 {skipped} 条未评分" if skipped else ""
+        result_side_ran = True
         result_side_note = (
             f"实测 {hit_scored}/{len(scored_a)}={ratio:.4f}"
             f"（{path.name}{skip_note}）"
@@ -1248,12 +1327,51 @@ def check_f24_axis_a_not_saturated(dataset: Dataset, *, ceiling: float = 0.9999)
             result_side_problem = result_side_note + "——满分意味着测不到区分能力"
         break
 
+    # **三态必须分开**：
+    #
+    # | 情形 | applicable | passed |
+    # |---|---|---|
+    # | 分区为空（该代无产物） | False | False |
+    # | 有文件但不匹配本数据集 | True | False |
+    # | 结果侧真的跑了 | True | 由判据定 |
+    #
+    # 旧实现在两种情况都得到 `passed=True`（`result_side_problem is None`），
+    # 即"门禁没跑却报告通过"。
+    if not candidates:
+        return Check(
+            "F24",
+            "A 轴未饱和（SEH@1 不得满分）",
+            False,
+            f"[数据侧{'通过' if data_side_problem is None else '失败'}] "
+            f"随机基线 {baseline.seh_at_1:.4f}；"
+            f"结果目录里没有任何三路产物（分区 {ZONE_NAMES} 与顶层都为空）——"
+            "这代还没有数据，不是配置错。",
+            applicable=False,
+        )
+
+    if not matched_subject:
+        return Check(
+            "F24",
+            "A 轴未饱和（SEH@1 不得满分）",
+            False,
+            f"[数据侧{'通过' if data_side_problem is None else '失败'}] "
+            f"找到了 {len(candidates)} 个三路产物，但都不含本数据集的 A 轴查询——"
+            "这是配置问题（路径或数据集选错了），不是'还没有产物'。",
+        )
+
+    if not result_side_ran:
+        return Check(
+            "F24",
+            "A 轴未饱和（SEH@1 不得满分）",
+            False,
+            f"[数据侧{'通过' if data_side_problem is None else '失败'}] "
+            f"[结果侧未跑] {result_side_note}——"
+            "没有可评分的 A 轴 case，不能算通过。",
+        )
+
     passed = data_side_problem is None and result_side_problem is None
     data_mark = "通过" if data_side_problem is None else "失败"
-    result_mark = (
-        "未跑" if result_side_note.startswith("未跑")
-        else ("通过" if result_side_problem is None else "失败")
-    )
+    result_mark = "通过" if result_side_problem is None else "失败"
     detail = (
         f"[数据侧{data_mark}] 随机基线 {baseline.seh_at_1:.4f}、"
         f"竞争集均值 {baseline.mean_pool_size:.2f}；"
