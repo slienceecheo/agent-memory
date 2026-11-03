@@ -77,11 +77,12 @@ ValueError: F24: applicable=False 时 passed 必须为 False
 - [x] 5.1 `openspec validate gate-accounting --strict` 通过
 - [x] 5.2 **归档前**跑 `openspec validate --all --strict`
 - [x] 5.3 全量测试通过
-- [ ] 5.4 归档
+- [x] 5.4 归档
 
 ## 6. 不在本变更范围
 
 - **不把 `applicable` 改枚举**：B + 数据约束已覆盖当前已知形状
 - **不造 v3 数据**：但 v3 数据约束里要加"每 subject 至少 1 条派生 within"
 - **不改 `passed` 数的算法**：19 / 23 不变
+
 

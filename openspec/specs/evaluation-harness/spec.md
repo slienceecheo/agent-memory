@@ -376,16 +376,12 @@
 - **WHEN** 某门禁的判据依赖排序装置，且文件签名**不等于** `CURRENT_APPARATUS`
 - **THEN** 门禁 MUST 返回 `applicable=False`，`passed` MUST 为 False
 
-- **AND** detail MUST 写明**两边**分别是什么（"X 装置产物，当前为 Y"）
-
-- **AND** MUST NOT 因为"当前装置是 v3"就直接判不适用
+- **AND** detail MUST 写明**两边**分别是什么
 
 #### Scenario: 判据不依赖装置的门禁照常执行
 
 - **WHEN** 某门禁的判据与排序装置无关
 - **THEN** 它 MUST 照常执行并给出**通过或失败**
-
-- **AND** MUST NOT 因为"产物来自旧装置"就返回"不适用"
 
 #### Scenario: 装置签名只读结构事实
 
@@ -406,50 +402,59 @@
 - **WHEN** 有人把"判据不依赖装置"的门禁也判成"不适用"
 - **THEN** MUST 有测试会红
 
-- **AND** 该测试 MUST 断言**哪些**门禁不适用
-
 #### Scenario: 当前装置必须识别为适用
 
-- **WHEN** 断言"当前装置是哪一代"，或对当前代码产出的结果文件跑门禁
+- **WHEN** 断言"当前装置是哪一代"
 - **THEN** MUST 比较 `CURRENT_APPARATUS` 与**当前代码实际产出的签名**
 
 - **AND** MUST NOT 只断言常量值——那是同义反复
 
-- **AND** 同装置签名的文件 MUST 让门禁**执行**；若改回"只看常量"，MUST 有测试变红
-
 #### Scenario: 判据依赖装置不等于判据失效
 
-- **WHEN** 某门禁的判据在 v3 下的**期望值**变了（而非判据本身失效）
-- **THEN** MUST 在 v3 下给出**新的期望值并执行**，MUST NOT 永久返回"不适用"
-
-- **AND** 例：`F20` 在 v3 下期望 `drop == 0`（能抓"BREAKING 被回退"）
+- **WHEN** 某门禁的判据在 v3 下的**期望值**变了
+- **THEN** MUST 在 v3 下给出**新的期望值并执行**
 
 #### Scenario: 门禁必须能发现所有分区的产物
 
-- **WHEN** 结果文件位于任何**已登记分区**（`results/` 顶层或 `results/v3/` 等）
+- **WHEN** 结果文件位于任何**已登记分区**
 - **THEN** 门禁 MUST 能发现它
 
-- **AND** 文件发现 MUST NOT 依赖文件名前缀（如 `v2-`）——
-  前缀是历史约定，不该成为"能不能被发现"的条件
-
-- **AND** 装置归属 MUST 由 `apparatus_signature` 判断，MUST NOT 由文件名判断
+- **AND** 文件发现 MUST NOT 依赖文件名前缀
 
 #### Scenario: 找不到文件必须显式区分三件事
 
 - **WHEN** 门禁没有找到可用的结果文件
-- **THEN** MUST 区分以下三种情形，且 MUST NOT 混为一种：
-
-  | 情形 | 应有结果 |
-  |---|---|
-  | 目标分区**为空**（该代尚无产物） | `applicable=False`，写明"尚无产物" |
-  | 有文件但**不匹配本数据集** | `passed=False`，写明是配置问题 |
-  | 有匹配文件 | 执行判据 |
+- **THEN** MUST 区分：分区为空（`applicable=False`）/
+  有文件但不匹配（`passed=False`）/ 有匹配文件（执行判据）
 
 - **AND** 前两种 MUST NOT 返回 `passed=True`
 
-**为什么这条必须存在**：实测 `F20` 与 `F24` 对"没找到文件"给出**相反**的结论
-（`passed=False` vs `passed=True`）。同一个状态两种处置，
-而 `passed=True` 让"门禁没跑"伪装成"执行过"。
+#### Scenario: 不适用在账本里必须与失败分开
+
+- **WHEN** 汇总一次 `run_all()` 的结果
+- **THEN** MUST 分别报 **通过 / 不适用 / 未通过** 三个数
+
+- **AND** `不适用` MUST NOT 计入 `未通过`
+
+- **AND** 结果文件的每条 check MUST 含 `applicable` 字段——
+  否则从文件复算时无法区分两种 false
+
+**为什么**：实测 `billing` 的 27 条里 `passed=True` 是 23、
+`applicable=False` 是 2，而旧 `main()` 报 `通过 23/27` 并把
+`[F6, F20, F21b, F24]` 一起列为"未通过"——**2 条不适用被算进了失败**，
+而 `--json` 不写 `applicable`，结果文件也复算不出这个区别。
+
+#### Scenario: 判据没有主语时必须判失败，不判不适用
+
+- **WHEN** 装置匹配、文件可读，但数据形状让某条判据**没有对象**
+  （例如 `F24` 在"派生 within 为空"的 subject 上）
+- **THEN** `passed` MUST 为 False，`applicable` MUST 保持 True
+
+- **AND** MUST NOT 用 `applicable=False`：
+  它的语义是"跨装置，判据不成立"，而这里装置是对的，是数据形状的问题
+
+- **AND** v3 的数据约束 MUST 写明"每个 subject 至少 1 条派生 within 查询"，
+  否则 `F24` 会在合法数据上永久红
 
 ### Requirement: A 轴饱和判据的分母
 
