@@ -31,8 +31,6 @@ from __future__ import annotations
 import tomllib
 from pathlib import Path
 
-import pytest
-
 ROOT = Path(__file__).resolve().parents[2]
 PYPROJECT = ROOT / "pyproject.toml"
 
@@ -90,6 +88,13 @@ def test_ignore_errors_really_suppresses(tmp_path: Path) -> None:
     """**实证**：`ignore_errors` 生效时，明显的类型错误不会报。
 
     这条是防"配置改了但行为没变"——例如把 `module` 写成 `tests`（无 `.*`）。
+
+    **不能用 `pytest.skip` 处理"mypy 跑不起来"**：这条要证明的正是
+    "ignore_errors 生效"，而 mypy 跑不起来时它会变成绿色，
+    等于**什么都没验证**。这与"`--yes` 跳过未勾任务"是同一种形态：
+    检查没运行，却显示为通过。
+
+    mypy 已是 dev 依赖，跑不起来只有一种解释——环境坏了，那应该红。
     """
     probe = ROOT / "tests" / "_mypy_scope_probe.py"
     probe.write_text(
@@ -109,8 +114,14 @@ def test_ignore_errors_really_suppresses(tmp_path: Path) -> None:
             errors="replace",
         )
         out = (r.stdout or "") + (r.stderr or "")
-        if "error: Cannot find implementation" in out or r.returncode not in (0, 1):
-            pytest.skip(f"mypy 不可用：{out.strip()[:100]}")
+
+        # **不 skip**：跑不起来说明环境坏了
+        assert r.returncode in (0, 1), (
+            f"mypy 跑不起来（exit={r.returncode}）。\n"
+            f"mypy 是 dev 依赖，跑不起来说明环境坏了——"
+            f"而这条测试若 skip，它要证明的'ignore_errors 生效'就完全没被验证。\n"
+            f"输出：{out.strip()[:300]}"
+        )
 
         assert "Success" in out, (
             f"tests 下的明显类型错误被 mypy 报出来了：{out.strip()[:200]}。\n"
@@ -119,3 +130,26 @@ def test_ignore_errors_really_suppresses(tmp_path: Path) -> None:
         )
     finally:
         probe.unlink(missing_ok=True)
+
+
+def test_ignore_errors_depends_on_package_markers() -> None:
+    """`module = "tests.*"` 只匹配**包内模块**——依赖 `__init__.py` 存在。
+
+    **这条是上一条的诊断前提**：删掉 `tests/__init__.py`，
+    `tests.*` 就匹配不到那条探针，492 个错误会突然冒出来，
+    而 `test_ignore_errors_really_suppresses` 会红在一句
+    "tests 下的类型错误被报出来了"——**那会让人去查类型，而不是查 `__init__.py`。**
+
+    所以把依赖显式断言出来，让诊断指向真正的原因。
+    """
+    for marker in (
+        ROOT / "tests" / "__init__.py",
+        ROOT / "tests" / "retrieval" / "__init__.py",
+        ROOT / "evals" / "__init__.py",
+    ):
+        assert marker.exists(), (
+            f"{marker.relative_to(ROOT)} 不存在。\n"
+            "`[[tool.mypy.overrides]] module = [\"tests.*\", \"evals.*\"]` 只匹配包内模块——\n"
+            "删掉 __init__.py 会让 ignore_errors 失效，492 个错误会冒出来。\n"
+            "这一条先红，是为了让'类型错误突然变多'指向真正的原因。"
+        )
