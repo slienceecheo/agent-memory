@@ -96,33 +96,75 @@ def test_check_counts_are_real() -> None:
     assert done > 0, f"{archived[0]} 读不到任何已勾任务——正则或文件格式变了"
 
 
+def _norm(name: str) -> str:
+    """去掉归档时加上的日期前缀（`YYYY-MM-DD-`）。
+
+    **必须规范化**：归档目录名带日期前缀、活动目录名不带，
+    所以 `archived & active` 在结构上恒为空——
+    它看起来在检查"归档只复制没删除"，实际上永远通过。
+
+    实测：建一个 `openspec/changes/retrieval-v3-apparatus/`
+    （正是"只复制未删除"的形态），原写法仍 1 passed。
+    """
+    return re.sub(r"^\d{4}-\d{2}-\d{2}-", "", name)
+
+
+def test_archived_and_active_do_not_overlap() -> None:
+    """**规范化后**比较：同一变更不得同时出现在活动与归档里。
+
+    这条抓的是"归档只复制、没有删除"——那会让 `openspec list`
+    把残留当成活动变更，而 `test_handoff` 对"有活动变更"是 **skip**，
+    于是整个仓库对这种残留保持沉默。
+
+    **上一版的判据是 `archived & active`，它恒为空**（日期前缀 vs 无前缀），
+    所以那条断言没有判别力。写成这条时先在探针上验过它会红。
+    """
+    archived = (
+        {_norm(d.name) for d in ARCHIVE.iterdir() if d.is_dir()}
+        if ARCHIVE.exists()
+        else set()
+    )
+    active = (
+        {d.name for d in ACTIVE.iterdir() if d.is_dir() and d.name != "archive"}
+        if ACTIVE.exists()
+        else set()
+    )
+
+    overlap = archived & active
+    assert not overlap, (
+        f"这些变更同时存在于活动与归档：{sorted(overlap)}。\n"
+        "归档应当把目录**移走**，而不是复制一份留下。\n"
+        "残留会被 openspec list 当成活动变更，而 test_handoff 对"
+        "'有活动变更'是 skip——于是整条链对它沉默。"
+    )
+
+
 def test_active_changes_are_not_checked_by_this_gate() -> None:
     """**边界确认**：进行中的变更允许有未勾任务，本门禁不查它。
 
     若把判据套到 `changes/`（进行中）上，任何刚建的变更都会红，
     于是人会去加 `xfail` 或放宽断言——**门禁就消失了**。
 
-    **这条只断言"归档集与活动集不相交"，不断言"活动集为空"。**
+    "归档后不许留活动变更"这件事由
+    `tests/test_handoff.py::test_no_active_changes_after_archive` 负责，
+    且它用的是 **skip** 而非 fail——同一状态两个测试不该给相反处置。
 
-    上一版写了 `assert active == set()`，而它正是本条 docstring 批评的那个反模式：
-    **下一次开工建了变更目录，这条测试立刻红**，于是会被放宽或删掉。
-    实测：建一个 `openspec/changes/zz-probe-in-progress/` 就红了。
-
-    "归档后不许留活动变更"这件事由 `tests/test_handoff.py::test_no_active_changes_after_archive`
-    负责，且它用的是 **skip** 而非 fail——同一状态两个测试给相反处置，
-    这件事本身就该避免。
-
-    **剩下这条判据仍然有效**：同名目录不能同时出现在 `changes/` 与
-    `changes/archive/` 下——那说明归档只复制没删除。
+    **本条不断言"活动集为空"**：上一版写了 `assert active == set()`，
+    而它正是上文批评的那个反模式——下一次开工建了变更目录就会红。
+    实测：建 `openspec/changes/zz-probe-in-progress/` 就红了。
     """
-    archived = {d.name for d in ARCHIVE.iterdir() if d.is_dir()} if ARCHIVE.exists() else set()
-    active = {
-        d.name
-        for d in ACTIVE.iterdir()
-        if d.is_dir() and d.name != "archive"
-    } if ACTIVE.exists() else set()
-
-    assert not (archived & active), (
-        f"同名目录同时在活动与归档里：{sorted(archived & active)}。"
-        "归档应当把目录移走，而不是复制一份留下。"
+    # 只在"有活动变更"时验证边界：此时归档门禁仍应只扫归档
+    active = (
+        {d.name for d in ACTIVE.iterdir() if d.is_dir() and d.name != "archive"}
+        if ACTIVE.exists()
+        else set()
     )
+
+    # 有活动变更时，本文件的门禁仍只看 archive——用"未勾任务计数不受影响"验证
+    archived_tasks = sorted(ARCHIVE.glob("*/tasks.md")) if ARCHIVE.exists() else []
+    assert archived_tasks, "归档目录里没有 tasks.md，门禁失去了作用对象"
+    # 活动目录里的 tasks.md（若有）不应被算进归档统计
+    for name in active:
+        assert not (ARCHIVE / name / "tasks.md").exists(), (
+            f"{name} 的 tasks.md 出现在归档目录里——归档不该包含活动变更"
+        )

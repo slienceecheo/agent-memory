@@ -2219,6 +2219,19 @@ evidence_lock       -> 6 条（读 git 归档，只有历史被改写才红）
 integrity_check     -> 1 条（工作区归档被覆盖时红，动作是还原）
 ```
 
+> **`mypy -> clean` 必须带范围**：`pyproject.toml` 里 `files = ["src"]`，
+> 且 `evals.*` / `tests.*` 被设了 `ignore_errors = true`。
+>
+> | 命令 | 实际检查 | 结果 |
+> |---|---|---|
+> | `mypy`（无参数） | **38 个 src 文件** | clean |
+> | `mypy src evals tests` | 232 个文件，但 evals/tests 的错误被**关掉** | 显示 clean，**实为假绿** |
+> | 临时删掉 `ignore_errors` | 232 个文件 | **492 个错误**（tests 431 / evals 61） |
+>
+> **所以报"232 files clean"是错的**。正确说法：src 的 38 个文件 clean，
+> evals/tests 的 492 个错误被配置屏蔽。
+> 实测：往 tests 里塞一个明显的类型错误，`mypy tests/...` 仍报 `Success`。
+
 **下一步**：v2 作为报告集的工作已完成。若要继续，需要 v3。
 
 **v3 有三个候选，推荐顺序 A → B → C，理由不是"重要性"而是依赖**：

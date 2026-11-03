@@ -1,0 +1,62 @@
+[project]
+name = "agent-memory"
+version = "0.1.0"
+description = "Conflict-aware long-term memory layer for LLM agents"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "httpx>=0.28",
+    "numpy>=2.1",
+    "pydantic>=2.9",
+    "python-dotenv>=1.0",
+]
+
+[dependency-groups]
+dev = [
+    "hypothesis>=6.115",
+    "jsonschema>=4.26.0",
+    "mypy>=1.13",
+    "pyarrow>=26.0.0",
+    "pytest>=8.3",
+    "ruff>=0.8",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/memory"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = [
+    "network: hits a real external service; deselected by default",
+    "locked_defect: 锁定某个已知缺陷的现状。修复后此测试必须变红，并提示同步报告",
+    "evidence_lock: 锁定 git 归档里的历史数字。只有 git 历史被改写时才该变红",
+    "integrity_check: 检测工作区文件是否被污染。变红时的动作是还原文件，不是改代码",
+    "plan_check: 用测试内的实现验证某个方案会得到什么结果。不调用产品的匹配/排序逻辑，因此不会因修复而变红。它的价值是记录方案评估，不是锁缺陷现状",
+]
+addopts = "-m 'not network'"
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+src = ["src", "evals", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM", "RUF"]
+ignore = ["RUF001", "RUF002", "RUF003"]
+
+[tool.ruff.lint.per-file-ignores]
+# 场景数据是"一行一条记录"的表格结构，拆行会破坏可读性与 diff 稳定性
+"evals/tools/build_conflict_set.py" = ["E501"]
+"tests/store/test_models.py" = ["B017"]
+"tests/resolver/test_apply.py" = ["B017"]
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+warn_unreachable = true
+files = ["src"]
+
