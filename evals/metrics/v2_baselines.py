@@ -115,6 +115,82 @@ def all_axis_baselines(dataset: Dataset, *, k: int = DEFAULT_K) -> dict[str, Axi
     return {axis.value: axis_baseline(dataset, axis, k=k) for axis in Axis}
 
 
+def derived_axis_of(dataset: Dataset, query: Query) -> str:
+    """按池结构派生一条查询的轴：`relation_within` / `relation_cross`。
+
+    与 `derive_axis` 同义，但作用于数据集全集（而不是构造出来的池）。
+    `n_competitors` = 同 subject 同 relation 的其他记忆数（不含 gold）。
+    """
+    gold = dataset.memory(query.gold_memory_id)
+    n = sum(
+        1
+        for m in dataset.memories
+        if m.memory_id != gold.memory_id
+        and m.subject == gold.subject
+        and m.relation == gold.relation
+    )
+    return "relation_within" if n > 0 else "relation_cross"
+
+
+def axis_baseline_derived(dataset: Dataset) -> dict[str, float]:
+    """按**派生轴**分组算随机基线（`SEH@1`）。
+
+    **核心**：`N` MUST 从 `competing_set()` 取，MUST NOT 由 `n_competitors + 1` 推算。
+
+    实测 `n_competitors + 1 == len(competing_set)` 在 5 条查询上不成立
+    （全部是 C 轴）：
+
+    | 查询 | `n_competitors` | `competing_set` | `n+1` |
+    |---|---|---|---|
+    | `ledger-q11/q12` | 0 | **12** | 1 |
+    | `billing-c1/c2/c3` | 2 | **9** | 3 |
+
+    按 `n+1` 推会让 cross 基线变成 `1/1 = 1.0`（随机也满分），
+    **与真值 `1/12 = 0.0833` 差 12 倍**——任何实测值都"不高于基线"，判据失效。
+
+    **验收**（现有 v2 数据）：
+
+    ```
+    axis_baseline_derived(sample) ==
+        {"relation_within": 0.3000, "relation_cross": 0.0833}
+    ```
+    """
+    groups: dict[str, list[float]] = {
+        "relation_within": [],
+        "relation_cross": [],
+    }
+
+    for query in dataset.queries:
+        axis = derived_axis_of(dataset, query)
+        # **N 从竞争集取**，不推公式
+        n = len(competing_set(dataset, query))
+        groups[axis].append(random_seh_at_1(n))
+
+    return {
+        axis: (sum(values) / len(values) if values else 0.0)
+        for axis, values in groups.items()
+    }
+
+
+def axis_label_mismatches(dataset: Dataset) -> dict[str, int]:
+    """标注轴与派生轴的不一致数。
+
+    **可追溯性来自报告写不写这个数字，不来自门禁用哪套轴。**
+
+    实测基线：`sample` 0/12、`billing` 3/12
+    （`billing-c1/c2/c3` 标注为 C，池结构上是 within）。
+    """
+    mismatch = 0
+    for query in dataset.queries:
+        derived = derived_axis_of(dataset, query)
+        labeled = (
+            "relation_within" if query.axis is Axis.A else "relation_cross"
+        )
+        if derived != labeled:
+            mismatch += 1
+    return {"mismatch": mismatch, "total": len(dataset.queries)}
+
+
 def monte_carlo_seh(
     dataset: Dataset,
     axis: Axis,

@@ -36,6 +36,17 @@ v2 数据集   2 个 subject：project:ledger（12 记忆）、project:billing�
             前缀是历史命名约定，不该成为"能不能被发现"的条件。
             由 `test_gate_applicability.py` / `test_gate_apparatus_binding.py` /
             `test_gate_discovers_zones.py` 锁定。
+
+            **轴的两个池大小必须分开**（`v3_baselines.py`）：
+            `n_competitors`（同 relation，轴派生用）与 `ranking_pool_size`
+            （实际参排，含 gold，基线用）。两者只在 A 轴满足 `n+1 == cs`：
+            `ledger-q11/q12`（n=0, cs=12）、`billing-c1/c2/c3`（n=2, cs=9）是例外。
+            按 `n+1` 推会让 cross 基线变成 `1/1 = 1.0`，与真值 `1/12` 差 12 倍。
+
+            **`F24` 两套轴口径**：
+            v2 用标注轴、判据"不满分"；
+            v3 用派生轴、判据"高于随机基线"（满分为好，不是坏）。
+            **标注与派生不一致**：`ledger` 0/12、`billing` **3/12**。
 结论        docs/reports/v2-what-it-measures.md（四条，每条带复算命令）
 冻结        tag dataset-v2-frozen（5a55620）= 数据最终版，带 5 处已登记缺陷
 协议        tag dataset-v2-protocol-r2（cb9c77f）= 当前有效

@@ -98,7 +98,14 @@ def test_gate_finds_zone_products(tmp_path: Path, monkeypatch) -> None:
 
 
 def test_f24_finds_zone_products(tmp_path: Path, monkeypatch) -> None:
-    """`F24` 同样必须能发现 `results/v3/` 的产物。"""
+    """`F24` 同样必须能发现 `results/v3/` 的产物。
+
+    **注意 v3 的判据与 v2 相反**：v3 判"是否高于派生基线"，
+    所以 A 轴 10/10 满分在 v3 下是**通过**（1.0 > 0.3000）。
+    v2 才会把满分判失败（"数据太简单"）。
+
+    这条断言的是"能发现并执行"，不是"被判失败"。
+    """
     import evals.tools.check_v2_dataset as module
     from evals.datasets.retrieval_v2 import load_dataset
     from evals.tools.check_v2_dataset import check_f24_axis_a_not_saturated
@@ -112,11 +119,11 @@ def test_f24_finds_zone_products(tmp_path: Path, monkeypatch) -> None:
     ds = load_dataset(DATA / "sample")
     check = check_f24_axis_a_not_saturated(ds)
 
-    # v3 签名 vs 当前 v3 -> 同装置，应执行；A 轴 10/10 -> 满分 -> 失败
     assert check.applicable, f"v3 分区产物未被发现：{check.detail}"
-    assert not check.passed, (
-        f"A 轴 10/10 满分应判失败（饱和）：{check.detail}"
-    )
+    # 真的执行了：detail 里有实测值
+    assert "实测 10/10=1.0000" in check.detail, check.detail
+    # v3 判据：1.0 > 0.3000 -> 通过
+    assert check.passed, f"v3 下 1.0 > 基线，应通过：{check.detail}"
     assert "1.0000" in check.detail
 
 

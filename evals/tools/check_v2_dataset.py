@@ -39,7 +39,9 @@ from evals.datasets.retrieval_v2 import (
 )
 from evals.metrics.v2_baselines import (
     axis_baseline,
+    axis_baseline_derived,
     competing_set,
+    derived_axis_of,
     monte_carlo_seh,
 )
 from memory.retrieval.condition import _ALIASES
@@ -1222,9 +1224,34 @@ def check_f24_axis_a_not_saturated(dataset: Dataset, *, ceiling: float = 0.9999)
     """
     from evals.datasets.retrieval_v2 import Axis as _Axis
 
-    baseline = axis_baseline(dataset, _Axis.A)
-    if baseline.queries == 0:
-        return Check("F24", "A 轴未饱和", True, "没有 A 轴查询")
+    # **两套轴口径**：
+    #
+    # | 装置 | 数据侧基线 | 结果侧分组 | 结果侧判据 |
+    # |---|---|---|---|
+    # | v2 | `axis_baseline(dataset, Axis.A)`（标注） | 标注 A | `ratio < ceiling`（不满分） |
+    # | v3 | `axis_baseline_derived()["relation_within"]` | **派生 within** |
+    # 判据 **`ratio > baseline`** |
+    #
+    # **v3 为什么换判据**："不满分"在 v3 下没有意义——
+    # v2 里满分意味着"数据太简单"（坏），v3 里满分可能意味着"排序有效"（好）。
+    # 两个方向相反，所以 v3 判"是否比随机好"。
+    is_v3 = CURRENT_APPARATUS == "v3"
+
+    if is_v3:
+        derived = axis_baseline_derived(dataset)
+        baseline_seh1 = derived["relation_within"]
+        baseline_note = f"派生 within 基线 {baseline_seh1:.4f}"
+        if not derived:
+            return Check("F24", "A 轴未饱和", True, "没有查询")
+    else:
+        baseline = axis_baseline(dataset, _Axis.A)
+        if baseline.queries == 0:
+            return Check("F24", "A 轴未饱和", True, "没有 A 轴查询")
+        baseline_seh1 = baseline.seh_at_1
+        baseline_note = (
+            f"随机基线 SEH@1={baseline_seh1:.4f}"
+            f"（竞争集均值 {baseline.mean_pool_size:.2f}）"
+        )
 
     # 两段的结论要**分别写出来**，不能合并成一句话。
     #
@@ -1236,11 +1263,8 @@ def check_f24_axis_a_not_saturated(dataset: Dataset, *, ceiling: float = 0.9999)
     # `v2-billing-lexical-vector-adjacency.json` 存在。
     # 删掉它，F24 会变绿。**这个依赖必须可见。**
     data_side_problem: str | None = None
-    if baseline.seh_at_1 >= ceiling:
-        data_side_problem = (
-            f"随机基线 SEH@1={baseline.seh_at_1:.4f} 已饱和"
-            f"（竞争集均值 {baseline.mean_pool_size:.2f}）"
-        )
+    if baseline_seh1 >= ceiling:
+        data_side_problem = f"{baseline_note} 已饱和"
 
     result_side_problem: str | None = None
     result_side_note = "未跑（无结果文件）"
@@ -1250,7 +1274,16 @@ def check_f24_axis_a_not_saturated(dataset: Dataset, *, ceiling: float = 0.9999)
     # 于是"没找到文件"得到 `passed=True`——**门禁没跑却报告通过**。
     # 用布尔量与文案解耦：不靠"detail 里有没有'未跑'"这种字符串匹配。
     result_side_ran = False
-    dataset_a = {q.query_id for q in dataset.queries if q.axis is _Axis.A}
+
+    if is_v3:
+        # v3：结果侧按**派生 within** 分组
+        dataset_a = {
+            q.query_id
+            for q in dataset.queries
+            if derived_axis_of(dataset, q) == "relation_within"
+        }
+    else:
+        dataset_a = {q.query_id for q in dataset.queries if q.axis is _Axis.A}
 
     candidates = result_files("*-lexical-vector-adjacency.json")
     matched_subject = False
@@ -1323,7 +1356,22 @@ def check_f24_axis_a_not_saturated(dataset: Dataset, *, ceiling: float = 0.9999)
             f"实测 {hit_scored}/{len(scored_a)}={ratio:.4f}"
             f"（{path.name}{skip_note}）"
         )
-        if ratio >= ceiling:
+
+        if is_v3:
+            # **v3 判据：是否比随机好**，不是"是否不满分"。
+            #
+            # | 装置 | 满分意味着 |
+            # |---|---|
+            # | v2 | 数据太简单（坏） |
+            # | v3 | 排序有效（好） |
+            #
+            # 两个方向相反，所以阈值不能沿用。
+            if ratio <= baseline_seh1:
+                result_side_problem = (
+                    result_side_note
+                    + f"——不高于派生基线 {baseline_seh1:.4f}"
+                )
+        elif ratio >= ceiling:
             result_side_problem = result_side_note + "——满分意味着测不到区分能力"
         break
 
@@ -1343,7 +1391,7 @@ def check_f24_axis_a_not_saturated(dataset: Dataset, *, ceiling: float = 0.9999)
             "A 轴未饱和（SEH@1 不得满分）",
             False,
             f"[数据侧{'通过' if data_side_problem is None else '失败'}] "
-            f"随机基线 {baseline.seh_at_1:.4f}；"
+            f"{baseline_note}；"
             f"结果目录里没有任何三路产物（分区 {ZONE_NAMES} 与顶层都为空）——"
             "这代还没有数据，不是配置错。",
             applicable=False,
@@ -1373,16 +1421,20 @@ def check_f24_axis_a_not_saturated(dataset: Dataset, *, ceiling: float = 0.9999)
     data_mark = "通过" if data_side_problem is None else "失败"
     result_mark = "通过" if result_side_problem is None else "失败"
     detail = (
-        f"[数据侧{data_mark}] 随机基线 {baseline.seh_at_1:.4f}、"
-        f"竞争集均值 {baseline.mean_pool_size:.2f}；"
+        f"[数据侧{data_mark}] {baseline_note}；"
         f"[结果侧{result_mark}] {result_side_note}"
     )
     if data_side_problem:
         detail += f"；饱和：{data_side_problem}"
     if result_side_problem:
-        detail += "；满分意味着测不到区分能力"
+        detail += "；" + result_side_problem
 
-    return Check("F24", "A 轴未饱和（SEH@1 不得满分）", passed, detail)
+    title = (
+        "A 轴未饱和（SEH@1 高于派生基线）"
+        if is_v3
+        else "A 轴未饱和（SEH@1 不得满分）"
+    )
+    return Check("F24", title, passed, detail)
 
 
 ALL_CHECKS = (
