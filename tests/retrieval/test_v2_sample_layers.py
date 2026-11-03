@@ -146,9 +146,18 @@ def test_gate_count_matches_actual_runs() -> None:
     )
 
     # 4. 当前值必须写在 HANDOFF（唯一"当前状态"入口）
+    #
+    # **三态必须分开**：`applicable=False` 既不算通过也不算失败。
+    # 旧写法只断言 `ledger {passed}/27`，那会把"不适用"隐藏掉——
+    # 而 HANDOFF 现在写的是"19 通过 / 2 不适用 / 6 未通过"。
     handoff = (ROOT / "docs" / "HANDOFF.md").read_text(encoding="utf-8")
-    assert f"ledger {passed}/27" in handoff, (
-        f"HANDOFF 未写当前值 ledger {passed}/27"
+    na_count = sum(1 for r in results if not r.applicable)
+    failed_count = sum(1 for r in results if r.applicable and not r.passed)
+
+    expected = f"**{passed} 通过 / {na_count} 不适用 / {failed_count} 未通过**"
+    assert expected in handoff, (
+        f"HANDOFF 未写三态 `{expected}`。"
+        "只写 `X/27` 会把'不适用'与'失败'压成一格。"
     )
 
     # 5. 失败项 = 历史失败项 + 新增的"不适用"项

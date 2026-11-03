@@ -1241,12 +1241,23 @@ def check_f24_axis_a_not_saturated(dataset: Dataset, *, ceiling: float = 0.9999)
         derived = axis_baseline_derived(dataset)
         baseline_value = derived.get("relation_within")
         if baseline_value is None:
+            # **"判据没有主语"不是"不适用"**：
+            #
+            # `applicable=False` 的语义是"跨装置，判据不成立"；
+            # 而这里装置是对的，是数据形状让 F24 没有对象
+            # （该 subject 的 relation 全单值 -> 派生 within 为空）。
+            #
+            # 用 `applicable=False` 会让两种完全不同的原因混进同一个值。
+            # 所以判"适用但失败"，并在 detail 里写明原因。
+            #
+            # **v3 数据约束要配套**：每个 subject MUST 至少有 1 条派生 within 查询，
+            # 否则这条会在合法数据上永久红。
             return Check(
                 "F24",
                 "A 轴未饱和（SEH@1 在派生基线与上限之间）",
-                True,
-                "没有派生 within 查询——无从计算基线",
-                applicable=False,
+                False,
+                "该 subject 没有派生 within 查询（relation 全单值）——"
+                "F24 的判据没有主语。v3 数据要求每个 subject 至少 1 条派生 within。",
             )
         baseline_seh1 = baseline_value
         baseline_note = f"派生 within 基线 {baseline_seh1:.4f}"
@@ -1526,11 +1537,38 @@ def main(argv: list[str] | None = None) -> int:
     print()
     width = max(len(r.title) for r in results)
     for result in results:
-        mark = "PASS" if result.passed else "FAIL"
+        # **三态标记**：不适用不能显示成 FAIL——
+        # 那会让"没在检查当前装置"与"检查了但没通过"看起来一样。
+        if not result.applicable:
+            mark = "N/A "
+        elif result.passed:
+            mark = "PASS"
+        else:
+            mark = "FAIL"
         print(f"  [{mark}] {result.code:4} {result.title:<{width}}  {result.detail}")
-    failed = [r for r in results if not r.passed]
+
+    # **三态必须三个数**：
+    #
+    # | 状态 | 计入通过 | 计入失败 |
+    # |---|---|---|
+    # | applicable & passed | ✅ | ❌ |
+    # | applicable & !passed | ❌ | ✅ |
+    # | !applicable | ❌ | ❌ |
+    #
+    # 旧实现用 `not r.passed` 一网打尽，把"不适用"算进了失败。
+    # 实测 billing：23 通过 / 2 不适用 / 2 未通过，而旧输出是"通过 23/27" +
+    # 把 4 条列为未通过。
+    na = [r for r in results if not r.applicable]
+    failed = [r for r in results if r.applicable and not r.passed]
+    passed = [r for r in results if r.applicable and r.passed]
+
     print()
-    print(f"通过 {len(results) - len(failed)}/{len(results)}")
+    print(
+        f"通过 {len(passed)} / 不适用 {len(na)} / 未通过 {len(failed)}"
+        f"（共 {len(results)}）"
+    )
+    if na:
+        print(f"不适用：{', '.join(r.code for r in na)}（跨装置或判据不成立）")
     if failed:
         print(f"未通过：{', '.join(r.code for r in failed)}")
         print(
@@ -1555,6 +1593,9 @@ def main(argv: list[str] | None = None) -> int:
                     "code": r.code,
                     "title": r.title,
                     "passed": r.passed,
+                    # **必须写 `applicable`**：没有它，结果文件无法区分
+                    # "不适用"与"失败"，而 HANDOFF 里所有 X/27 都靠这个文件复算。
+                    "applicable": r.applicable,
                     "detail": r.detail,
                 }
                 for r in results
@@ -1568,6 +1609,7 @@ def main(argv: list[str] | None = None) -> int:
         )
         print(f"-> {args.json}")
 
+    # `failed` 现在只含"适用且未通过"——"不适用"不影响退出码。
     return 0 if not failed else 1
 
 

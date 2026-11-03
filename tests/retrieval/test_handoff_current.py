@@ -62,7 +62,11 @@ def test_protocol_is_marked_frozen_not_pending() -> None:
 
 
 def test_gate_status_matches_actual_run() -> None:
-    """§0 写的门禁通过数必须与实际一致。"""
+    """§0 写的门禁三态必须与实际一致。
+
+    **三态必须分开**：`applicable=False` 既不算通过也不算失败。
+    旧写法只断言 `{label} {passed}/27`，那会把"不适用"隐藏掉。
+    """
     text = _text()
 
     sys.path.insert(0, str(ROOT))
@@ -74,9 +78,16 @@ def test_gate_status_matches_actual_run() -> None:
         if not dataset_dir.exists():
             pytest.skip(f"{name} 缺失")
         results = run_all(load_dataset(dataset_dir))
-        passed = sum(1 for r in results if r.passed)
-        expected = f"{label} {passed}/{len(results)}"
-        assert expected in text, f"HANDOFF 未写 {expected}"
+        passed = sum(1 for r in results if r.applicable and r.passed)
+        na = sum(1 for r in results if not r.applicable)
+        failed = sum(1 for r in results if r.applicable and not r.passed)
+
+        # HANDOFF 里写的是 "ledger **19 通过 / 2 不适用 / 6 未通过**（共 27）"
+        expected = f"{label} **{passed} 通过 / {na} 不适用 / {failed} 未通过**"
+        assert expected in text, (
+            f"HANDOFF 未写三态 `{expected}`。"
+            "只写 `X/27` 会把'不适用'与'失败'压成一格。"
+        )
 
 
 def test_no_duplicate_runtime_block() -> None:
