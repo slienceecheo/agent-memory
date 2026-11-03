@@ -55,27 +55,38 @@ def test_l6c_requires_a_real_run_file() -> None:
 
 @pytest.mark.parametrize("field", ["lexical", "vector", "adjacency"])
 def test_l6c_fails_when_a_path_returns_zero(field: str, tmp_path: Path, monkeypatch) -> None:
-    """任一路返回 0 条时必须判失败。"""
+    """任一路返回 0 条时必须判失败。
+
+    **必须把假文件造成 v3 签名**（`per_case[0]` 带 `features`）：
+    否则适用域检查会先短路，返回"跨装置，不适用"——
+    那时本测试**测不到 L6c 的判据**，只是恰好因为 `passed=False` 而通过。
+    这正是"不适用掩盖判据"的形态。
+    """
     target = RESULTS / "a3-lexical-vector-adjacency.json"
     if not target.exists():
         pytest.skip("缺少三路运行结果")
 
     payload = json.loads(target.read_text(encoding="utf-8"))
     payload["path_returns"][field] = 0
-    broken = tmp_path / "broken.json"
-    broken.write_text(json.dumps(payload, ensure_ascii=False), encoding="utf-8")
+    # **改成 v3 签名**，让判据真正被执行
+    for case in payload.get("per_case") or []:
+        case["features"] = {"base": 1.0, "authority": 1.0, "status": 1.0}
 
     import evals.tools.check_v2_dataset as module
 
     monkeypatch.setattr(module, "ROOT", tmp_path.parent)
-    # 直接构造同名路径
     fake_results = tmp_path.parent / "results"
     fake_results.mkdir(exist_ok=True)
     (fake_results / "a3-lexical-vector-adjacency.json").write_text(
-        broken.read_text(encoding="utf-8"), encoding="utf-8"
+        json.dumps(payload, ensure_ascii=False), encoding="utf-8"
     )
 
     result = check_l6c_paths_return_nonempty(None)  # type: ignore[arg-type]
 
+    # 先确认没被适用域短路——否则下面断言的是"跨装置"，不是判据
+    assert result.applicable, (
+        "被适用域短路了。本测试要验 L6c 的判据，不是装置关系——"
+        "假文件必须造成 v3 签名。"
+    )
     assert result.passed is False
     assert f"{field} 返回 0 条" in result.detail

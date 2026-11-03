@@ -42,20 +42,30 @@ def test_f24_is_registered() -> None:
     }
 
 
-def test_f24_passes_on_ledger() -> None:
-    """ledger 的 A 轴 SEH@1 = 0.9000，有区分空间。"""
+def test_f24_passes_on_ledger(monkeypatch) -> None:
+    """v2 装置下：ledger 的 A 轴 SEH@1 = 0.9000，有区分空间。
+
+    **必须把装置设回 v2**：当前代码是 v3，F24 在 v3 下不适用
+    （阈值语义随装置反转）。本条测的是 **v2 装置下 F24 的判据**，
+    所以显式声明装置版本，而不是依赖全局默认。
+    """
     if not SAMPLE.exists():
         pytest.skip("样例数据集缺失")
+
+    import evals.tools.check_v2_dataset as module
+
+    monkeypatch.setattr(module, "CURRENT_APPARATUS", "v2")
 
     result = check_f24_axis_a_not_saturated(load_dataset(SAMPLE))
 
     assert result.code == "F24"
+    assert result.applicable, "v2 装置下 F24 应适用"
     assert result.passed, result.detail
     assert "0.3000" in result.detail
 
 
-def test_f24_fails_on_billing() -> None:
-    """**billing 的 A 轴 SEH@1 = 1.0000 —— 这是正确的失败。**
+def test_f24_fails_on_billing(monkeypatch) -> None:
+    """v2 装置下：**billing 的 A 轴 SEH@1 = 1.0000 —— 这是正确的失败。**
 
     它不是装置问题：0 条并列，gold 与第二名差距 0.085–0.253。
     所以失败的含义是"这份数据测不到区分能力"，不是"门禁写错了"。
@@ -63,34 +73,48 @@ def test_f24_fails_on_billing() -> None:
     if not BILLING.exists():
         pytest.skip("billing 数据集缺失")
 
+    import evals.tools.check_v2_dataset as module
+
+    monkeypatch.setattr(module, "CURRENT_APPARATUS", "v2")
+
     result = check_f24_axis_a_not_saturated(load_dataset(BILLING))
 
     assert result.code == "F24"
+    assert result.applicable
     assert not result.passed
     assert "1.0000" in result.detail
     assert "测不到区分能力" in result.detail
 
 
-def test_f24_data_side_check_works_without_results(tmp_path: Path) -> None:
+def test_f24_data_side_check_works_without_results(
+    tmp_path: Path, monkeypatch
+) -> None:
     """数据侧检查（随机基线）不依赖结果文件。
 
     F24 分两段：数据侧（随机基线 < 1.0）永远执行；
     结果侧（实测 SEH@1 不得满分）只在结果文件存在时执行。
     这保证合格性检查不依赖系统分数（协议 §1.1）。
+
+    **把装置设回 v2**：v3 下 F24 整体不适用，就测不到数据侧了。
     """
     if not SAMPLE.exists():
         pytest.skip("样例数据集缺失")
+
+    import evals.tools.check_v2_dataset as module
+
+    monkeypatch.setattr(module, "CURRENT_APPARATUS", "v2")
 
     dataset = load_dataset(SAMPLE)
     # 用 ceiling=0 让随机基线这一侧必然失败，证明它被执行了
     result = check_f24_axis_a_not_saturated(dataset, ceiling=0.0)
 
+    assert result.applicable
     assert not result.passed
     assert "数据侧失败" in result.detail
 
 
-def test_f24_detail_shows_both_stages() -> None:
-    """**detail 必须分别写出数据侧与结果侧的结论。**
+def test_f24_detail_shows_both_stages(monkeypatch) -> None:
+    """v2 装置下：**detail 必须分别写出数据侧与结果侧的结论。**
 
     否则读者无法判断"如果没跑评测，这条会是什么"。
 
@@ -101,7 +125,12 @@ def test_f24_detail_shows_both_stages() -> None:
     if not SAMPLE.exists():
         pytest.skip("样例数据集缺失")
 
+    import evals.tools.check_v2_dataset as module
+
+    monkeypatch.setattr(module, "CURRENT_APPARATUS", "v2")
+
     ledger = check_f24_axis_a_not_saturated(load_dataset(SAMPLE))
+    assert ledger.applicable
     assert "[数据侧通过]" in ledger.detail
     assert "[结果侧" in ledger.detail
 
@@ -111,6 +140,28 @@ def test_f24_detail_shows_both_stages() -> None:
         assert "[数据侧通过]" in billing.detail
         assert "[结果侧失败]" in billing.detail
         assert not billing.passed
+
+
+def test_f24_is_not_applicable_on_v3() -> None:
+    """**当前装置是 v3 时，F24 必须不适用**——这是本变更的产出。
+
+    它与上面三条（v2 装置下的行为）是互斥的两面：
+    判据本身没变，变的是"在当前装置下它是否成立"。
+    """
+    if not SAMPLE.exists():
+        pytest.skip("样例数据集缺失")
+
+    from evals.tools.check_v2_dataset import CURRENT_APPARATUS
+
+    assert CURRENT_APPARATUS == "v3", (
+        f"当前装置是 {CURRENT_APPARATUS!r}，不是 v3——"
+        "本条断言的场景不成立"
+    )
+
+    result = check_f24_axis_a_not_saturated(load_dataset(SAMPLE))
+    assert not result.applicable
+    assert not result.passed
+    assert "v3" in result.detail
 
 
 def test_f24_marks_result_side_as_not_run_when_no_file(tmp_path: Path) -> None:

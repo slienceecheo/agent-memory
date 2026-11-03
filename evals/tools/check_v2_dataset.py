@@ -53,10 +53,106 @@ class Check:
     title: str
     passed: bool
     detail: str
+    # 适用域：产物由别的装置产生时为 False。
+    #
+    # **`applicable=False` 时 `passed` 必须为 False**（构造时校验）：
+    # "不适用"不是"通过"。把不适用记成通过，会让 6 条读历史产物的门禁
+    # 全部显示为健康——而那正是本变更要暴露的问题。
+    applicable: bool = True
+
+    def __post_init__(self) -> None:
+        if not self.applicable and self.passed:
+            raise ValueError(
+                f"{self.code}: applicable=False 时 passed 必须为 False。"
+                "'不适用'与'通过'是两件事——"
+                "记成通过会让'没在检查任何东西'看起来是健康的。"
+            )
+
+
+# 当前代码的排序装置。
+#
+# **必须是显式常量，不能从产物推**：产物的签名回答"这东西是谁产的"，
+# 而不是"当前代码是哪一代"。用产物判当前装置，会让"读到旧文件"
+# 变成"以为自己在用旧装置"。
+#
+# 与 `evals/run_retrieval.py` 的三特征装置对应：v3 里 `condition` 不参与加权。
+CURRENT_APPARATUS = "v3"
+
+
+def _not_applicable(code: str, title: str, *, source: str, reason: str) -> Check:
+    """构造"不适用"的 Check。
+
+    **只有"判据依赖装置"的门禁才用这个**：
+
+    | 门禁 | 判据 | 依赖装置？ | 处置 |
+    |---|---|---|---|
+    | `L6b` | 池内向量都写入（范数非零） | ❌ | **照跑** |
+    | `L8` | dedup 收到的分数有方差 | ❌ | **照跑** |
+    | `L6c` | 三路召回都返回非空 | ❌ | **照跑** |
+    | `F19b` | implicit 的 gold 被召回 | ❌（召回不依赖排序） | **照跑** |
+    | `F20` | condition 对 A 轴有贡献 | **✅ 判据已不存在** | 不适用 |
+    | `F24` | A 轴 SEH@1 不满分 | **✅ 阈值意义随装置变** | 不适用 |
+
+    **这个区分比装置签名更根本**：签名只是识别手段，
+    "判据依赖什么"才是该不该跑的理由。
+    把 L6c 判成"不适用"，等于永久关掉一条在 v3 下仍然有效的门禁。
+    """
+    return Check(
+        code,
+        title,
+        False,
+        f"不适用：{source} 由 {reason}。本门禁的判据依赖排序装置，"
+        "而在当前装置下该判据不成立。",
+        applicable=False,
+    )
 
 
 def _normalize(text: str) -> str:
     return re.sub(r"\s+", "", text).casefold()
+
+
+def apparatus_signature(payload: object) -> str:
+    """判断一份结果文件由哪个装置产生：`"v2"` / `"v3"` / `"unknown"`。
+
+    **两种文件格式，两套结构判据**（都只读文件自身，不依赖常量）：
+
+    | 格式 | 判据 | 为什么是结构事实 |
+    |---|---|---|
+    | 有 `per_case` | 有 `features` -> v3 | v2 的代码不写这个键 |
+    | 消融聚合 | 两轴逐条 rank 相同 -> v3 | 消融不改变名次 |
+
+    **为什么不用 `apparatus` 常量字段**：常量可以说谎。
+    若有人把 v3 代码回退成三特征前、或复制一份旧脚本，它仍会写
+    `apparatus: "v3"`——因为那就是一行常量。
+    而"消融不改变名次"是**跑出来的结果**，结构不能说谎。
+
+    **误判方向是安全的**：若一份 v3 数据的 condition 全为空（消融天然不改变名次），
+    它会被判成 v3 -> 门禁**执行** -> `F20` 得到 `drop=0 < 0.3` 而变红。
+    也就是说误判让门禁更严格，而不是静默变"不适用"。
+
+    局限：若将来 v4 也带 `features`，第一行判据失效，需换结构指纹。
+    """
+    if not isinstance(payload, dict):
+        return "unknown"
+
+    per_case = payload.get("per_case")
+    if isinstance(per_case, list) and per_case:
+        first = per_case[0]
+        if not isinstance(first, dict):
+            return "unknown"
+        return "v3" if "features" in first else "v2"
+
+    # 消融聚合格式
+    wc = payload.get("with_condition")
+    wo = payload.get("without_condition")
+    if isinstance(wc, dict) and isinstance(wo, dict) and wc:
+        if set(wc) != set(wo):
+            return "unknown"  # 覆盖的查询集不同，不可比
+        if all(wc[k] == wo[k] for k in wc):
+            return "v3"  # 消融不改变名次 = condition 不参与加权
+        return "v2"
+
+    return "unknown"
 
 
 def check_l1_no_verbatim_text(dataset: Dataset) -> Check:
@@ -421,6 +517,9 @@ def check_l6b_embedding_written() -> Check:
     if payload is None:
         return Check("L6b", "池构造写入向量", False, f"缺少 {THREE_PATH_RUN}")
 
+    # **不判适用域**：判据是"池内向量都写入了"，与排序装置无关。
+    # v2 装置写出的向量与 v3 装置的向量在这条判据下等价。
+
     cases = [
         c
         for c in payload["per_case"]  # type: ignore[index]
@@ -472,6 +571,8 @@ def check_l8_dedup_scores_have_variance() -> Check:
     if payload is None:
         return Check("L8", "dedup 分数有方差", False, f"缺少 {DEDUP_RUN}")
 
+    # **不判适用域**：判据是"dedup 收到的分数有方差"，与排序装置无关。
+
     cases = [
         c
         for c in payload["per_case"]  # type: ignore[index]
@@ -516,6 +617,10 @@ def check_l6c_paths_return_nonempty(dataset: Dataset) -> Check:
         )
 
     payload = json.loads(run_file.read_text(encoding="utf-8"))
+
+    # **不判适用域**：判据是"三路召回都返回非空"，与排序装置无关。
+    # 把它判成"不适用"等于永久关掉一条在 v3 下仍然有效的门禁。
+
     returns = payload.get("path_returns") or {}
     enabled = set(payload.get("paths_enabled") or [])
 
@@ -850,7 +955,7 @@ def check_f19a_implicit_gold_complete(dataset: Dataset) -> Check:
     )
 
 
-def _ablation_for_subjects(dataset: Dataset) -> tuple[dict[str, object], str]:
+def _ablation_for_subjects(dataset: Dataset) -> tuple[dict[str, object], str, str]:
     """找到覆盖数据集全部 subject 的消融结果文件。
 
     **为什么不能硬编码文件名**：`check_f19b` / `check_f20` 曾经写死读
@@ -862,6 +967,9 @@ def _ablation_for_subjects(dataset: Dataset) -> tuple[dict[str, object], str]:
 
     做法：按 subject 集合匹配。文件名约定 `v2-<subject>-condition-ablation.json`，
     而样例期用的是 `v2-sample-condition-ablation.json`。
+
+    **返回三元组**（payload, 文件名, 装置签名）：签名让调用方判断适用域，
+    而不是把"读到文件了"当成"文件适用于当前装置"。
     """
     candidates = sorted(ROOT.joinpath("results").glob("v2-*-condition-ablation.json"))
 
@@ -871,9 +979,9 @@ def _ablation_for_subjects(dataset: Dataset) -> tuple[dict[str, object], str]:
         dataset_ids = {q.query_id for q in dataset.queries}
         # 全覆盖：该文件包含本数据集的每条查询
         if dataset_ids and dataset_ids <= ranked_ids:
-            return payload, path.name
+            return payload, path.name, apparatus_signature(payload)
 
-    return {}, ""
+    return {}, "", "unknown"
 
 
 def check_f19b_implicit_gold_recalled(dataset: Dataset) -> Check:
@@ -892,7 +1000,7 @@ def check_f19b_implicit_gold_recalled(dataset: Dataset) -> Check:
     一个 C 轴 case 召回失败时它红（与 implicit 无关），
     而 implicit 的失败被别处抵消时它绿（正是要防的情况）。
     """
-    payload, source = _ablation_for_subjects(dataset)
+    payload, source, _ = _ablation_for_subjects(dataset)
     if not payload:
         return Check(
             "F19b",
@@ -900,6 +1008,10 @@ def check_f19b_implicit_gold_recalled(dataset: Dataset) -> Check:
             False,
             "没有覆盖本数据集的消融结果；先跑 evals.tools.ablate_condition --dataset <目录>",
         )
+
+    # **不判适用域**：判据是"implicit 的 gold 被召回"，
+    # 而**召回路径不依赖排序装置**——condition 退出加权不影响召回。
+    # 把它判成"不适用"会丢掉一条在 v3 下仍该跑的门禁。
 
     implicit_ids = {
         q.query_id for q in dataset.queries if q.cue_type.value == "implicit"
@@ -942,13 +1054,27 @@ def check_f20_condition_contributes(dataset: Dataset) -> Check:
 
     **按 subject 匹配结果文件**，理由同 `_ablation_for_subjects`。
     """
-    payload, source = _ablation_for_subjects(dataset)
+    payload, source, _ = _ablation_for_subjects(dataset)
     if not payload:
         return Check(
             "F20",
             "condition 对 A 轴有贡献",
             False,
             "没有覆盖本数据集的消融结果；先跑 evals.tools.ablate_condition --dataset <目录>",
+        )
+
+    # **这条的判据依赖装置**：它测"去掉 condition 后 A 轴 SEH@1 掉多少"。
+    # 而在 v3 里 condition 不参与加权，掉幅**恒为 0**——判据本身不成立。
+    #
+    # **所以按当前代码的装置分支**，而不是按产物的签名：
+    # 产物是 v2 的（`signature == "v2"`）只说明"这份文件能读"，
+    # 不说明"它的数字能用来回答当前装置的问题"。
+    if CURRENT_APPARATUS == "v3":
+        return _not_applicable(
+            "F20",
+            "condition 对 A 轴有贡献",
+            source=source,
+            reason="v3 装置（condition 不参与加权，该判据已不存在）",
         )
 
     drop = payload.get("drop")
@@ -1013,19 +1139,70 @@ def check_f24_axis_a_not_saturated(dataset: Dataset, *, ceiling: float = 0.9999)
 
     result_side_problem: str | None = None
     result_side_note = "未跑（无结果文件）"
+    dataset_a = {q.query_id for q in dataset.queries if q.axis is _Axis.A}
+
     for path in sorted((ROOT / "results").glob("v2-*-lexical-vector-adjacency.json")):
         payload = json.loads(path.read_text(encoding="utf-8"))
         cases = payload.get("per_case") or []
         if not cases:
             continue
         case_ids = {c["case_id"] for c in cases}
-        dataset_a = {q.query_id for q in dataset.queries if q.axis is _Axis.A}
+
+        # **先按内容匹配 subject，再判适用域。**
+        #
+        # 顺序不能反：`v2-*-lexical-vector-adjacency.json` 会匹配到**两个 subject**
+        # 的文件。若先判适用域，第一个文件（sorted 后是 billing）就会短路返回——
+        # 于是 `sample` 的 F24 会拿 billing 的文件名说话。
+        # 实测过：把适用域判断放在前面时，sample 的 detail 写的是
+        # `v2-billing-lexical-vector-adjacency.json`。
         if not dataset_a <= case_ids:
             continue
+
+        # **这条的判据依赖装置**：阈值 `< 0.9999` 的意义随装置变。
+        #
+        # | 配置 | A 轴 SEH@1 | 判据 | 真实含义 |
+        # |---|---|---|---|
+        # | v2 三路 | 1.0000 | **红**（饱和） | 装置健康，指标饱和 |
+        # | v3 单路 | 0.8333 | **绿** | **排序能力下降** |
+        #
+        # 同一个阈值，两种装置下绿/红的意义相反——所以按**当前代码的装置**判，
+        # 不按产物签名。产物是 v2 的只说明"能读"，不说明"它的数字能用"。
+        if CURRENT_APPARATUS == "v3":
+            return _not_applicable(
+                "F24",
+                "A 轴未饱和（SEH@1 不得满分）",
+                source=path.name,
+                reason="v3 装置（阈值语义随装置变：满分与低分都不再表示'饱和/健康'）",
+            )
+
         ranks = {c["case_id"]: c["rank_after_rerank"] for c in cases}
-        hit = sum(1 for qid in dataset_a if ranks.get(qid) == 1)
-        ratio = hit / len(dataset_a)
-        result_side_note = f"实测 {hit}/{len(dataset_a)}={ratio:.4f}（{path.name}）"
+
+        # **分母必须是已评分的 A**，不是全部 A 标注。
+        #
+        # 未评分的 case（池不足 K 被 skip，`rank_after_rerank` 为 None）
+        # 没有名次。把它们算作"未命中"会系统性低报：
+        #
+        # | 文件 | A 标注 | 已评分 | hit | 全部 A 分母 | 已评分分母 |
+        # |---|---|---|---|---|---|
+        # | `v2-sample-lexical.json` | 10 | 6 | 6 | 0.6000 | **1.0000** |
+        # | `v2-billing-lexical.json` | 9 | 7 | 7 | 0.7778 | **1.0000** |
+        # | `v2-sample-threeway.json` | 10 | 10 | 9 | 0.9000 | 0.9000 |
+        #
+        # **这个缺陷 F24 自己发现不了**：它只 glob 三路文件，而三路的
+        # 已评分数恰好等于 A 标注总数。所以低报只在单路配置上可见，
+        # 必须由 `test_f24_denominator.py` 用单路文件覆盖。
+        scored_a = [qid for qid in dataset_a if ranks.get(qid) is not None]
+        if not scored_a:
+            result_side_note = f"无已评分 A（{path.name}）"
+            continue
+        hit_scored = sum(1 for qid in scored_a if ranks[qid] == 1)
+        ratio = hit_scored / len(scored_a)
+        skipped = len(dataset_a) - len(scored_a)
+        skip_note = f"，跳过 {skipped} 条未评分" if skipped else ""
+        result_side_note = (
+            f"实测 {hit_scored}/{len(scored_a)}={ratio:.4f}"
+            f"（{path.name}{skip_note}）"
+        )
         if ratio >= ceiling:
             result_side_problem = result_side_note + "——满分意味着测不到区分能力"
         break

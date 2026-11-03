@@ -121,6 +121,14 @@ def test_gate_verdicts_still_reproduce() -> None:
     from evals.datasets.retrieval_v2 import load_dataset
     from evals.tools.check_v2_dataset import run_all
 
+    # **判据依赖装置的两条不参与比对**：它们的 `passed` 从 `True` 变成
+    # "不适用"（仍非通过）是本变更的**有意产出**，不是装置不确定性。
+    #
+    # 这条测试防的是"同一份产物给出不同判定"（确定性），
+    # 而 F20/F24 的变化来自"判据在当前装置下不成立"——
+    # 排除它们不会削弱确定性检查，因为其余 25 条仍在比对。
+    APPARATUS_DEPENDENT = {"F20", "F24"}
+
     for name, path in (
         ("sample", "v2-sample-gates.json"),
         ("billing", "v2-billing-gates.json"),
@@ -129,10 +137,15 @@ def test_gate_verdicts_still_reproduce() -> None:
         if not stored_path.exists():
             pytest.skip(f"{path} 缺失")
         stored = json.loads(stored_path.read_text(encoding="utf-8"))
-        stored_checks = {c["code"]: c["passed"] for c in stored["checks"]}
+        stored_checks = {
+            c["code"]: c["passed"]
+            for c in stored["checks"]
+            if c["code"] not in APPARATUS_DEPENDENT
+        }
         fresh = {
             r.code: r.passed
             for r in run_all(load_dataset(ROOT / "data" / "retrieval-v2" / name))
+            if r.code not in APPARATUS_DEPENDENT
         }
 
         diff = {
@@ -141,6 +154,13 @@ def test_gate_verdicts_still_reproduce() -> None:
             if stored_checks[k] != fresh.get(k)
         }
         assert not diff, f"{name} 的判定变了：{diff}"
+
+        # **排除后仍必须有足够多的条目被比对**：若 `APPARATUS_DEPENDENT`
+        # 写宽了（例如把所有 code 都放进去），上面那条会恒真。
+        assert len(stored_checks) >= 25, (
+            f"{name}: 只比对了 {len(stored_checks)} 条，应 >= 25。"
+            "排除清单可能写宽了。"
+        )
 
 
 def test_handoff_documents_the_fingerprint_tag_gap() -> None:
@@ -205,18 +225,25 @@ def test_gates_result_f24_detail_may_lag_but_verdict_must_match() -> None:
     assert stored_f24["passed"] is False, "billing 的 F24 应当仍是失败"
 
 
-def test_f24_detail_now_separates_both_stages() -> None:
-    """当前代码的 F24 detail 必须分两段写（这是 tag 之后的改进）。"""
+def test_f24_detail_now_separates_both_stages(monkeypatch) -> None:
+    """v2 装置下，F24 的 detail 必须分两段写（这是 tag 之后的改进）。
+
+    **把装置设回 v2**：v3 下 F24 整体不适用，detail 不写数据侧/结果侧。
+    """
     import sys
 
     sys.path.insert(0, str(ROOT))
+    import evals.tools.check_v2_dataset as module
     from evals.datasets.retrieval_v2 import load_dataset
     from evals.tools.check_v2_dataset import check_f24_axis_a_not_saturated
+
+    monkeypatch.setattr(module, "CURRENT_APPARATUS", "v2")
 
     for name in ("sample", "billing"):
         result = check_f24_axis_a_not_saturated(
             load_dataset(ROOT / "data" / "retrieval-v2" / name)
         )
+        assert result.applicable, f"{name}: v2 装置下应适用"
         assert "[数据侧" in result.detail, f"{name} 未标数据侧"
         assert "[结果侧" in result.detail, f"{name} 未标结果侧"
 
