@@ -1239,10 +1239,17 @@ def check_f24_axis_a_not_saturated(dataset: Dataset, *, ceiling: float = 0.9999)
 
     if is_v3:
         derived = axis_baseline_derived(dataset)
-        baseline_seh1 = derived["relation_within"]
+        baseline_value = derived.get("relation_within")
+        if baseline_value is None:
+            return Check(
+                "F24",
+                "A 轴未饱和（SEH@1 在派生基线与上限之间）",
+                True,
+                "没有派生 within 查询——无从计算基线",
+                applicable=False,
+            )
+        baseline_seh1 = baseline_value
         baseline_note = f"派生 within 基线 {baseline_seh1:.4f}"
-        if not derived:
-            return Check("F24", "A 轴未饱和", True, "没有查询")
     else:
         baseline = axis_baseline(dataset, _Axis.A)
         if baseline.queries == 0:
@@ -1265,6 +1272,15 @@ def check_f24_axis_a_not_saturated(dataset: Dataset, *, ceiling: float = 0.9999)
     data_side_problem: str | None = None
     if baseline_seh1 >= ceiling:
         data_side_problem = f"{baseline_note} 已饱和"
+
+    # **数据侧在 v3 下是恒真的**——必须写明，否则读者会以为两段都在验。
+    #
+    # 派生 within 的池大小 `= n_competitors + 1 >= 2`，所以基线最大 `1/2 = 0.5`，
+    # 永远小于 `0.9999`。实测：`sample` 理论最大 1/3、`billing` 1/3。
+    #
+    # 真正有判别力的是结果侧（`ratio > baseline` 且 `ratio < ceiling`）。
+    # 保留数据侧是因为**若将来池大小退化成 1**（`n_competitors` 全为 0），
+    # 基线会变成 1.0，那时这条会红——它防的是那个形状退化。
 
     result_side_problem: str | None = None
     result_side_note = "未跑（无结果文件）"
@@ -1358,18 +1374,28 @@ def check_f24_axis_a_not_saturated(dataset: Dataset, *, ceiling: float = 0.9999)
         )
 
         if is_v3:
-            # **v3 判据：是否比随机好**，不是"是否不满分"。
+            # **v3 判据：两档都要**。
             #
-            # | 装置 | 满分意味着 |
-            # |---|---|
-            # | v2 | 数据太简单（坏） |
-            # | v3 | 排序有效（好） |
+            # | 档 | 判据 | 违反形式 |
+            # |---|---|---|
+            # | 下限 | `ratio > baseline` | 排序比随机还差 |
+            # | **上限** | `ratio < ceiling` | **数据太简单**（池太小，随便排都满分） |
             #
-            # 两个方向相反，所以阈值不能沿用。
+            # **为什么 v3 也要上限**：v3 数据要求"每 subject 至少一个单值 relation"，
+            # 而单值 relation 意味着池可能很小（`n_competitors=1` -> 池 2），
+            # 于是 `ratio` 容易满分。**只有下限会放行"数据太简单"。**
+            #
+            # **上限在 v3 下的语义是"数据难度"，不是"装置语义"**：
+            # v2 里满分意味着"指标测不到区分能力"（装置/数据都有关）；
+            # v3 里满分只说明"这份数据太容易"（数据问题）。所以 0.9999 仍有效。
             if ratio <= baseline_seh1:
                 result_side_problem = (
+                    result_side_note + f"——不高于派生基线 {baseline_seh1:.4f}"
+                )
+            elif ratio >= ceiling:
+                result_side_problem = (
                     result_side_note
-                    + f"——不高于派生基线 {baseline_seh1:.4f}"
+                    + "——满分说明这份数据太容易（池太小，随便排都对）"
                 )
         elif ratio >= ceiling:
             result_side_problem = result_side_note + "——满分意味着测不到区分能力"
@@ -1427,7 +1453,13 @@ def check_f24_axis_a_not_saturated(dataset: Dataset, *, ceiling: float = 0.9999)
     if data_side_problem:
         detail += f"；饱和：{data_side_problem}"
     if result_side_problem:
-        detail += "；" + result_side_problem
+        # `result_side_problem` 已含 `result_side_note` 与原因，
+        # 但 detail 里已单独写过 note——所以只取"；"之后的原因部分，
+        # 避免同一句实测值出现两次。
+        reason = result_side_problem
+        if reason.startswith(result_side_note):
+            reason = reason[len(result_side_note) :]
+        detail += "；" + reason.lstrip("—；")
 
     title = (
         "A 轴未饱和（SEH@1 高于派生基线）"

@@ -112,12 +112,27 @@ def test_billing_derived_baseline() -> None:
 def test_billing_has_no_cross_axis() -> None:
     """`billing` 的派生 cross 轴为空——三个 relation 全多分支。
 
-    所以它的 cross 基线没有对象可算。
+    **空组 MUST 返回 `None`，MUST NOT 返回 `0.0`**：
+
+    `0.0` 作为基线意味着"随机命中率是 0"，于是任何实测值（哪怕也是 0）
+    都会 `ratio <= baseline` -> 报红。**"没有数据"会被伪装成"基线是 0"。**
     """
     from evals.metrics.v2_baselines import axis_baseline_derived
 
     got = axis_baseline_derived(_ds("billing"))
-    assert got.get("relation_cross", 0.0) == pytest.approx(0.0)
+    assert got["relation_cross"] is None, (
+        f"空组返回了 {got['relation_cross']!r}，应为 None。"
+        "0.0 会让下一个人拿它当基线用，然后得到'所有 cross 查询都不达标'的假红。"
+    )
+
+
+def test_cross_baseline_is_usable_when_present() -> None:
+    """有对象时，cross 基线必须是**数值**而不是 None——反向确认。"""
+    from evals.metrics.v2_baselines import axis_baseline_derived
+
+    got = axis_baseline_derived(_ds("sample"))
+    assert got["relation_cross"] is not None
+    assert got["relation_cross"] == pytest.approx(1 / 12, abs=1e-9)
 
 
 # ---------- 1.5 恒等式例外必须被登记 ----------

@@ -132,7 +132,7 @@ def derived_axis_of(dataset: Dataset, query: Query) -> str:
     return "relation_within" if n > 0 else "relation_cross"
 
 
-def axis_baseline_derived(dataset: Dataset) -> dict[str, float]:
+def axis_baseline_derived(dataset: Dataset) -> dict[str, float | None]:
     """按**派生轴**分组算随机基线（`SEH@1`）。
 
     **核心**：`N` MUST 从 `competing_set()` 取，MUST NOT 由 `n_competitors + 1` 推算。
@@ -147,6 +147,13 @@ def axis_baseline_derived(dataset: Dataset) -> dict[str, float]:
 
     按 `n+1` 推会让 cross 基线变成 `1/1 = 1.0`（随机也满分），
     **与真值 `1/12 = 0.0833` 差 12 倍**——任何实测值都"不高于基线"，判据失效。
+
+    **空组返回 `None`，不返回 `0.0`**：
+    `0.0` 作为基线意味着"随机命中率是 0"，于是任何实测值（哪怕也是 0）
+    都会 `ratio <= baseline` -> 报红。**"没有数据"会被伪装成"基线是 0"。**
+
+    实测 `billing` 的 `relation_cross` 就是空组（三个 relation 全多分支，
+    12 条派生全落在 within）——旧实现返回 `0.0`。
 
     **验收**（现有 v2 数据）：
 
@@ -167,7 +174,7 @@ def axis_baseline_derived(dataset: Dataset) -> dict[str, float]:
         groups[axis].append(random_seh_at_1(n))
 
     return {
-        axis: (sum(values) / len(values) if values else 0.0)
+        axis: (sum(values) / len(values) if values else None)
         for axis, values in groups.items()
     }
 
