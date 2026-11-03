@@ -19,6 +19,7 @@
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 import pytest
@@ -88,23 +89,148 @@ def test_apparatus_signature_handles_empty_per_case() -> None:
     assert apparatus_signature({}) == "unknown"
 
 
-# ---------- 1.3 验收 5：自检 ----------
+# ---------- 1.4 签名必须真的接进判断 ----------
 
+
+def _fake_ablation(dataset_ids: set[str], *, v3: bool) -> dict:
+    """构造消融结果：v3 签名 = 两轴 rank 相同；v2 = 不同。"""
+    if v3:
+        ranks = {qid: 1 for qid in dataset_ids}
+        return {
+            "with_condition": ranks,
+            "without_condition": dict(ranks),
+            "drop": 0.0,
+            "threshold": 0.30,
+            "axis_a_seh1_with": 1.0,
+            "axis_a_seh1_without": 1.0,
+        }
+    return {
+        "with_condition": {qid: 1 for qid in dataset_ids},
+        "without_condition": {qid: 2 for qid in dataset_ids},
+        "drop": 0.6,
+        "threshold": 0.30,
+        "axis_a_seh1_with": 0.9,
+        "axis_a_seh1_without": 0.3,
+    }
+
+
+def test_f20_actually_reads_the_signature(tmp_path: Path, monkeypatch) -> None:
+    """**`F20` 必须真的比较签名，不能只看 `CURRENT_APPARATUS` 常量。**
+
+    **这条防的形态**：`apparatus_signature` 写完了，但没有任何使用点。
+    实测过：`CURRENT_APPARATUS == "v3"` 在常量恒为 "v3" 时永远为真，
+    于是"不适用"变成无条件结论——**v3 数据造出来后 F20 仍永久不适用**。
+
+    | 文件签名 | 当前装置 | 应有行为 |
+    |---|---|---|
+    | v3 | v3 | **执行**并断言掉幅 0 |
+    | v2 | v3 | 不适用 |
+    """
+    from evals.datasets.retrieval_v2 import load_dataset
+    from evals.tools.check_v2_dataset import (
+        CURRENT_APPARATUS,
+        apparatus_signature,
+        check_f20_condition_contributes,
+    )
+
+    data = ROOT / "data" / "retrieval-v2" / "sample"
+    if not data.exists():
+        pytest.skip("sample 数据集缺失")
+    ds = load_dataset(data)
+    ids = {q.query_id for q in ds.queries}
+
+    import evals.tools.check_v2_dataset as module
+
+    monkeypatch.setattr(module, "ROOT", tmp_path)
+
+    # 1) v3 签名的文件 -> 必须执行
+    v3_payload = _fake_ablation(ids, v3=True)
+    assert apparatus_signature(v3_payload) == CURRENT_APPARATUS, (
+        "构造前提不成立：这份假文件应被判为当前装置"
+    )
+    results = tmp_path / "results"
+    results.mkdir(exist_ok=True)
+    (results / "v2-sample-condition-ablation.json").write_text(
+        json.dumps(v3_payload, ensure_ascii=False), encoding="utf-8"
+    )
+
+    check = check_f20_condition_contributes(ds)
+    assert check.applicable, (
+        "同装置的文件却判'不适用'——说明判断只看常量，"
+        "`apparatus_signature` 没有接进来。"
+    )
+    assert check.passed, check.detail
+    assert "0.0000" in check.detail, (
+        f"v3 下应断言掉幅为 0：{check.detail}"
+    )
+
+    # 2) v2 签名的文件 -> 必须不适用
+    v2_payload = _fake_ablation(ids, v3=False)
+    assert apparatus_signature(v2_payload) == "v2"
+    (results / "v2-sample-condition-ablation.json").write_text(
+        json.dumps(v2_payload, ensure_ascii=False), encoding="utf-8"
+    )
+
+    check = check_f20_condition_contributes(ds)
+    assert not check.applicable, "跨装置的文件却执行了——签名比较失效"
+
+
+def test_f20_rejects_nonzero_drop_on_v3(tmp_path: Path, monkeypatch) -> None:
+    """v3 下掉幅不为 0 必须红——那说明 condition 又参与了加权。
+
+    **这条是 v3 的 F20 判据**：不是"不适用"，是"掉幅必须为 0"。
+    把 F20 永久关闭等于放弃这条断言。
+    """
+    from evals.datasets.retrieval_v2 import load_dataset
+    from evals.tools.check_v2_dataset import check_f20_condition_contributes
+
+    data = ROOT / "data" / "retrieval-v2" / "sample"
+    if not data.exists():
+        pytest.skip("sample 数据集缺失")
+    ds = load_dataset(data)
+    ids = {q.query_id for q in ds.queries}
+
+    import evals.tools.check_v2_dataset as module
+
+    monkeypatch.setattr(module, "ROOT", tmp_path)
+
+    # v3 签名（rank 全部相同）但 drop 写成 0.6——矛盾文件
+    payload = _fake_ablation(ids, v3=True)
+    payload["drop"] = 0.6
+
+    results = tmp_path / "results"
+    results.mkdir(exist_ok=True)
+    (results / "v2-sample-condition-ablation.json").write_text(
+        json.dumps(payload, ensure_ascii=False), encoding="utf-8"
+    )
+
+    check = check_f20_condition_contributes(ds)
+    assert check.applicable
+    assert not check.passed, (
+        "v3 下 drop=0.6 却通过了——v3 的 F20 判据没有生效。"
+        "condition 若又参与加权，这条必须红。"
+    )
+    assert "不为 0" in check.detail
+
+
+# ---------- 1.3 验收 5：自检 ----------
 
 def test_current_apparatus_is_v3() -> None:
     """**验收 5（自检）**：当前代码产出的结果必须被判为 `v3`。
 
-    若这条红，说明签名函数把当前装置也判成"不适用"——
-    那会让 6 条门禁全部静默变成"不适用"，而报告显示"已处置"。
+    **这条必须比较"常量 vs 现实"，不能只断言常量值。**
 
-    **用真实 `evaluate()` 产出一份 `per_case`**，不手写 dict：
-    手写的 dict 只能证明签名函数会读 `features`，
-    不能证明**当前代码真的会写出 `features`**。
+    同义反复的写法是 `assert CURRENT_APPARATUS == "v3"`——它只能证明
+    "有人把常量写对了"，证明不了"常量与现实一致"。
+    若有人改了 `evaluate()` 的字段名（例如 `features` -> `feature_scores`）
+    但忘了改常量，旧写法仍会绿，而所有跨装置判断都会失效。
+
+    正确判据：`CURRENT_APPARATUS == apparatus_signature(当前代码的产物)`。
     """
     from evals.datasets.retrieval_v2 import load_dataset
     from evals.datasets.v2_adapter import rows as adapt_rows
     from evals.run_retrieval import evaluate
-    from evals.tools.check_v2_dataset import apparatus_signature
+    from evals.tools.check_v2_dataset import CURRENT_APPARATUS, apparatus_signature
 
     from memory.retrieval.pool_modes import PoolMode
 
@@ -125,13 +251,16 @@ def test_current_apparatus_is_v3() -> None:
         paths=("lexical",),
     )
 
-    payload = {"per_case": result["per_case"]}
-    assert apparatus_signature(payload) == "v3", (
-        "当前代码产出的结果被判成了非 v3。"
-        "若签名函数或 evaluate 的字段名变了，6 条门禁会全部静默变成'不适用'。"
-    )
+    produced = apparatus_signature({"per_case": result["per_case"]})
 
-    # 且 per_case 里确实有 features 键（不是靠 other 字段推理出来的）
+    assert produced == CURRENT_APPARATUS, (
+        f"常量说当前装置是 {CURRENT_APPARATUS!r}，"
+        f"但 evaluate() 产出的签名是 {produced!r}——常量与现实脱节，"
+        "所有基于签名的跨装置判断都会失效。"
+    )
+    assert produced == "v3", f"当前代码产出被判为 {produced!r}，应为 'v3'"
+
+    # 且 per_case 里确实有 features 键（不是靠别的字段推理出来的）
     assert any("features" in c for c in result["per_case"]), (
         "per_case 里没有 features 键——签名函数不可能判对"
     )

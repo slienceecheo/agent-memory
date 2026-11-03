@@ -1054,7 +1054,7 @@ def check_f20_condition_contributes(dataset: Dataset) -> Check:
 
     **按 subject 匹配结果文件**，理由同 `_ablation_for_subjects`。
     """
-    payload, source, _ = _ablation_for_subjects(dataset)
+    payload, source, signature = _ablation_for_subjects(dataset)
     if not payload:
         return Check(
             "F20",
@@ -1063,18 +1063,56 @@ def check_f20_condition_contributes(dataset: Dataset) -> Check:
             "没有覆盖本数据集的消融结果；先跑 evals.tools.ablate_condition --dataset <目录>",
         )
 
-    # **这条的判据依赖装置**：它测"去掉 condition 后 A 轴 SEH@1 掉多少"。
-    # 而在 v3 里 condition 不参与加权，掉幅**恒为 0**——判据本身不成立。
+    # **这条的判据依赖装置**，所以要比对两件事：
     #
-    # **所以按当前代码的装置分支**，而不是按产物的签名：
-    # 产物是 v2 的（`signature == "v2"`）只说明"这份文件能读"，
-    # 不说明"它的数字能用来回答当前装置的问题"。
-    if CURRENT_APPARATUS == "v3":
+    # | 问题 | 由什么回答 |
+    # |---|---|
+    # | 当前代码是哪一代装置？ | `CURRENT_APPARATUS` 常量 |
+    # | 这份文件能不能回答当前装置的问题？ | `CURRENT_APPARATUS` vs `signature` |
+    #
+    # **只比常量是错的**：`CURRENT_APPARATUS == "v3"` 在常量恒为 "v3" 的前提下
+    # 永远为真——那样 v3 数据造出来后 F20 仍永久不适用。
+    # 实测过这个形态：`apparatus_signature` 的返回值一度没有任何使用点。
+    #
+    # 必须是**两者比较**：常量回答"当前是哪一代"，比较回答"这份文件属不属于它"。
+    if signature != CURRENT_APPARATUS:
         return _not_applicable(
             "F20",
             "condition 对 A 轴有贡献",
             source=source,
-            reason="v3 装置（condition 不参与加权，该判据已不存在）",
+            reason=f"{signature} 装置产物，当前为 {CURRENT_APPARATUS}",
+        )
+
+    # **同装置时判据仍然有效**，只是期望值变了：
+    #
+    # - v2 装置：condition 参与加权，掉幅应 >= 阈值
+    # - v3 装置：condition 不参与加权，掉幅应**恒为 0**
+    #
+    # 后者是一条可断言的结论，不是"判据失效"。把它永久关闭等于放弃
+    # "v3 下掉幅必须为 0"这条断言。
+    if CURRENT_APPARATUS == "v3":
+        drop_v3 = payload.get("drop")
+        with_c = payload.get("axis_a_seh1_with")
+        without_c = payload.get("axis_a_seh1_without")
+        if drop_v3 is None:
+            return Check(
+                "F20",
+                "condition 对 A 轴无贡献（v3 期望掉幅为 0）",
+                False,
+                f"{source} 缺 drop 字段，无法验证 v3 的零掉幅",
+            )
+        ok = abs(float(drop_v3)) < 1e-9
+        return Check(
+            "F20",
+            "condition 对 A 轴无贡献（v3 期望掉幅为 0）",
+            ok,
+            f"v3 下 A 轴 SEH@1 {with_c} vs {without_c}，"
+            f"掉幅 {float(drop_v3):+.4f}（期望 0；来源 {source}）"
+            if ok
+            else (
+                f"v3 下掉幅 {float(drop_v3):+.4f} 不为 0——"
+                "说明 condition 又参与了加权（BREAKING 被回退）"
+            ),
         )
 
     drop = payload.get("drop")
@@ -1165,14 +1203,17 @@ def check_f24_axis_a_not_saturated(dataset: Dataset, *, ceiling: float = 0.9999)
         # | v2 三路 | 1.0000 | **红**（饱和） | 装置健康，指标饱和 |
         # | v3 单路 | 0.8333 | **绿** | **排序能力下降** |
         #
-        # 同一个阈值，两种装置下绿/红的意义相反——所以按**当前代码的装置**判，
-        # 不按产物签名。产物是 v2 的只说明"能读"，不说明"它的数字能用"。
-        if CURRENT_APPARATUS == "v3":
+        # 同一个阈值，两种装置下绿/红的意义相反。
+        #
+        # **必须比较签名**，不能只看常量：`CURRENT_APPARATUS == "v3"` 恒真时
+        # 条件恒成立，v3 数据造出来后 F24 也永久不适用。
+        signature = apparatus_signature(payload)
+        if signature != CURRENT_APPARATUS:
             return _not_applicable(
                 "F24",
                 "A 轴未饱和（SEH@1 不得满分）",
                 source=path.name,
-                reason="v3 装置（阈值语义随装置变：满分与低分都不再表示'饱和/健康'）",
+                reason=f"{signature} 装置产物，当前为 {CURRENT_APPARATUS}",
             )
 
         ranks = {c["case_id"]: c["rank_after_rerank"] for c in cases}
