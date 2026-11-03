@@ -474,7 +474,7 @@ MUST 从分母中排除。
 - **WHEN** 存在一份单路配置的结果文件，其 A 轴有未评分 case
 - **THEN** MUST 有测试断言其 `SEH@1` 用正确口径计算
 
-- **AND** 该测试 MUST 用**单路**文件：`F24` 自己只读三路文件
+- **AND** 该测试 MUST 用**单路**文件
 
 #### Scenario: 结果侧未跑不得算作通过
 
@@ -496,19 +496,13 @@ MUST 从分母中排除。
 - **AND** `ranking_pool_size` MUST 从竞争集定义取，
   MUST NOT 由 `n_competitors + 1` 推算
 
-**为什么**：实测 `n_competitors + 1 == len(competing_set)` 在 5 条查询上不成立——
-
-| 查询 | `n_competitors` | `competing_set` | `n+1` |
-|---|---|---|---|
-| `ledger-q11` / `q12` | 0 | **12** | 1 |
-| `billing-c1` / `c2` / `c3` | 2 | **9** | 3 |
-
-按 `n+1` 推会让 cross 轴基线变成 `1/1 = 1.0`（随机也能满分），**与真值差 12 倍**。
+- **AND** 实测例外（全部是 C 轴）：`ledger-q11/q12`（`n=0, cs=12`）、
+  `billing-c1/c2/c3`（`n=2, cs=9`）
 
 #### Scenario: 随机基线必须按派生轴分组
 
 - **WHEN** 计算某装置的随机基线
-- **THEN** 轴归属 MUST 由池结构派生（`derive_axis`），MUST NOT 读数据集的标注字段
+- **THEN** 轴归属 MUST 由池结构派生，MUST NOT 读数据集的标注字段
 
 - **AND** 基线 MUST 用 `ranking_pool_size` 的 `1/N`
 
@@ -519,24 +513,58 @@ MUST 从分母中排除。
       {"relation_within": 0.3000, "relation_cross": 0.0833}
   ```
 
-- **AND** `relation_cross` MUST 是 `1/12`，MUST NOT 是 `1/1`——
-  后者说明用了 `n_competitors + 1`
+- **AND** `relation_cross` MUST 是 `1/12`，MUST NOT 是 `1/1`
+
+#### Scenario: 空轴必须返回缺失值，不得返回 0
+
+- **WHEN** 某个派生轴没有任何查询
+- **THEN** 该轴的基线 MUST 为 `None`（或缺席），**MUST NOT 为 `0.0`**
+
+- **AND** 调用方 MUST 显式处理 `None`
+
+**为什么**：`0.0` 作为基线意味着"随机命中率是 0"，于是任何实测值
+（哪怕也是 0）都会 `ratio <= baseline` 而报红——
+**"没有数据"会伪装成"基线是 0"**。
+
+- **AND** 实测：`billing` 的 `relation_cross` 是空组（三个 relation 全多分支），
+  MUST 返回 `None`
 
 #### Scenario: v3 下的判据是"比随机好"
 
 - **WHEN** `F24` 在 v3 装置下执行
-- **THEN** 结果侧判据 MUST 是 `ratio > baseline`，
-  MUST NOT 是"不满分"（`ratio < 0.9999`）
+- **THEN** 结果侧 MUST **同时**满足两档：
 
-- **AND** "不满分"在 v3 下没有意义：v2 里满分意味着"数据太简单"，
-  v3 里满分可能意味着"排序有效"——**两个方向相反**
+  | 档 | 判据 | 违反形式 |
+  |---|---|---|
+  | 下限 | `ratio > baseline` | 排序比随机还差 |
+  | 上限 | `ratio < ceiling`（`0.9999`） | **数据太简单** |
+
+- **AND** MUST NOT 只设下限：v3 数据要求"每 subject 至少一个单值 relation"，
+  而单值 relation 意味着池可能很小（`n_competitors=1` -> 池 2），
+  `ratio` 容易满分——**只设下限会放行"数据太简单"**
+
+- **AND** 上限在 v3 下的语义是**数据难度**，不是装置语义：
+  v2 里满分意味着"指标测不到区分能力"（装置与数据都有关），
+  v3 里满分只说明"这份数据太容易"
+
+#### Scenario: v3 的数据侧恒真必须被登记
+
+- **WHEN** `F24` 在 v3 下检查数据侧（基线是否饱和）
+- **THEN** MUST 在代码注释与本节写明：**该判据在 v3 下恒真**
+
+- **AND** 理由：派生 within 的池大小 `= n_competitors + 1 >= 2`，
+  基线最大 `1/2 = 0.5`，永远小于 `0.9999`
+
+- **AND** MUST 保留该判据：它防的是"池大小退化成 1"这个形状退化
+  （`n_competitors` 全为 0 时基线变 1.0）
+
+- **AND** 真正有判别力的是结果侧（下限 + 上限），MUST NOT 让读者以为两段都在验
 
 #### Scenario: 标注与派生的不一致必须被报告
 
 - **WHEN** 报告某 subject 的轴统计
 - **THEN** MUST 报"标注与派生不一致 N/M"
 
-- **AND** 该数字 MUST NOT 依赖门禁使用哪套轴——可追溯性来自报告写不写它，
-  不来自门禁的轴口径
+- **AND** 该数字 MUST NOT 依赖门禁使用哪套轴
 
 - **AND** 实测基线：`sample` 0/12、`billing` **3/12**
