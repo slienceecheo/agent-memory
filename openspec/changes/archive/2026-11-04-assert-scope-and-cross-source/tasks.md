@@ -59,9 +59,9 @@ test_scenario_count_is_real -> **通过**
 ## 4. 验收
 
 - [x] 4.1 `openspec validate assert-scope-and-cross-source --strict` 通过
-- [ ] 4.2 **归档前**跑 `openspec validate --all --strict`
-- [ ] 4.3 全量测试通过
-- [ ] 4.4 归档
+- [x] 4.2 **归档前**跑 `openspec validate --all --strict`
+- [x] 4.3 全量测试通过
+- [x] 4.4 归档
 
 ## 5. 不在本变更范围
 
@@ -69,3 +69,4 @@ test_scenario_count_is_real -> **通过**
   前者是扫描算出，后者是人工结论（"`substring_exact_match` 那一条 exists 有意义"）。
   数值现在相同但定义不同，合并会让"人工判断"伪装成"算出来的"
 - **不做 v3 数据**
+
