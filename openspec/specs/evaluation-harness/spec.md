@@ -373,8 +373,6 @@
 - **WHEN** 某门禁的判据依赖排序装置，且文件签名**不等于** `CURRENT_APPARATUS`
 - **THEN** 门禁 MUST 返回 `applicable=False`，`passed` MUST 为 False
 
-- **AND** detail MUST 写明**两边**分别是什么
-
 #### Scenario: 判据不依赖装置的门禁照常执行
 
 - **WHEN** 某门禁的判据与排序装置无关
@@ -383,12 +381,7 @@
 #### Scenario: 装置签名只读结构事实
 
 - **WHEN** 需要判断一份结果文件由哪个装置产生
-- **THEN** 签名 MUST 由文件自身的结构决定：
-
-  | 格式 | 判据 |
-  |---|---|
-  | 有 `per_case` | `per_case[0]` 有 `features` -> v3 |
-  | 消融聚合（无 `per_case`） | 两轴逐条 rank 相同 -> v3 |
+- **THEN** 签名 MUST 由文件自身的结构决定
 
 - **AND** MUST NOT 依赖 `apparatus` 之类的常量字段
 
@@ -438,23 +431,12 @@
 - **WHEN** 装置匹配、文件可读，但数据形状让某条判据**没有对象**
 - **THEN** `passed` MUST 为 False，`applicable` MUST 保持 True
 
-- **AND** MUST NOT 用 `applicable=False`
-
 #### Scenario: 测试判据必须与账本三态一致
 
-- **WHEN** 某测试检查"未通过项是否被分类/登记"
+- **WHEN** 某测试检查"未通过项是否被分类"
 - **THEN** 它 MUST 用 `applicable and not passed`，MUST NOT 用 `not passed`
 
-- **AND** MUST NOT 只断言"这个 code 在文档里出现过"——
-  那无法区分"被分类为失败"与"在别处被提到"
-
-- **AND** 必须有证伪证明：
-  (a) 删掉一条**真失败**的编码 -> 测试红
-  (b) 删掉一条**不适用**的编码 -> 测试不红
-
-**为什么**：实测两个判据抓到的集合不同（`sample` 差 `F20`/`F24`，
-`billing` 也差 `F20`/`F24`）。而旧测试此前没红，只因那两个编码
-恰好出现在 HANDOFF 别处的解释文字里——**"断言总能通过"的形态**。
+- **AND** 必须有证伪证明：删真失败 -> 红；删不适用 -> 不红
 
 #### Scenario: 历史判定与当前判定必须分开标注
 
@@ -463,11 +445,20 @@
 
 - **AND** MUST NOT 使用 `actually_fails` 这类默认"现在"的措辞
 
-- **AND** 实测：`F20`/`F24` 在冻结文件（v2 装置）中
-  `sample` 都通过、`billing` 的 `F24` 失败；而在当前 v3 装置下都 `applicable=False`
+#### Scenario: 读冻结文件时不得假设三态字段存在
 
-- **AND** 这个差异 MUST 被视为有意（装置变了，适用性也变了），
-  MUST NOT 被写成"两处矛盾"
+- **WHEN** 某测试读**冻结的 v2 文件**（`v2-*-gates.json`）
+- **THEN** 它 MUST 只用该文件实际拥有的字段
+
+- **AND** MUST NOT 用 `applicable` 做判据——**那份文件没有这个字段**
+
+- **AND** 实测：`v2-sample-gates.json` 与 `v2-billing-gates.json`
+  的 `checks[*]` 键只有 `[code, detail, passed, title]`
+
+**为什么**：那些文件由 v2 装置产出，那时只有两态。
+用三态判据读会 `KeyError`，或更糟——静默把缺失当成 `False`。
+
+- **AND** 三态判据只适用于**当前 `run_all()` 的返回值**，不适用于冻结文件
 
 ### Requirement: A 轴饱和判据的分母
 
