@@ -73,7 +73,7 @@ spec  ->  recount_specs.py  ->  HANDOFF
 - [x] 5.1 `openspec validate stats-single-source --strict` 通过
 - [x] 5.2 **归档前**跑 `openspec validate --all --strict`
 - [x] 5.3 全量测试通过
-- [ ] 5.4 归档
+- [x] 5.4 归档
 
 ## 6. 不在本变更范围
 
@@ -82,4 +82,5 @@ spec  ->  recount_specs.py  ->  HANDOFF
   不是数字
 - **不加"同节不允许重复百分比"**：§0.6 里现在每个百分比只出现一次，
   那条断言会恒真；真正防住它的是已写进 HANDOFF 的说明 + 配套测试
+
 
