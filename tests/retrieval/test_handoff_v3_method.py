@@ -433,29 +433,88 @@ def test_scenario_count_is_real() -> None:
     total = stats["scenarios"]
 
     text = _text()
-    assert f"| **合计** | **{total}** |" in text, (
-        f"spec 里算出 {total} 个 Scenario，而 HANDOFF 的合计不是这个数。\n"
+    # **必须限定在 Scenario 那一节之内**：全文里 `| **合计** | **N** |`
+    # 出现三次（§0.6 的 MUST 表、Scenario 表、要求数），
+    # 而它们各自的数字**可能相等**。
+    #
+    # 实测过这个形态：把 Scenario 表写成 219、MUST 表写成 220，
+    # 而两条真值都是 220 时，全文扫描会让 Scenario 那条
+    # **因为 MUST 表的 220 而通过**——它没有验到 Scenario 表。
+    section = text.split("真正该看的数字：")[1].split("\n### ")[0]
+
+    assert f"| **合计** | **{total}** |" in section, (
+        f"spec 里算出 {total} 个 Scenario，而 **Scenario 那一节**的合计不是这个数。\n"
         f"分项：{ {k: v['scenarios'] for k, v in stats['per_capability'].items()} }\n"
-        "先跑 `uv run --no-sync python evals/tools/recount_specs.py` 看当前值。"
+        "注意：本条只在 Scenario 节内断言——全文扫描会被 MUST 表顶替。"
+    )
+
+
+def test_three_layer_symbol_exists_matches_four_way() -> None:
+    """三层表的"符号存在"分子必须与四类表的"有函数名"相等。
+
+    **它们本来是同一个量**：有函数名的行 = `exists` 检查能覆盖的行。
+
+    | 量 | 来源 |
+    |---|---|
+    | `four_way.has_fn.n` | **扫描 spec 算出** |
+    | `three_layer.symbol_exists.numerator` | **手写常量** `MANUAL_SYMBOL_EXISTS_ROWS` |
+
+    **现在是两个来源**。若有人在 spec 里新写一条"实现 foo"，
+    `has_fn` 会变成 2，而常量仍是 1——三层表会显示 `1/214 = 0.5%`，
+    四类表显示 `2/214 = 0.9%`，**两处数字不一致而没有任何断言发现**。
+
+    这条现在通过（都是 1），但它防的是"将来 has_fn 变了而常量没改"。
+    这正是 B 类与 A 类交界处的形态。
+    """
+    from evals.tools.recount_specs import compute
+
+    stats = compute()
+    computed = stats["four_way"]["has_fn"]["n"]
+    manual = stats["three_layer"]["symbol_exists"]["numerator"]
+
+    assert computed == manual, (
+        f"四类表算出 {computed} 条「有函数名」，而三层表的常量写 {manual}。\n"
+        "两者是同一个量：若 spec 新增了「实现 foo」，"
+        "须同时更新 MANUAL_SYMBOL_EXISTS_ROWS。"
     )
 
 
 def test_recount_script_matches_reality() -> None:
-    """**统计脚本必须能跑**——它是"不要手数"的前提。
+    """**统计脚本必须能算**——它是"不要手数"的前提。
 
-    若脚本坏了，人会退回去手数，而这个流程正是本变更要终结的。
+    若脚本坏了，人会退回去手数，而这个流程正是要终结的。
+
+    **判据从 `main() == 0` 改成"`compute()` 返回非空"**：
+
+    | 旧 | 新 |
+    |---|---|
+    | `assert mod.main() == 0` | `assert stats["scenarios"] > 0` |
+
+    **旧写法有两个问题**：
+    1. `main()` 只证明"函数没抛异常"，不证明"算出了东西"
+    2. `main()` 会**把整份报告打印到 stdout**，在 pytest 里污染输出
+       （`-q` 下看不出来，但那正是问题）
+
+    **也不用 `importlib.util` 加载文件**：`compute()` 已在模块里，
+    `from ... import compute` 就能用，而那条路径与生产一致。
     """
-    import importlib.util
+    from evals.tools.recount_specs import compute
 
     script = ROOT / "evals" / "tools" / "recount_specs.py"
     assert script.exists(), f"统计脚本缺失：{script}"
 
-    spec = importlib.util.spec_from_file_location("recount_specs", script)
-    assert spec is not None and spec.loader is not None
-    mod = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(mod)
+    stats = compute()
+    assert stats["scenarios"] > 0, "compute() 算出 0 个 Scenario——脚本或 spec 路径有问题"
+    assert stats["must_lines"] > 0, "compute() 算出 0 条 MUST/SHALL 行"
+    assert stats["capabilities"] > 0, "compute() 算出 0 个能力"
 
-    assert mod.main() == 0
+    # 四类之和必须等于总数——这是 `compute()` 内部的一致性
+    four = stats["four_way"]
+    total = four["total"]
+    summed = sum(four[k]["n"] for k in ("no_backtick", "has_fn", "has_const", "tick_not_literal"))
+    assert summed == total, (
+        f"四类之和 {summed} != 合计 {total}——compute() 的分组有重叠或遗漏"
+    )
 
 
 # ---------- 0.6 抽样与 Test: 列的边界 ----------
@@ -1820,9 +1879,15 @@ def test_must_coverage_numbers_are_real() -> None:
     function_lines = stats["four_way"]["has_fn"]["n"]
 
     text = _text()
-    assert f"| **合计** | **{total}** |" in text, (
-        f"spec 里算出 {total} 条含 MUST/SHALL 的行，而 HANDOFF 的合计不是这个数。\n"
-        "先跑 `uv run --no-sync python evals/tools/recount_specs.py` 看当前值。"
+    # **限定在 §0.6 之内**：全文里 `| **合计** | **N** |` 出现三次，
+    # 而数字可能相等。实测过：Scenario 表写 219、MUST 表写 220、
+    # 两条真值都是 220 时，全文扫描会让两条断言互相顶替。
+    section = text.split("### 0.6 自动检查的边界")[1].split("### 0.7")[0]
+
+    assert f"| **合计** | **{total}** |" in section, (
+        f"spec 里算出 {total} 条含 MUST/SHALL 的行，"
+        "而 **§0.6** 的合计不是这个数。\n"
+        "注意：本条只在 §0.6 内断言——全文扫描会被 Scenario 表顶替。"
     )
 
     # "点名函数实现的行"是 A 类里的一档，也必须与文档一致
