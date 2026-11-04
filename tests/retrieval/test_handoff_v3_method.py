@@ -361,24 +361,40 @@ def test_section_0_6_records_the_three_layer_split() -> None:
 
 
 def test_section_0_6_has_the_four_way_split() -> None:
-    """四种分类的数字都要在，且**合计等于总数 142**。
+    """四种分类的数字都要在，且**合计等于 MUST 行总数**。
 
     **只断言百分比不够**：四个百分比加起来可以等于 100%，
     而每一项的绝对值与总数脱节（这次就发生过：总数从 83 改成 142，
     而四类仍是 73/1/4/5）。所以这里同时断言合计。
+
+    **本测试已改为读 `compute()`**：四类细分是 A 类（分子分母都可算），
+    所以四个百分比与合计都能从 spec 复算，文档是"被检查的副本"。
     """
+    from evals.tools.recount_specs import compute
+
+    stats = compute()
+    four = stats["four_way"]
+
     text = _text()
     section = text.split("### 0.6 自动检查的边界")[1].split("### 0.7")[0]
 
-    assert "68.7%" in section   # 无反引号
-    assert "0.5%" in section    # 有函数名（1/190）
-    assert "5.1%" in section    # 字符串常量
-    assert "25.8%" in section   # 非字面量
+    for key, label in (
+        ("no_backtick", "无反引号"),
+        ("has_fn", "有函数名"),
+        ("has_const", "字符串常量"),
+        ("tick_not_literal", "非字面量"),
+    ):
+        expected = f"{four[key]['pct']:.1f}%"
+        assert expected in section, (
+            f"{label}的占比应为 {expected}（spec 算出 {four[key]['n']} 条），"
+            f"而 §0.6 里没有这个数。"
+        )
 
-    # 合计必须与 §0.7 的 142 一致
-    assert "| 合计 | 198 | |" in section, (
-        "四类合计与总数 142 对不上。"
-        "改总数时必须重算这四类，改百分比也一样。"
+    # 合计必须与 MUST 行总数一致
+    total = stats["must_lines"]
+    assert f"| 合计 | {total} | |" in section, (
+        f"四类合计应为 {total}（spec 算出的 MUST/SHALL 行数），"
+        "与 §0.6 表格里的合计对不上。"
     )
 
 
@@ -395,29 +411,32 @@ def test_section_0_6_records_scenario_gap() -> None:
 
 
 def test_scenario_count_is_real() -> None:
-    """271 这个数必须能从 spec 复算。
+    """HANDOFF 写的 Scenario 合计必须能从 spec 复算。
 
-    **这个数字每次归档都会变**（新增能力、新增 scenario）。
-    变的时候要同时改 HANDOFF 的那张能力表与"统计时点"说明，
-    而不是只改这个常量——否则表里的分项加起来对不上总数。
+    **这条已经从"断言常量"改成"断言文档与 spec 一致"**：
 
-    **`evals/tools/recount_specs.py` 能一键算全部统计**：
-    这已是第五次因归档手改数字，脚本是为终结这个流程而加的。
+    | 旧 | 新 |
+    |---|---|
+    | 从 spec 算出 282，断言 `== 282` | 从 spec 算出，断言 **HANDOFF 里写的是同一个数** |
+
+    **为什么这样更好**：旧写法有两个真相来源（spec + 测试里的字面量 + HANDOFF），
+    任何一处改了另两处没跟上都会红，而红的时候不知道该信哪个。
+    新写法只有一个真相来源（spec），文档是"被检查的副本"。
+
+    **这也是"十次手改、四次漏"的根因**：同一个数字在两处以不同形式出现，
+    没有结构约束保证它们一致。改成读文档之后，只有一处需要改——文档。
     """
-    import re
 
-    total = 0
-    per_capability: dict[str, int] = {}
-    for path in (ROOT / "openspec" / "specs").rglob("spec.md"):
-        n = len(
-            re.findall(r"^#### Scenario:", path.read_text(encoding="utf-8"), re.M)
-        )
-        per_capability[path.parent.name] = n
-        total += n
-    assert total == 282, (
-        f"Scenario 数变成 {total}。分项：{per_capability}\n"
-        "改这个常量时，HANDOFF 的能力表也要跟着改。"
-        "先跑 `uv run --no-sync python evals/tools/recount_specs.py`。"
+    from evals.tools.recount_specs import compute
+
+    stats = compute()
+    total = stats["scenarios"]
+
+    text = _text()
+    assert f"| **合计** | **{total}** |" in text, (
+        f"spec 里算出 {total} 个 Scenario，而 HANDOFF 的合计不是这个数。\n"
+        f"分项：{ {k: v['scenarios'] for k, v in stats['per_capability'].items()} }\n"
+        "先跑 `uv run --no-sync python evals/tools/recount_specs.py` 看当前值。"
     )
 
 
@@ -1788,30 +1807,27 @@ def test_must_coverage_numbers_are_real() -> None:
     **改用"动词 + 标识符"判定**：函数是被实现/被调用的动作，字段是被读写的名词。
     这比维护一份"哪些标识符不是函数"的白名单可靠——白名单每加一个字段就要改，
     而它永远不全（这次就是活例子）。
+
+    **本测试已改为读 `compute()` + 断言文档**：
+    | 旧 | 新 |
+    |---|---|
+    | 从 spec 算出 198，断言 `== 198` | 从 spec 算出，断言 **HANDOFF 里写的是同一个数** |
     """
-    import re
+    from evals.tools.recount_specs import compute
 
-    specs = ROOT / "openspec" / "specs"
-    total = 0
-    function_lines = 0
-    detail: list[str] = []
+    stats = compute()
+    total = stats["must_lines"]
+    function_lines = stats["four_way"]["has_fn"]["n"]
 
-    verb_pattern = re.compile(r"(实现|调用|导出|定义)\s*`([a-z_][a-z0-9_]*)`")
+    text = _text()
+    assert f"| **合计** | **{total}** |" in text, (
+        f"spec 里算出 {total} 条含 MUST/SHALL 的行，而 HANDOFF 的合计不是这个数。\n"
+        "先跑 `uv run --no-sync python evals/tools/recount_specs.py` 看当前值。"
+    )
 
-    for path in specs.rglob("spec.md"):
-        for line in path.read_text(encoding="utf-8").splitlines():
-            stripped = line.strip()
-            if "MUST" not in stripped and "SHALL" not in stripped:
-                continue
-            total += 1
-            m = verb_pattern.search(stripped)
-            if m:
-                function_lines += 1
-                detail.append(f"{path.parent.name}: {m.group(2)}")
-
-    assert total == 198, f"含 MUST/SHALL 的行变成 {total}（归档前是 83）"
+    # "点名函数实现的行"是 A 类里的一档，也必须与文档一致
     assert function_lines == 1, (
-        f"点名函数实现的行变成 {function_lines}：{detail}。\n"
+        f"点名函数实现的行变成 {function_lines}。\n"
         "若这条变了，覆盖率这个数要重算，不是只改常量。"
     )
-    assert "substring_exact_match" in detail[0]
+    assert stats["four_way"]["has_fn"]["pct"] > 0
