@@ -79,12 +79,13 @@
 ## 5. 验收
 
 - [x] 5.1 `openspec validate per-capability-counts --strict` 通过
-- [ ] 5.2 **归档前**跑 `openspec validate --all --strict`
-- [ ] 5.3 全量测试通过
-- [ ] 5.4 归档
+- [x] 5.2 **归档前**跑 `openspec validate --all --strict`
+- [x] 5.3 全量测试通过
+- [x] 5.4 归档
 
 ## 6. 不在本变更范围
 
 - **不改 `_load_run`**：现在的分工已经是对的（见 §4）
 - **不改 `compute()` 的返回结构**
 - **不造 v3 数据**
+
