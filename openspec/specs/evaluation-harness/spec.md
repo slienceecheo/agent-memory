@@ -366,9 +366,6 @@
 | 当前代码是哪一代装置？ | 一个**显式常量**（MUST NOT 从产物推） |
 | 这份文件能不能回答当前装置的问题？ | **常量与文件签名的比较** |
 
-**只判断第一个问题是错的**：常量在任意一次运行内恒定，所以
-`CURRENT_APPARATUS == "v3"` 这类条件**恒为真**，会让"不适用"变成无条件结论。
-
 **只有当判据依赖装置时**才返回"不适用"；判据不依赖装置的门禁 MUST 照常执行。
 
 #### Scenario: 判据依赖装置的门禁返回不适用
@@ -395,8 +392,6 @@
 
 - **AND** MUST NOT 依赖 `apparatus` 之类的常量字段
 
-- **AND** 签名是 `unknown` 时 MUST 保守处置为"不适用"
-
 #### Scenario: 分类写宽时必须被抓住
 
 - **WHEN** 有人把"判据不依赖装置"的门禁也判成"不适用"
@@ -407,7 +402,7 @@
 - **WHEN** 断言"当前装置是哪一代"
 - **THEN** MUST 比较 `CURRENT_APPARATUS` 与**当前代码实际产出的签名**
 
-- **AND** MUST NOT 只断言常量值——那是同义反复
+- **AND** MUST NOT 只断言常量值
 
 #### Scenario: 判据依赖装置不等于判据失效
 
@@ -436,25 +431,43 @@
 
 - **AND** `不适用` MUST NOT 计入 `未通过`
 
-- **AND** 结果文件的每条 check MUST 含 `applicable` 字段——
-  否则从文件复算时无法区分两种 false
-
-**为什么**：实测 `billing` 的 27 条里 `passed=True` 是 23、
-`applicable=False` 是 2，而旧 `main()` 报 `通过 23/27` 并把
-`[F6, F20, F21b, F24]` 一起列为"未通过"——**2 条不适用被算进了失败**，
-而 `--json` 不写 `applicable`，结果文件也复算不出这个区别。
+- **AND** 结果文件的每条 check MUST 含 `applicable` 字段
 
 #### Scenario: 判据没有主语时必须判失败，不判不适用
 
 - **WHEN** 装置匹配、文件可读，但数据形状让某条判据**没有对象**
-  （例如 `F24` 在"派生 within 为空"的 subject 上）
 - **THEN** `passed` MUST 为 False，`applicable` MUST 保持 True
 
-- **AND** MUST NOT 用 `applicable=False`：
-  它的语义是"跨装置，判据不成立"，而这里装置是对的，是数据形状的问题
+- **AND** MUST NOT 用 `applicable=False`
 
-- **AND** v3 的数据约束 MUST 写明"每个 subject 至少 1 条派生 within 查询"，
-  否则 `F24` 会在合法数据上永久红
+#### Scenario: 测试判据必须与账本三态一致
+
+- **WHEN** 某测试检查"未通过项是否被分类/登记"
+- **THEN** 它 MUST 用 `applicable and not passed`，MUST NOT 用 `not passed`
+
+- **AND** MUST NOT 只断言"这个 code 在文档里出现过"——
+  那无法区分"被分类为失败"与"在别处被提到"
+
+- **AND** 必须有证伪证明：
+  (a) 删掉一条**真失败**的编码 -> 测试红
+  (b) 删掉一条**不适用**的编码 -> 测试不红
+
+**为什么**：实测两个判据抓到的集合不同（`sample` 差 `F20`/`F24`，
+`billing` 也差 `F20`/`F24`）。而旧测试此前没红，只因那两个编码
+恰好出现在 HANDOFF 别处的解释文字里——**"断言总能通过"的形态**。
+
+#### Scenario: 历史判定与当前判定必须分开标注
+
+- **WHEN** 某测试读**冻结的结果文件**做出判定
+- **THEN** 测试名与 docstring MUST 写明它验的是**哪一代装置**
+
+- **AND** MUST NOT 使用 `actually_fails` 这类默认"现在"的措辞
+
+- **AND** 实测：`F20`/`F24` 在冻结文件（v2 装置）中
+  `sample` 都通过、`billing` 的 `F24` 失败；而在当前 v3 装置下都 `applicable=False`
+
+- **AND** 这个差异 MUST 被视为有意（装置变了，适用性也变了），
+  MUST NOT 被写成"两处矛盾"
 
 ### Requirement: A 轴饱和判据的分母
 
