@@ -34,9 +34,14 @@ PROTOCOL = ROOT / "docs" / "requirements" / "retrieval-dataset-v2.md"
 # **这是唯一权威清单。** 新增未通过项必须同时改这里与协议 §11.0.1，
 # 否则 `test_no_unregistered_failure` 会红。
 #
-# 实测分布：
+# 实测分布（**读的是冻结的 v2 装置文件**，不是当前 run_all）：
 #   sample  6 条：F6 / F13 / F17b / F18 / F21a / F21b
+#            （F20/F24 在 sample 上是**通过**，不在失败列表里）
 #   billing 3 条：F6 / F21b / F24
+#            （F20 在 billing 上通过）
+#
+# **当前代码是 v3 装置**，F20/F24 都 `applicable=False`（跨装置）。
+# 那份"不适用"与这里的"失败"是两件事，两者的差异是有意的。
 ACCEPTED_FAILURES: dict[str, str] = {
     "F6": "构造性：单作者，第二作者转入 v3（两个 subject 都失败）",
     "F21b": "构造性：subject 总数不足 5+5（两个 subject 都失败）",
@@ -44,7 +49,7 @@ ACCEPTED_FAILURES: dict[str, str] = {
     "F17b": "正确的失败：ledger C 轴只覆盖 2/5 个 relation",
     "F18": "正确的失败：ledger 2 条 authority 降级无依据（缺陷 18）",
     "F21a": "正确的失败：ledger 有 5 个 relation，协议上限 3",
-    "F24": "正确的失败：billing A 轴 SEH@1 = 1.0000",
+    "F24": "正确的失败：**billing** A 轴 SEH@1 = 1.0000（sample 上是通过）",
 }
 
 
@@ -73,10 +78,23 @@ def test_no_unregistered_failure(dataset: str) -> None:
 
 
 @pytest.mark.parametrize("code", sorted(ACCEPTED_FAILURES))
-def test_accepted_failure_actually_fails(code: str) -> None:
-    """已登记的失败必须**真的失败**。
+def test_accepted_failure_failed_in_v2_apparatus(code: str) -> None:
+    """已登记的失败必须在**冻结的 v2 装置下**真的失败。
 
-    若某条变成通过（比如数据被改了让它过），这条会红——
+    **这条读的是冻结文件（`v2-*-gates.json`，`47e4785-dirty`），
+    验的是"当年失败"，不是"现在失败"。**
+
+    当前代码是 v3 装置，`F20`/`F24` 现在 `applicable=False`（跨装置，判据不成立），
+    与"失败"是两件事。所以：
+
+    | 来源 | `F20`/`F24` |
+    |---|---|
+    | 冻结文件（v2 装置） | `sample`：都通过；`billing`：`F20` 通过、`F24` 失败 |
+    | 当前 `run_all()`（v3 装置） | 都 `applicable=False` |
+
+    **两者的差异是有意的**，不是不一致：装置变了，判据的适用性也变了。
+
+    若某条在**冻结文件里**变成通过（数据被改），这条会红——
     那时要确认"是不是为了让它通过而改了数据"。
     """
     sample = {c["code"]: c["passed"] for c in _checks("v2-sample-gates.json")}
@@ -92,8 +110,10 @@ def test_accepted_failure_actually_fails(code: str) -> None:
         failures.append("billing")
 
     assert failures, (
-        f"{code} 现在通过了——若是有意修复，请从 ACCEPTED_FAILURES "
-        "与协议 §11.0.1 里移除，并说明改了什么"
+        f"{code} 在冻结的 v2 装置下现在通过了——"
+        "若是有意修复，请从 ACCEPTED_FAILURES 与协议 §11.0.1 里移除，"
+        "并说明改了什么。"
+        "\n注意：本测试读冻结文件，与当前 v3 装置的判定**无关**。"
     )
 
 

@@ -124,7 +124,18 @@ def test_every_failing_gate_is_classified() -> None:
         dataset_dir = ROOT / "data" / "retrieval-v2" / name
         if not dataset_dir.exists():
             continue
-        failed |= {r.code for r in run_all(load_dataset(dataset_dir)) if not r.passed}
+        # **必须是 `applicable and not passed`**：`applicable=False` 是"不适用"，
+        # 它既不算通过也不算失败，不该要求它出现在"未通过门禁"表里。
+        #
+        # 旧写法 `if not r.passed` 会把 `F20`/`F24` 当成失败——
+        # 实测 sample 会多抓 2 条、billing 会多抓 2 条，
+        # 而它们只是"跨装置，判据不成立"。
+        # 这与 `main()` 里那个把"不适用"算进 failed 的 bug 是同一个形态。
+        failed |= {
+            r.code
+            for r in run_all(load_dataset(dataset_dir))
+            if r.applicable and not r.passed
+        }
 
     # 样例上的 F19b/F20 依赖消融结果；F24 依赖结果文件——都已在结果目录里
     for code in failed:
