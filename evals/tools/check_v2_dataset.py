@@ -1017,16 +1017,36 @@ def _ablation_for_subjects(dataset: Dataset) -> tuple[dict[str, object], str, st
     诊断必须区分后两者：**"这代还没数据"与"数据放错地方"是两件事**，
     处置方向相反（去造数据 vs 去查路径）。旧的实现把它们压成同一句
     "没有覆盖本数据集的消融结果"，人只能猜。
+
+    **必须优先选"当前装置"的产物**：实测 `result_files` 会同时找到
+    `v2-sample-condition-ablation.json` 与 `v3-sample-condition-ablation.json`，
+    而 `sorted` 把 v2 排在前面。
+
+    | 选法 | 后果 |
+    |---|---|
+    | 取第一个匹配的 | 拿到 v2 文件 -> 判"跨装置不适用" -> **v3 产物被遮蔽** |
+    | **优先同装置** | 拿到 v3 文件 -> 真正执行判据 |
+
+    实测过前者：v3 产物存在时 `F20` 仍报"由 v2 装置产物，当前为 v3"。
     """
     candidates = result_files("*-condition-ablation.json")
 
     dataset_ids = {q.query_id for q in dataset.queries}
+    matched: list[tuple[dict[str, object], str, str]] = []
     for path in candidates:
         payload = json.loads(path.read_text(encoding="utf-8"))
         ranked_ids = set((payload.get("with_condition") or {}).keys())
         # 全覆盖：该文件包含本数据集的每条查询
         if dataset_ids and dataset_ids <= ranked_ids:
-            return payload, path.name, apparatus_signature(payload), "ok"
+            matched.append((payload, path.name, apparatus_signature(payload)))
+
+    if matched:
+        # **优先当前装置的产物**，否则取第一个（保持旧行为）
+        for payload, name, sig in matched:
+            if sig == CURRENT_APPARATUS:
+                return payload, name, sig, "ok"
+        payload, name, sig = matched[0]
+        return payload, name, sig, "ok"
 
     if not candidates:
         return {}, "", "unknown", "empty"

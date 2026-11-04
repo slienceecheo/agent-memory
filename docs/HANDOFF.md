@@ -27,16 +27,47 @@ v2 数据集   2 个 subject：project:ledger（12 记忆）、project:billing�
             - `F24`：v3 下判 **`baseline < ratio < 0.9999`**（两档）：
               下限抓"排序比随机差"，上限抓"数据太简单"。
               v2 版本是"不满分"，语义不同。
-            **其余 4 条读历史产物的门禁照常执行**（`L6b`/`L8`/`L6c`/`F19b`）。
+            **其余 4 条读历史产物的门禁照常执行**（`L6a`/`L6b`/`L8`/`L6c`）。
+            **读 `results/` 的一共 7 条，但只有 3 条能看到 `results/v3/`**：
+
+            | 门禁 | 发现方式 | 看到 v3 |
+            |---|---|---|
+            | `L6a` / `L6b` / `L6c` | 写死 `a3-lexical-vector-adjacency.json` | ❌ |
+            | `L8` | 写死 `a3-with-dedup.json` | ❌ |
+            | `F19b` / `F20` | `_ablation_for_subjects` -> `result_files` | ✅ |
+            | `F24` | `result_files` | ✅ |
+
+            **前 4 条看不到 v3 是适用域不是遗漏**：它们的判据（三路被调用 /
+            向量写入 / 返回非空 / 分数有方差）不依赖排序装置，读 v2 产物
+            得到结论是合理的。**所以"造完 v3 数据谁来验"的答案是 3 条，
+            不是 6 条或 7 条。**
+
             **没有一条 result-side 门禁读过当前装置的产物**：
-            6 条读的都是历史文件（`899e2b6-dirty` 的 `a3-*.json`、
+            7 条读的都是历史文件（`899e2b6-dirty` 的 `a3-*.json`、
             `47e4785-dirty` 的 `v2-*.json`），当前代码是 `0fbc3d2-dirty`。
-            但这不等于 6 条都该关——**判据是否依赖装置**才是该不该跑的理由：
-            4 条照跑（判据不依赖装置），2 条不适用（跨装置）。
+            但这不等于 7 条都该关——**判据是否依赖装置**才是该不该跑的理由：
+            5 条照跑（判据不依赖装置），2 条不适用（跨装置）。
+
+            **登记表由 AST 派生比对，不是手写**：
+            `test_result_side_gates.py::test_registry_matches_implementation`
+            从源码派生每条门禁实际读什么，与登记逐条比（**含空集**）。
+            手写的清单已经漂移过三次（漏 `L6a`、`L6b` 写成 `a3-with-dedup.json`、
+            `F24` 多写 `v2-` 前缀），所以不再靠"再手写一遍"。
+
+            **`F24` 那个前缀不是笔误，它让机制失效**：登记的设计是
+            "有人重跑那些文件时自动失效"，但 `v2-*` 匹配不到 `results/v3/v3-*.json`
+            ——v3 产物放进去那条机制不触发。实测：旧方式看到 2 个文件且看不到 v3，
+            新方式看到 4 个且看到 v3。
+
             **门禁的文件发现扫顶层 + `results/v3/`，且不按 `v2-` 前缀匹配**：
             前缀是历史命名约定，不该成为"能不能被发现"的条件。
             由 `test_gate_applicability.py` / `test_gate_apparatus_binding.py` /
-            `test_gate_discovers_zones.py` 锁定。
+            `test_gate_discovers_zones.py` / `test_gate_zone_visibility.py` 锁定。
+
+            **同类产物有多份时优先当前装置**：`_ablation_for_subjects` 曾取
+            `sorted()` 的第一个，而 `v2-` 排在 `v3-` 前——v3 产物被 v2 遮蔽，
+            `F20` 永远报"跨装置不适用"。实测修前 `(False, False)`、
+            修后 `(True, True)` 且 `drop=+0.0000`。
 
             **轴的两个池大小必须分开**（`v3_baselines.py`）：
             `n_competitors`（同 relation，轴派生用）与 `ranking_pool_size`
