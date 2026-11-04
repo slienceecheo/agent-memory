@@ -36,12 +36,16 @@ PROTOCOL = ROOT / "docs" / "requirements" / "retrieval-dataset-v2.md"
 #
 # 实测分布（**读的是冻结的 v2 装置文件**，不是当前 run_all）：
 #   sample  6 条：F6 / F13 / F17b / F18 / F21a / F21b
-#            （F20/F24 在 sample 上是**通过**，不在失败列表里）
+#            （F20/F24 在 sample 上都是**通过**，不在失败列表里）
 #   billing 3 条：F6 / F21b / F24
 #            （F20 在 billing 上通过）
 #
 # **当前代码是 v3 装置**，F20/F24 都 `applicable=False`（跨装置）。
 # 那份"不适用"与这里的"失败"是两件事，两者的差异是有意的。
+#
+# **这份文件没有 `applicable` 字段**——它由 v2 装置产出，那时只有两态。
+# 所以下面的判据 `not c["passed"]` 在这份文件上是正确的；
+# 不要把它改成 `applicable and not passed`（那个字段根本不存在）。
 ACCEPTED_FAILURES: dict[str, str] = {
     "F6": "构造性：单作者，第二作者转入 v3（两个 subject 都失败）",
     "F21b": "构造性：subject 总数不足 5+5（两个 subject 都失败）",
@@ -49,7 +53,10 @@ ACCEPTED_FAILURES: dict[str, str] = {
     "F17b": "正确的失败：ledger C 轴只覆盖 2/5 个 relation",
     "F18": "正确的失败：ledger 2 条 authority 降级无依据（缺陷 18）",
     "F21a": "正确的失败：ledger 有 5 个 relation，协议上限 3",
-    "F24": "正确的失败：**billing** A 轴 SEH@1 = 1.0000（sample 上是通过）",
+    "F24": (
+        "正确的失败：**billing** A 轴 SEH@1 = 1.0000（满分=测不到区分）；"
+        "**sample 上是通过**（SEH@1 = 0.9000）"
+    ),
 }
 
 
