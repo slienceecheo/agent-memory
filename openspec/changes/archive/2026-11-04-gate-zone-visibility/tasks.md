@@ -104,8 +104,8 @@
 - [x] 7.1 `openspec validate gate-zone-visibility --strict` 通过
 - [x] 7.2 全量测试：`1643 passed, 3 skipped`（本变更前 1637 + 6 新增）
 - [x] 7.3 `ruff` / `mypy` 干净
-- [ ] 7.4 **归档前**跑 `openspec validate --all --strict`
-- [ ] 7.5 归档
+- [x] 7.4 **归档前**跑 `openspec validate --all --strict`
+- [x] 7.5 归档
 
 ## 8. 不在本变更范围
 
@@ -113,3 +113,4 @@
   4 条门禁的行为，是另一个决策
 - **不造 v3 数据**
 - **不改 `apparatus_signature` 的判据**
+
