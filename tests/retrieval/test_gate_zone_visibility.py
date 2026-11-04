@@ -119,6 +119,96 @@ def test_v3_product_is_not_shadowed_by_v2(clean_v3) -> None:
     )
 
 
+# ---------- 写死路径的门禁：缺文件必须是"失败"，不是"不适用" ----------
+
+
+def test_fixed_path_gates_fail_when_artifact_missing(tmp_path, monkeypatch) -> None:
+    """**`a3-*.json` 缺失时，那 4 条必须判失败，MUST NOT 判不适用。**
+
+    **这是一条"不改"的决定，必须写成断言**——否则下一个人会重新提出
+    "给 `_load_run` 加三态"，而那会让一条真实缺陷的检测被放松。
+
+    | 产物族 | 缺失的含义 | 正确处置 |
+    |---|---|---|
+    | `a3-*.json` | **那次实验没做** | **失败**（缺陷） |
+    | `v2-*` / `v3-*` | **这代还没数据** | 不适用（不是缺陷） |
+
+    两者不能共用一个语义：把 `a3-*.json` 缺失判成"不适用"，
+    等于把"实验没做"从失败列表里移出去——那正是本项目一直在防的
+    "用不适用掩盖没检查"。
+
+    **实测当前行为**（`results/` 为空目录）：
+
+    ```
+    L6a: applicable=True  passed=False  "缺少 a3-lexical-vector-adjacency.json"
+    L6b: applicable=True  passed=False  "缺少 a3-lexical-vector-adjacency.json"
+    L6c: applicable=True  passed=False  "缺少真实运行结果 a3-..."
+    L8:  applicable=True  passed=False  "缺少 a3-with-dedup.json"
+    ```
+
+    **这不是"待决定"**：现在的实现已经是对的分工——
+    `_load_run` 判失败（一次性实验产物），`result_files` 判三态（每代产物）。
+    """
+    import evals.tools.check_v2_dataset as m
+
+    monkeypatch.setattr(m, "ROOT", tmp_path)
+    (tmp_path / "results").mkdir(parents=True)  # 存在但为空
+
+    ds = _ds()
+
+    checks = [
+        m.check_l6a_three_paths_called(),
+        m.check_l6b_embedding_written(),
+        m.check_l6c_paths_return_nonempty(ds),
+        m.check_l8_dedup_scores_have_variance(),
+    ]
+
+    assert [c.code for c in checks] == list(FIXED_PATH_GATES) or {
+        c.code for c in checks
+    } == set(FIXED_PATH_GATES)
+
+    for check in checks:
+        assert check.applicable, (
+            f"{check.code} 在 a3-*.json 缺失时被判成**不适用**：{check.detail}\n"
+            "这会把'实验没做'从失败里移出去。"
+            "一次性实验产物的缺失是缺陷，不是'这代还没数据'。"
+        )
+        assert not check.passed, (
+            f"{check.code} 在文件缺失时 passed=True：{check.detail}"
+        )
+        assert "缺少" in check.detail, (
+            f"{check.code} 的 detail 应说明缺哪个文件：{check.detail}"
+        )
+
+
+def test_v3_aware_gates_are_not_applicable_when_zone_empty(
+    tmp_path, monkeypatch
+) -> None:
+    """**`v2-*`/`v3-*` 缺失时判不适用**——与上面的 4 条语义相反。
+
+    这一条与 `test_fixed_path_gates_fail_when_artifact_missing` 配对，
+    共同定义"产物族 -> 缺失含义"的映射。只写其中一侧，
+    读者会以为"所有缺文件都该判失败"。
+    """
+    import evals.tools.check_v2_dataset as m
+
+    monkeypatch.setattr(m, "ROOT", tmp_path)
+    (tmp_path / "results").mkdir(parents=True)
+
+    ds = _ds()
+    f20 = m.check_f20_condition_contributes(ds)
+    f24 = m.check_f24_axis_a_not_saturated(ds)
+
+    for check in (f20, f24):
+        assert not check.applicable, (
+            f"{check.code} 在没有任何产物时应判不适用（这代还没数据），"
+            f"实际 {check.detail}"
+        )
+        assert not check.passed, (
+            f"{check.code} 把'没数据'报成了通过：{check.detail}"
+        )
+
+
 def test_ablation_picks_current_apparatus_first(clean_v3) -> None:
     """`_ablation_for_subjects` 必须优先返回当前装置的产物。"""
     import evals.tools.check_v2_dataset as m

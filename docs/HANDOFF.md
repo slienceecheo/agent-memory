@@ -2645,16 +2645,19 @@ v3 若按 §8 把 C 轴扩到每 subject 20–60 条，再定判据。
 | 能力 | 要求数 |
 |---|---|
 | `conflict-resolution` | 7 |
-| `evaluation-harness` | **13** |
+| `evaluation-harness` | **18** |
 | `llm-and-embedding-io` | 7 |
 | `memory-retrieval` | 11 |
 | `memory-store` | 12 |
 | **`retrieval-apparatus`** | **4** |
 | **合计** | **59** |
 
-> **统计时点**：2026-11-03，三次归档之后。
-> 归档前是 5 个能力 / 46 条要求；现在 6 个 / 54 条。
-> `evaluation-harness` 从 9 -> 11 -> 13（+门禁的适用域、+A 轴饱和判据的分母）。
+> **统计时点**：2026-11-03，`gate-zone-visibility` 归档之后（第十三次）。
+> 归档前是 5 个能力 / 46 条要求；现在 6 个 / 59 条。
+> `evaluation-harness` 从 9 -> 11 -> 13 -> **18**（+门禁的适用域、+A 轴饱和判据的分母）。
+> **分项之和必须等于合计**：这张表曾写 `13` 而合计是 `59`，
+> 分项相加只有 `54`——连自洽都做不到，且没有任何断言看过它。
+> 现在由 `test_per_capability_counts_match_compute` 逐行比对 `compute()`。
 
 ## 下一步：先修尺子，再造数据
 

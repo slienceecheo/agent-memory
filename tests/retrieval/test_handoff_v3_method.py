@@ -479,6 +479,165 @@ def test_three_layer_symbol_exists_matches_four_way() -> None:
     )
 
 
+def test_per_capability_counts_match_compute() -> None:
+    """**§0.6 / Scenario / 要求数 三张表的每一行**都必须与 `compute()` 一致。
+
+    **为什么需要**：合计断言验的是"合计对不对"，不是"分项对不对"。
+    合计对而分项错时，合计断言**必然通过**——这正是它抓不到的形态。
+
+    实测过三次（都是同一个形态）：
+
+    | 表 | 写错的行 | 合计 | 被谁发现 |
+    |---|---|---|---|
+    | MUST 表 | `evaluation-harness` 64（实际 143） | 226 一直对 | **没人** |
+    | Scenario 表 | 把 98 改成 97 | 300 不动 | **没人** |
+    | 要求数表 | `evaluation-harness` 13（实际 18） | 59 是**对的** | **没人** |
+
+    第三条尤其说明问题：分项之和是 54，而合计写 59——**连自洽都做不到**，
+    所以它不是"分项错、合计对"，而是"这张表从没被任何断言看过"。
+
+    **判据是"每一行 == compute()"，不是"这些数字出现在文档里"**：
+
+    | 层 | 来源 |
+    |---|---|
+    | 文档每行的数字 | HANDOFF 三张表 |
+    | 真值 | `compute()["per_capability"]` |
+
+    **合计断言保留不动**——两者验的不是同一件事：
+    合计抓"漏了一个能力"，分项抓"某个能力的数字写错"。
+    """
+
+    from evals.tools.recount_specs import compute
+
+    stats = compute()
+    per = stats["per_capability"]
+    text = _text()
+
+    # 三张表的 scope 用标题锚定，不用行号（行号每次归档都会变）
+    scopes = {
+        "MUST/SHALL 行表": (
+            text.split("### 0.6 自动检查的边界")[1].split("### 0.7")[0],
+            "| 能力 | 含 `MUST`/`SHALL` 的行 |",
+        ),
+        "Scenario 表": (
+            text.split("### 真正该看的数字：")[1].split("\n### ")[0],
+            "| 能力 | Scenario 数 |",
+        ),
+        "要求数表": (
+            text.split("### 六个能力")[1].split("\n## ")[0],
+            "| 能力 | 要求数 |",
+        ),
+    }
+
+    # 三张表分别对应哪个字段
+    field_of = {
+        "MUST/SHALL 行表": "must_lines",
+        "Scenario 表": "scenarios",
+        "要求数表": "requirements",
+    }
+
+    problems: list[str] = []
+    for table, (section, header) in scopes.items():
+        field = field_of[table]
+        rows = _parse_capability_table(section, header)
+
+        for cap, values in per.items():
+            expected = values[field]
+            if cap not in rows:
+                problems.append(f"{table}: 缺少 `{cap}` 这一行（应为 {expected}）")
+            elif rows[cap] != expected:
+                problems.append(
+                    f"{table}: `{cap}` 写的是 {rows[cap]}，"
+                    f"而 compute() 算出 {expected}"
+                )
+        extra = set(rows) - set(per)
+        if extra:
+            problems.append(f"{table}: 有 compute() 里不存在的能力 {sorted(extra)}")
+
+    assert not problems, (
+        "三张按能力拆分的表有分项与 compute() 不符：\n  "
+        + "\n  ".join(problems)
+        + "\n合计断言抓不到这个——它只验总和。"
+    )
+
+    # **分项之和必须等于该表声明的合计**：抓"行数不对"或"合计被手改"。
+    # 这与逐行比对不重复：逐行抓"某行写错"，这里抓"加起来对不上"。
+    #
+    # **不另加"合计 == compute() 总和"**：它在前两条都通过时必然成立
+    # （逐行全对 -> 分项和 == compute 总和；再等于合计 -> 合计 == 总和），
+    # 所以它**永远不会被单独违反**——那是恒真断言，不是判据。
+    for table, (section, header) in scopes.items():
+        field = field_of[table]
+        rows = _parse_capability_table(section, header)
+        declared = _declared_total(section, header)
+        assert declared == sum(rows.values()), (
+            f"{table} 的分项之和是 {sum(rows.values())}，"
+            f"而该表写明的合计是 {declared}。\n"
+            "逐行都对了才会走到这里，所以这说明表里少了或多了一行，"
+            "或合计被手改过。"
+        )
+
+
+def _parse_capability_table(section: str, header: str) -> dict[str, int]:
+    """把"能力 -> 数字"两列表解析成 dict。
+
+    **必须按表头定位**：§0.6 里有**两张**两列表（MUST/SHALL 行表、四类细分），
+    只按"两列 + 反引号"筛会同时抓到它们，于是 MUST 表被读成四类表的数字。
+    实测过这个错：`conflict-resolution` 被读成 35（Scenario 数）而不是 9（MUST 行数）。
+
+    **为什么不用 `f"| `{cap}` | {n} |" in section`**：
+    HANDOFF 里两种写法并存——`` | `cap` | 30 | `` 与
+    `` | **`cap`** | **30** | ``（后者把名称和外层都加粗）。
+    字符串匹配要枚举所有组合，实测漏掉了 `retrieval-apparatus` 那一行。
+
+    **解析还顺带排除"数字出现在别处"的顶替**：
+    `in section` 会让"30 出现在表格下方的正文里"也通过。
+    """
+    # 先切到 header 那张表：从表头行开始，到下一个空行或下一张表为止
+    idx = section.find(header)
+    if idx < 0:
+        raise AssertionError(f"找不到表头「{header}」")
+    block = section[idx:].split("\n\n")[0]
+
+    rows: dict[str, int] = {}
+    for raw in block.splitlines():
+        line = raw.strip()
+        if not line.startswith("|"):
+            continue
+        cells = [c.strip() for c in line.strip("|").split("|")]
+        if len(cells) != 2:
+            continue
+        name = cells[0].replace("*", "").strip()
+        value = cells[1].replace("*", "").strip()
+        if not (name.startswith("`") and name.endswith("`")):
+            continue
+        rows[name.strip("`")] = int(value)
+    return rows
+
+
+def _declared_total(section: str, header: str) -> int:
+    """从指定表格里取 `| **合计** | **N** |` 或 `| 合计 | N |` 的 N。
+
+    **不用 `in` 判断**：`| **合计** | **300** |` 也包含 `| 合计 | 300 |` 的子串，
+    所以必须先定位到表头，再取"合计"那一行的第二个单元格。
+    """
+    idx = section.find(header)
+    if idx < 0:
+        raise AssertionError(f"找不到表头「{header}」")
+    block = section[idx:].split("\n\n")[0]
+
+    for raw in block.splitlines():
+        line = raw.strip()
+        if not line.startswith("|"):
+            continue
+        cells = [c.strip() for c in line.strip("|").split("|")]
+        if len(cells) != 2:
+            continue
+        if cells[0].replace("*", "").strip() == "合计":
+            return int(cells[1].replace("*", "").strip())
+    raise AssertionError(f"「{header}」这张表缺少「合计」行")
+
+
 def test_recount_script_matches_reality() -> None:
     """**统计脚本必须能算**——它是"不要手数"的前提。
 
