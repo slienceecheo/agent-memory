@@ -106,6 +106,39 @@ v2 数据集   2 个 subject：project:ledger（12 记忆）、project:billing�
 v3 装置     **排序特征 = 3**（base / authority / status），condition 退出加权。
             `FeatureScores` 仍是四字段——它记录观测事实，不是排序策略。
             `RerankWeights` 只有三个权重；`PREREGISTERED_WEIGHTS` 四组，各组和为 1。
+
+            **三个特征的能力边界（实测，不是推测）**：
+
+            | 特征 | 性质 | 证据 |
+            |---|---|---|
+            | `status` | **恒为常数** | 池内方差 0/10、0/12 |
+            | `base` | **等于融合顺序** | `rrf_norm` 严格单调 |
+            | `authority` | **分层过滤器** | 同层逆序 0/22 |
+
+            **所以 v3 的 rerank 层不含语义相关性信号**，预期增益 ≈ 0，
+            而这个 0 是可解释的——不是"装置坏了"。
+
+            - `status`：记忆库只有 `ACTIVE`（召回只返回活跃条目），
+              所以 `uniform` 分给它的 0.3 权重**是空的**。
+              验证：保持 `base:authority=1:1` 只加 status，
+              `(0.50/0.50/0)`、`(0.45/0.45/0.10)`、`(0.35/0.35/0.30)` **逐条相同**。
+            - `base`：`rrf_norm` 是融合分的严格单调变换，所以按 base 排 == 按融合顺序排。
+              `base-only` 的 0.20 **不是"base 拖后腿"，是融合顺序的 top-1 率**
+              （融合是三路召回的产物，测的是召回质量不是重排能力）。
+            - `authority`：22 个 case 里同层逆序 **0** 个——同一 authority 层内部
+              的相对顺序与融合顺序完全一致。所以它的全部作用是**把低层推到后面**，
+              层内裁决仍由融合顺序完成。`auth-only` 的 0.40 不是"authority 选中了 gold"。
+              **`sample` 上 gold 的平均 authority 比干扰项低（−0.0244）**。
+
+            **数据侧 MUST NOT 制造 authority 与 gold 的相关性**：
+            gold 唯一最高 authority 的 case 数必须为 **0**（v2 实测 0/22），
+            `|mean_gold − mean_distractor|` 必须 < 0.05。
+            **这是防泄漏，不是提高增益**——v3 的 `authority` 与 v2 的 `condition`
+            是同一位置上的同一个东西：一个与 gold 同向的元数据先验。
+            v2 的 `condition` 直通让 `SEH@1 = 1.0000`；若 v3 让 authority 有区分度，
+            会重造同一个缺陷，而且**更难发现**（authority 看起来像合理的排序信号）。
+
+            由 `test_v3_capability_boundary.py`（10 条）锁定。
 v3 产物     `results/v3/`（独立子目录）。`results/*.json` 顶层**永远 48 个**。
             分区清单：`.` / `v3` / `archive` / `features`（后者预留，尚不存在）。
             **门禁扫顶层 + `v3`**（不扫 `archive`）；
