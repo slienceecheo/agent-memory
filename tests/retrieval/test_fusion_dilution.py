@@ -290,3 +290,125 @@ def test_report_marks_fusion_dilution_not_multi_path_harm() -> None:
     assert "召回" in section and "精度" in section, (
         "报告 §6 必须同时出现「召回」与「精度」，说明两个指标方向相反"
     )
+
+
+def test_report_states_mechanism_is_undifferentiated() -> None:
+    """**报告必须写明"机制未区分"**，不能只写现象。
+
+    结论 5 只说"三路融合后 top-1 变低"，而两个不同机制都能产生同样的数字：
+
+    | 机制 | 处置 |
+    |---|---|
+    | 融合规则（RRF 稀释） | 改融合 |
+    | vector 召回质量（cosine 排序差） | 改召回 |
+
+    **若不写这句限定，下一个人会以为结论 5 已经解释了原因**，
+    从而直接去改融合——而真正的原因可能是 cosine 排序。
+
+    **这条也解释了为什么本章止于现象**：区分两者需要产物记录 cosine，
+    而现有 15 份冻结产物都没有。
+    """
+    report = (ROOT / "docs" / "reports" / "v2-what-it-measures.md").read_text(
+        encoding="utf-8"
+    )
+    section = report.split("## 6. 结论 5")[1].split("\n## ")[0]
+
+    assert "机制未区分" in section, (
+        "报告 §6 缺少「机制未区分」这一节——"
+        "读者会以为结论 5 已经解释了融合稀释的原因"
+    )
+    assert "融合规则" in section and "vector 召回质量" in section, (
+        "§6 必须并列写出两个可能的机制，否则「未区分」没有对象"
+    )
+    assert "cosine" in section, (
+        "§6 必须点明区分两者需要 cosine 分——否则读者不知道为什么不能归因"
+    )
+
+
+def test_report_does_not_claim_462_is_per_case() -> None:
+    """**报告必须说明 `path_returns.vector = 462` 是累加值**。
+
+    错误读法：以为单条 case 的 vector 返回 462 条。
+    实际：单条 case 返回 == `pool_size`（14 / 9），vector 路返回**整个池**。
+
+    **这个数被误读的代价**：会以为"vector 返回了海量噪声"，
+    从而去"压缩 vector 召回"。而实际它返回的就是全部候选，
+    没有可压缩的东西。
+    """
+    report = (ROOT / "docs" / "reports" / "v2-what-it-measures.md").read_text(
+        encoding="utf-8"
+    )
+    section = report.split("## 6. 结论 5")[1].split("\n## ")[0]
+
+    assert "累加" in section, (
+        "§6 必须写明 462 是累加值，否则会被读成单条 case 的返回数"
+    )
+    assert "返回了整个池" in section or "返回整个池" in section, (
+        "§6 必须说明 vector 路返回整个池——这是它 SEH@1 低的直接原因"
+    )
+
+
+def test_product_shows_vector_returns_whole_pool() -> None:
+    """**`path_returns.vector == pool_size` 这个事实必须能从产物复算。**
+
+    这条**只读产物**，是 §6.7 那句"返回了整个池"的依据。
+    它不检查文档——文档那句由 `test_report_documents_vector_returns_whole_pool` 管。
+
+    **两条分开写的理由**：若合成一条，删掉文档那句时断言仍绿
+    （因为产物没变），而名字看起来覆盖了文档。实测过这个假阳性。
+
+    **不读 `v2-sample-*`**：那份文件不存在（`sample` 只有 `a3-*.json`）。
+    """
+    import json
+
+    cases: list[tuple[str, int, int]] = []
+    for name in (
+        "a3-lexical-vector-adjacency.json",
+        "v2-billing-lexical-vector-adjacency.json",
+    ):
+        path = ROOT / "results" / name
+        assert path.exists(), f"缺少产物 {name}"
+        data = json.loads(path.read_text(encoding="utf-8"))
+        for case in data.get("per_case") or []:
+            pool = case.get("pool_size")
+            vec = (case.get("path_returns") or {}).get("vector")
+            if vec is not None and pool:
+                cases.append((name, pool, vec))
+
+    assert cases, "没有任何可检查的 case"
+    mismatched = [(n, p, v) for n, p, v in cases if p != v]
+    assert not mismatched, (
+        f"这些 case 的 path_returns.vector != pool_size：{mismatched[:3]}。\n"
+        "若不再相等，'vector 返回整个池'这个结论要重核。"
+    )
+
+    pools = {p for _, p, _ in cases}
+    assert pools == {14, 9}, (
+        f"池大小变成 {sorted(pools)}（原为 9 与 14）——"
+        "数据或池构造变了，§6.7 的数字要更新"
+    )
+
+
+def test_report_documents_vector_returns_whole_pool() -> None:
+    """**报告必须写出"vector 路返回整个池"这句**。
+
+    这条**只读文档**。产物侧的对应事实由
+    `test_product_shows_vector_returns_whole_pool` 管。
+
+    **为什么必须分开**：名称相同但只读产物时，删掉文档那句不会红——
+    那会让"文档有没有写"这件事没有守卫。
+    """
+    report = (ROOT / "docs" / "reports" / "v2-what-it-measures.md").read_text(
+        encoding="utf-8"
+    )
+    section = report.split("## 6. 结论 5")[1].split("\n## ")[0]
+    sub = section.split("### 6.7")[1].split("### 6.8")[0]
+
+    assert "返回了整个池" in sub, (
+        "§6.7 必须明确写出「vector 路返回了整个池」——"
+        "这是它 SEH@1 低的直接原因，也是'462 不是噪声洪流'的依据"
+    )
+    assert "cosine 全序" in sub, (
+        "§6.7 必须说明 vector 的排序就是 cosine 全序——"
+        "否则读者会以为 vector 路还有别的排序逻辑"
+    )

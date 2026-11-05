@@ -432,7 +432,53 @@ RRF 把三路按名次融合。vector 的 462 条里绝大部分排在各自路�
 把它读成"多路召回不好"会导致一个错误的行动：砍掉 vector 路。
 而正确的读法是：**召回层变好了，融合层的排序没跟上。**
 
-### 6.6 复算
+### 6.6 机制未区分：两个原因都能产生同样的数字
+
+**结论 5 只说明了"三路融合后 top-1 变低"，没有说明原因。**
+
+两个完全不同的机制都能产生 `0.8333 → 0.5000`：
+
+| 机制 | 含义 | 处置 |
+|---|---|---|
+| **融合规则**（RRF 稀释） | 三路分数混合方式不当 | 改融合（加权 RRF、按路径长度归一） |
+| **vector 召回质量** | cosine 排序本身与 gold 不一致 | 改召回或不用 vector 排序 |
+
+**区分它们需要单独测"vector-only 的 cosine 排序质量"。**
+而那需要产物记录 cosine 分——**现有产物没有**：
+
+```
+v2-billing-lexical-vector-adjacency.json   features_by_tag 为空
+含 cos/similar 的字段：无
+pool_vectors 是计数（int），pool_vector_norms 是范数
+```
+
+**所以本节止于"现象"，不进到"归因"。**
+
+**下一个人不该以为结论 5 已经解释了融合稀释的原因。**
+
+### 6.7 关于「462 条」这个数
+
+`path_returns.vector = 462` 是**三份产物上所有 case 的累加**，不是单条 case 的返回数。
+
+| 产物 | 顶层 `path_returns.vector` | 单条 case | pool_size |
+|---|---|---|---|
+| `a3-lexical-vector-adjacency.json` | 462 | 14 | 14 |
+| `v2-billing-lexical-vector-adjacency.json` | 108 | 9 | 9 |
+
+**单条 case 的 `path_returns.vector` 恒等于 `pool_size`**——
+也就是说 vector 路**返回了整个池**，它的排序就是 cosine 全序。
+
+**这解释了两件事**：
+
+| 现象 | 解释 |
+|---|---|
+| vector-only 召回 10/10、12/12 | 它返回全部候选 |
+| vector-only 的 `SEH@1` 只有 0.4000 / 0.1667 | cosine 的排序只在少数 case 上与 gold 一致 |
+
+**注意**：`v2-sample-lexical-vector-adjacency.json` **不存在**（`sample` 只有冻结的
+`a3-*.json`，池 14），所以 §6.1 的 `sample` 数字来自现场重跑，不是读那份文件。
+
+### 6.8 复算
 
 ```bash
 uv run --no-sync pytest tests/retrieval/test_fusion_dilution.py -q
