@@ -118,9 +118,9 @@
 ## 8. 验收
 
 - [x] 8.1 `openspec validate cosine-not-a-gold-detector --strict` 通过
-- [ ] 8.2 **归档前**跑 `openspec validate --all --strict`
-- [ ] 8.3 全量测试通过
-- [ ] 8.4 归档
+- [x] 8.2 **归档前**跑 `openspec validate --all --strict`
+- [x] 8.3 全量测试通过
+- [x] 8.4 归档
 
 ## 9. 不在本变更范围
 
@@ -128,3 +128,4 @@
 - **不改产物格式**
 - **不加 cosine 特征**
 - **不造 v3 数据**
+
