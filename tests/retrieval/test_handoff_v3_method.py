@@ -440,7 +440,13 @@ def test_scenario_count_is_real() -> None:
     # 实测过这个形态：把 Scenario 表写成 219、MUST 表写成 220，
     # 而两条真值都是 220 时，全文扫描会让 Scenario 那条
     # **因为 MUST 表的 220 而通过**——它没有验到 Scenario 表。
-    section = text.split("真正该看的数字：")[1].split("\n### ")[0]
+    #
+    # **锚点用 `### ` 前缀，不含标题里的数字**：
+    # 标题是 `### 真正该看的数字：347 个 Scenario ...`，数字每次归档都变。
+    # 用 `### 真正该看的数字` 锚定小节，标题里的数字怎么变都不影响。
+    # （防御性修正：旧锚点 `"真正该看的数字："` 本身不含数字，347->400 时仍有效；
+    #   只有标题格式改成"347 个 Scenario"前置形式才会断。）
+    section = text.split("### 真正该看的数字")[1].split("\n### ")[0]
 
     assert f"| **合计** | **{total}** |" in section, (
         f"spec 里算出 {total} 个 Scenario，而 **Scenario 那一节**的合计不是这个数。\n"
@@ -520,7 +526,7 @@ def test_per_capability_counts_match_compute() -> None:
             "| 能力 | 含 `MUST`/`SHALL` 的行 |",
         ),
         "Scenario 表": (
-            text.split("### 真正该看的数字：")[1].split("\n### ")[0],
+            text.split("### 真正该看的数字")[1].split("\n### ")[0],
             "| 能力 | Scenario 数 |",
         ),
         "要求数表": (
