@@ -92,9 +92,9 @@ v3 低分无法归因：
 ## 6. 验收
 
 - [x] 6.1 `openspec validate fusion-dilution-conclusion --strict` 通过
-- [ ] 6.2 **归档前**跑 `openspec validate --all --strict`
-- [ ] 6.3 全量测试通过
-- [ ] 6.4 归档
+- [x] 6.2 **归档前**跑 `openspec validate --all --strict`
+- [x] 6.3 全量测试通过
+- [x] 6.4 归档
 
 ## 7. 不在本变更范围
 
@@ -102,3 +102,4 @@ v3 低分无法归因：
 - **不加第四特征**：见 §5
 - **不造 v3 数据**
 - **不新增 results 文件**（顶层保持 48 个）
+
