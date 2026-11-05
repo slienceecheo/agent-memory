@@ -309,11 +309,11 @@ def test_section_0_6_records_the_coverage_limit() -> None:
     section = text.split("### 0.6 自动检查的边界")[1].split("### 0.7")[0]
 
     # MUST/SHALL 分母
-    assert "277 条含 `MUST`/`SHALL` 的行" in section, "未写 MUST/SHALL 总行数"
+    assert "287 条含 `MUST`/`SHALL` 的行" in section, "未写 MUST/SHALL 总行数"
     # 三层表：每层都必须写全"分子/分母 = 百分比"
-    assert "1/277 = 0.4%" in section, "未写函数实现可验证率（带分母）"
-    assert "0/277 = 0.0%" in section, "未写行为符合率（带分母）"
-    assert "3/277 = 1.1%" in section, "未写人工映射率（带分母）"
+    assert "1/287 = 0.3%" in section, "未写函数实现可验证率（带分母）"
+    assert "0/287 = 0.0%" in section, "未写行为符合率（带分母）"
+    assert "3/287 = 1.0%" in section, "未写人工映射率（带分母）"
     # 关键区分
     assert "有反引号" in section and "不等于" in section
     # 能力分组
@@ -340,8 +340,8 @@ def test_section_0_6_distinguishes_the_two_1_2_percent() -> None:
         "有它，读者才知道 1.2% 在本节不能脱离分母使用。"
     )
     # 两个分母都必须出现，且各自绑定正确的百分比
-    assert "3/**311**" in section
-    assert "1/**277**" in section
+    assert "3/**316**" in section
+    assert "1/**287**" in section
     # 且 MUST 侧不能是 1.2%
     assert "1/83 = 1.2%" not in section, "MUST 侧还在用旧分母 83"
 
@@ -355,7 +355,7 @@ def test_section_0_6_records_the_three_layer_split() -> None:
     assert "符号存在" in section
     assert "行为符合" in section
     # 关键：行为符合是 0%（带分母）
-    assert "0/277 = 0.0%" in section
+    assert "0/287 = 0.0%" in section
     # 关键：不是 98.8%
     assert "100% 的" in section
 
@@ -403,7 +403,7 @@ def test_section_0_6_records_scenario_gap() -> None:
     text = _text()
     section = text.split("### 0.6 自动检查的边界")[1].split("### 0.7")[0]
 
-    assert "311" in section
+    assert "316" in section
     assert "Scenario" in section
     assert "1.0%" in section
     # 修复成本更低

@@ -43,9 +43,9 @@
 ## 4. 验收
 
 - [x] 4.1 `openspec validate f24-report-gain --strict` 通过
-- [ ] 4.2 **归档前**跑 `openspec validate --all --strict`
-- [ ] 4.3 全量测试通过
-- [ ] 4.4 归档
+- [x] 4.2 **归档前**跑 `openspec validate --all --strict`
+- [x] 4.3 全量测试通过
+- [x] 4.4 归档
 
 ## 5. 不在本变更范围
 
@@ -53,3 +53,4 @@
 - **不改 `F24` 的判据**（仍是 `baseline < ratio < 0.9999`）
 - **不动 v2 分支的 detail**
 - **不定任何目标区间**
+
