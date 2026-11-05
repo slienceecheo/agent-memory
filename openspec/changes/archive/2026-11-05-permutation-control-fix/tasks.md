@@ -105,9 +105,9 @@ _, p = _perm_test(a_vals, b_vals + list(groups["C"].values()))   # <- C 混进�
 ## 8. 验收
 
 - [x] 8.1 `openspec validate permutation-control-fix --strict` 通过
-- [ ] 8.2 **归档前**跑 `openspec validate --all --strict`
-- [ ] 8.3 全量测试通过
-- [ ] 8.4 归档
+- [x] 8.2 **归档前**跑 `openspec validate --all --strict`
+- [x] 8.3 全量测试通过
+- [x] 8.4 归档
 
 ## 9. 不在本变更范围
 
@@ -116,3 +116,4 @@ _, p = _perm_test(a_vals, b_vals + list(groups["C"].values()))   # <- C 混进�
 - **不测 cosine**
 - **不改融合、不加特征**
 - **不造 v3 数据**
+
