@@ -116,9 +116,9 @@ cosine 的四条泄漏判据全过，但它依赖 embedding 稳定性。
 ## 9. 验收
 
 - [x] 9.1 `openspec validate cosine-noise-boundary --strict` 通过
-- [ ] 9.2 **归档前**跑 `openspec validate --all --strict`
-- [ ] 9.3 全量测试通过
-- [ ] 9.4 归档
+- [x] 9.2 **归档前**跑 `openspec validate --all --strict`
+- [x] 9.3 全量测试通过
+- [x] 9.4 归档
 
 ## 10. 不在本变更范围
 
@@ -126,3 +126,4 @@ cosine 的四条泄漏判据全过，但它依赖 embedding 稳定性。
 - **不改权重**
 - **不加 cosine 特征**
 - **不实施"稳定 case 子集"验收**
+
