@@ -1399,10 +1399,26 @@ def check_f24_axis_a_not_saturated(dataset: Dataset, *, ceiling: float = 0.9999)
         skipped = len(dataset_a) - len(scored_a)
         skip_note = f"，跳过 {skipped} 条未评分" if skipped else ""
         result_side_ran = True
-        result_side_note = (
-            f"实测 {hit_scored}/{len(scored_a)}={ratio:.4f}"
-            f"（{path.name}{skip_note}）"
-        )
+        # **必须同时报 ratio 与 baseline，并报差值。**
+        #
+        # 只报 ratio 时，读者无法判断"排序有没有增益"——那正是 v3 最该回答的问题。
+        # 差值让"ratio ≈ baseline"（排序无增益）与"ratio 明显高于 baseline"
+        # 在 detail 里一眼可分，不需要手算。
+        #
+        # **为什么不用"目标区间"代替**：定区间会诱导造数据时为了落进区间
+        # 而调难度，那是"为达标回头改数据"。报告差值不会。
+        gain = ratio - baseline_seh1
+        if is_v3:
+            result_side_note = (
+                f"实测 {hit_scored}/{len(scored_a)}={ratio:.4f}"
+                f" vs 派生 within 基线 {baseline_seh1:.4f}"
+                f"（差 {gain:+.4f}；{path.name}{skip_note}）"
+            )
+        else:
+            result_side_note = (
+                f"实测 {hit_scored}/{len(scored_a)}={ratio:.4f}"
+                f"（{path.name}{skip_note}）"
+            )
 
         if is_v3:
             # **v3 判据：两档都要**。

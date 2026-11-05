@@ -70,9 +70,9 @@
 ## 4. 验收
 
 - [x] 4.1 `openspec validate v3-expected-outcomes --strict` 通过
-- [ ] 4.2 **归档前**跑 `openspec validate --all --strict`
-- [ ] 4.3 全量测试通过
-- [ ] 4.4 归档
+- [x] 4.2 **归档前**跑 `openspec validate --all --strict`
+- [x] 4.3 全量测试通过
+- [x] 4.4 归档
 
 ## 5. 不在本变更范围
 
@@ -80,3 +80,4 @@
 - **不改任何门禁的判据**
 - **不重跑评测**：`F20` 的"必然"论证基于 `ablate()` 的代码结构
   （两次调用 `_run`，v3 下 condition 不参与 features，所以 ranks 必然相同）
+
