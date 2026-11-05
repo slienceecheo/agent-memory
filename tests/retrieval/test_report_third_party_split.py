@@ -79,9 +79,22 @@ def test_dataset_authors_are_really_all_primary() -> None:
 
 
 def test_report_registers_defects_20_and_21() -> None:
+    """缺陷 20/21（以及后加的 22/23）必须在 v2 报告里登记。
+
+    **锚点按模式匹配，不写死章节号**：
+    原先断言 `"## 8. 缺陷 20 与 21" in text`，而 2026-11-05
+    新增结论 5 后那一节变成 §9——断言红的是章节号，不是内容。
+    """
+    import re
+
     text = _report()
 
-    assert "## 8. 缺陷 20 与 21" in text
+    m = re.search(r"^## \d+\. 缺陷.*$", text, re.MULTILINE)
+    assert m, "v2 报告里找不到「## <数字>. 缺陷」这一节"
+    assert "20" in m.group() and "21" in m.group(), (
+        f"这一节的标题应含 20 与 21，实际是 {m.group()!r}"
+    )
+
     assert "20" in text and "21" in text
     # 必须给出修法——否则无法判断它是否可修复
     assert "修法" in text
@@ -93,9 +106,18 @@ def test_report_lists_data_defects_before_any_conclusion() -> None:
     """§0.1 的数据缺陷清单必须在任何结论之前。
 
     它是"frozen ≠ 合格"的唯一说明处。放在结论之后等于让它晚到。
+
+    **锚点按模式匹配**：原先写 `"## 1. 四条结论"`，
+    而结论数会变（2026-11-05 从四条变五条）。
+    现在找的是"第一个 `## <数字>. 结论`"或"第一个 `## <n>. ` 的结论文档节"。
     """
+    import re
+
     text = _report()
-    section = text[: text.index("## 1. 四条结论")]
+
+    m = re.search(r"^## \d+\. [^\n]*结论", text, re.MULTILINE)
+    assert m, "v2 报告里找不到结论节的标题"
+    section = text[: m.start()]
 
     assert "数据缺陷清单" in section
     for code in ("F13", "F17b", "F18", "F21a", "F24"):

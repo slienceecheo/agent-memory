@@ -171,17 +171,36 @@ def _defect_numbers_in_report() -> set[int]:
     c4_section = c4_text.split(c4_anchor)[1].split("#### ")[0]
     numbers |= {int(m) for m in re.findall(r"^\| (\d+) \|", c4_section, re.MULTILINE)}
 
-    v2_anchor = "## 8. 缺陷 20 与 21"
-    v2_text = V2_REPORT.read_text(encoding="utf-8")
-    if v2_anchor in v2_text:
-        v2_section = v2_text.split(v2_anchor)[1].split("\n## ")[0]
-        # 这里的编号是加粗的（`| **20** |`），与 C4 表的 `| 20 |` 格式不同
-        numbers |= {
-            int(m)
-            for m in re.findall(r"^\|\s*\**\s*(\d+)\s*\**\s*\|", v2_section, re.MULTILINE)
-        }
+    v2_numbers, _ = _v2_defect_numbers(V2_REPORT.read_text(encoding="utf-8"))
+    numbers |= v2_numbers
 
     return numbers
+
+
+def _v2_defect_numbers(text: str) -> tuple[set[int], bool]:
+    """从 v2 报告里取缺陷编号。
+
+    **锚点不能写死**：原先写的是 `## 8. 缺陷 20 与 21`，
+    而 2026-11-05 新增结论 5 后那一节变成了 §9——锚点失配，
+    `if v2_anchor in v2_text` 静默跳过，返回空集合。
+
+    **后果**：`test_report_lists_all_defects` 报"缺 [20,21,22,23]"，
+    而正文其实都在。**错的是锚点，不是报告。**
+
+    现在改为**按标题前缀匹配**（`## <数字>. 缺陷`），并把"找到了没有"
+    返回给调用方，让它能显式失败。
+    """
+    m = re.search(r"^## \d+\. 缺陷.*$", text, re.MULTILINE)
+    if not m:
+        return set(), False
+
+    section = text[m.start() :].split("\n## ")[0]
+    # 这里的编号是加粗的（`| **20** |`），与 C4 表的 `| 20 |` 格式不同
+    found = {
+        int(x)
+        for x in re.findall(r"^\|\s*\**\s*(\d+)\s*\**\s*\|", section, re.MULTILINE)
+    }
+    return found, True
 
 
 def _marked_test_names() -> set[str]:
@@ -212,6 +231,12 @@ def test_report_lists_all_defects() -> None:
     """
     in_reports = _defect_numbers_in_report()
     mapped = set(DEFECT_TESTS) | set(REPAIRED)
+
+    _, v2_found = _v2_defect_numbers(V2_REPORT.read_text(encoding="utf-8"))
+    assert v2_found, (
+        "v2 报告里找不到「## <数字>. 缺陷」这一节——"
+        "锚点失配会让 20-23 被静默漏掉，而它们其实记在正文里"
+    )
 
     assert in_reports == mapped, (
         f"报告里缺 {sorted(mapped - in_reports)}；"
