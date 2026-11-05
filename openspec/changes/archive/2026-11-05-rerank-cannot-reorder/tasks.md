@@ -115,9 +115,9 @@
 ## 7. 验收
 
 - [x] 7.1 `openspec validate rerank-cannot-reorder --strict` 通过
-- [ ] 7.2 **归档前**跑 `openspec validate --all --strict`
-- [ ] 7.3 全量测试通过
-- [ ] 7.4 归档
+- [x] 7.2 **归档前**跑 `openspec validate --all --strict`
+- [x] 7.3 全量测试通过
+- [x] 7.4 归档
 
 ## 8. 不在本变更范围
 
@@ -125,3 +125,4 @@
 - **不改融合规则**
 - **不造 v3 数据**
 - **不删 `status` 字段**：它是观测事实，只是不该参与加权
+
