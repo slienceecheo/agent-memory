@@ -342,11 +342,17 @@ def test_small_n_is_registered(measured) -> None:
 
 
 def _sub() -> str:
+    """取 §6.12.4 的正文。
+
+    **边界用 §6.12.6**：插入了 §6.12.6（噪声边界）后，
+    原来的 `split("#### 6.12.5")` 找不到边界，会把后面的内容全包进来——
+    那会让"证明"这个词从别处混进来，而断言本意是只检查 §6.12.4。
+    """
     report = (ROOT / "docs" / "reports" / "v2-what-it-measures.md").read_text(
         encoding="utf-8"
     )
     body = report.split("## 6. 结论 5")[1].split("\n## ")[0]
-    return body.split("#### 6.12.4 ")[1].split("#### 6.12.5")[0]
+    return body.split("#### 6.12.3 ")[1].split("#### 6.12.4")[0]
 
 
 def test_report_states_both_checks() -> None:
