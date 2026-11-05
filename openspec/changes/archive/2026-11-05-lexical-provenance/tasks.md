@@ -96,9 +96,9 @@
 ## 6. 验收
 
 - [x] 6.1 `openspec validate lexical-provenance --strict` 通过
-- [ ] 6.2 **归档前**跑 `openspec validate --all --strict`
-- [ ] 6.3 全量测试通过
-- [ ] 6.4 归档
+- [x] 6.2 **归档前**跑 `openspec validate --all --strict`
+- [x] 6.3 全量测试通过
+- [x] 6.4 归档
 
 ## 7. 不在本变更范围
 
@@ -107,3 +107,4 @@
 - **不加特征、不改融合**
 - **不造 v3 数据**
 - **不新增 results 文件**
+
