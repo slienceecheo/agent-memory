@@ -123,9 +123,9 @@
 ## 5. 验收
 
 - [x] 5.1 `openspec validate v3-apparatus-capability-boundary --strict` 通过
-- [ ] 5.2 **归档前**跑 `openspec validate --all --strict`
-- [ ] 5.3 全量测试通过
-- [ ] 5.4 归档
+- [x] 5.2 **归档前**跑 `openspec validate --all --strict`
+- [x] 5.3 全量测试通过
+- [x] 5.4 归档
 
 ## 6. 不在本变更范围
 
@@ -133,3 +133,4 @@
 - **不改权重**：`PREREGISTERED_WEIGHTS` 是预注册的，事后改是 HARKing
 - **不加第四特征**（如 vector 余弦）：那是装置变更，且要先确认它不与 gold 相关
 - **不改任何门禁判据**
+
