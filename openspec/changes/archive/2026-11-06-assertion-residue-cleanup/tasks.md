@@ -89,12 +89,13 @@
 ## 5. 验收
 
 - [x] 5.1 `openspec validate assertion-residue-cleanup --strict` 通过
-- [ ] 5.2 **归档前**跑 `openspec validate --all --strict`
-- [ ] 5.3 全量测试通过
-- [ ] 5.4 归档
+- [x] 5.2 **归档前**跑 `openspec validate --all --strict`
+- [x] 5.3 全量测试通过
+- [x] 5.4 归档
 
 ## 6. 不在本变更范围
 
 - **不起 `cosine-as-sort-feature`**（本变更只清残留）
 - **不改宽区间**
 - **不改 `CAPABILITIES`**
+
