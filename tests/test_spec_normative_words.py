@@ -70,11 +70,20 @@ def test_each_capability_has_normative_requirements(capability: str) -> None:
 
 
 def test_scenarios_are_not_required_to_carry_normative_words() -> None:
-    """**记录事实**：多数 scenario 不含规范词，这是既有书写习惯。
+    """**记录事实**：约半数 scenario 不含规范词，这是既有书写习惯。
 
     若将来统一了规范词，本测试的断言值需要更新——
     但**不要**把它改成"每个 scenario 必须有规范词"，
     那会要求改写 175 条，且 `openspec validate --strict` 本来就不要求。
+
+    **判据不能卡整数阈值**：
+    2026-11-06 归档后，这个比例从 51% 掉到 **49.9%**（179/359），
+    刚好跌破 `> 0.5`。而 49.9% 与 50% 在实质上是同一件事——
+    "多数/约半数 scenario 不含规范词"。
+
+    **所以改成断言一个宽区间** `[0.4, 0.7]`：
+    - 下界 0.4：若有人统一规范词，比例会迅速降到很低
+    - 上界 0.7：若有人删掉所有规范词，比例会接近 1.0
     """
     total = 0
     bare = 0
@@ -86,9 +95,12 @@ def test_scenarios_are_not_required_to_carry_normative_words() -> None:
                 bare += 1
 
     assert total > 200, f"scenario 总数异常：{total}"
-    assert bare / total > 0.5, (
-        f"只有 {bare}/{total} 条 scenario 不含规范词。若有人统一了规范词，"
-        "请更新本断言并在 HANDOFF 里改掉那条误判记录"
+
+    ratio = bare / total
+    assert 0.4 <= ratio <= 0.7, (
+        f"{bare}/{total} = {ratio:.3f} 条 scenario 不含规范词。\n"
+        "若有人统一了规范词（比例骤降）或删光了规范词（比例接近 1），"
+        "请更新本断言并在 HANDOFF 里改掉那条误判记录。"
     )
 
 

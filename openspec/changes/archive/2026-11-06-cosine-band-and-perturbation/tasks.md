@@ -121,12 +121,13 @@ G、H、I、J 最初都没红。已全部改成定位到表格行。
 ## 7. 验收
 
 - [x] 7.1 `openspec validate cosine-band-and-perturbation --strict` 通过
-- [ ] 7.2 **归档前**跑 `openspec validate --all --strict`
-- [ ] 7.3 全量测试通过
-- [ ] 7.4 归档
+- [x] 7.2 **归档前**跑 `openspec validate --all --strict`
+- [x] 7.3 全量测试通过
+- [x] 7.4 归档
 
 ## 8. 不在本变更范围
 
 - **不改产物格式**（`cosine_band` 只登记）
 - **不改权重**
 - **不加 cosine 特征**
+
