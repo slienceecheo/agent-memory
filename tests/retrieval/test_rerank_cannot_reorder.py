@@ -111,8 +111,8 @@ def measured():
     out: dict[str, dict] = {}
     original = dict(rr.PREREGISTERED_WEIGHTS)
     try:
-        rr.PREREGISTERED_WEIGHTS["__base"] = RerankWeights(1.0, 0.0, 0.0)
-        rr.PREREGISTERED_WEIGHTS["__v3"] = RerankWeights(0.4, 0.3, 0.3)
+        rr.PREREGISTERED_WEIGHTS["__base"] = RerankWeights(base=1.0, authority=0.0, cosine=0.0)
+        rr.PREREGISTERED_WEIGHTS["__v3"] = RerankWeights(base=0.4, authority=0.3, cosine=0.3)
 
         for subject in ("sample", "billing"):
             ds = load_dataset(DATA / subject)

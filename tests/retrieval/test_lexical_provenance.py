@@ -125,7 +125,7 @@ def measured():
     out: dict[str, dict] = {}
     original = dict(rr.PREREGISTERED_WEIGHTS)
     try:
-        rr.PREREGISTERED_WEIGHTS["__lexprov"] = RerankWeights(0.4, 0.3, 0.3)
+        rr.PREREGISTERED_WEIGHTS["__lexprov"] = RerankWeights(base=0.4, authority=0.3, cosine=0.3)
 
         for subject in SUBJECTS:
             ds = load_dataset(DATA / subject)

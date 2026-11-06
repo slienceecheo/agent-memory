@@ -53,7 +53,6 @@ from memory.retrieval.rerank import (
     authority_score,
     rerank,
     rrf_norm,
-    status_score,
 )
 from memory.retrieval.vector import recall_by_vector
 from memory.store.models import Authority, MemoryItem, Scope, Source, Status
@@ -756,14 +755,19 @@ def evaluate_case(
                 )
                 base = rrf_norm(score_by_id[tag], max_score=max_score)
                 authority = authority_score(item.authority)
-                status = status_score(item.status)
+                # commit ①：cosine 先占位为 0.0。
+                # 它的真值在 commit ② 从向量召回带出（见 spec「cosine 特征值必须来自向量召回」）。
+                #
+                # **占位为 0.0 而不是删除这个键**：`features` 必须恰好三键，
+                # 少一个键会被 `assert_result_is_complete` 拒绝。
+                cosine = 0.0
                 # 记整池（融合后、去重后的全部候选）的三项特征。
                 # **必须记整池**：只记 gold 的分，无法复算"gold 排第几"——
                 # 名次是相对于其他候选的，缺别人的分就无从比较。
                 features_by_tag[tag] = {
                     "base": base,
                     "authority": authority,
-                    "status": status,
+                    "cosine": cosine,
                 }
                 condition_by_tag[tag] = cond
                 candidates.append(
@@ -773,7 +777,7 @@ def evaluate_case(
                             base=base,
                             condition=cond,
                             authority=authority,
-                            status=status,
+                            cosine=cosine,
                         ),
                     )
                 )
@@ -1058,7 +1062,7 @@ def assert_result_is_complete(result: dict[str, object]) -> None:
     if not isinstance(cases, list):
         return
 
-    required = ("base", "authority", "status")
+    required = ("base", "authority", "cosine")
     for case in cases:
         if not isinstance(case, dict):
             continue

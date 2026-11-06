@@ -1853,7 +1853,7 @@ def test_section_0_7_has_the_four_step_checklist() -> None:
 
 
 def test_rerank_defect_tests_read_the_product_weights() -> None:
-    """缺陷 19/21 的测试必须**读取**产品权重，不能抄 `w = 0.25`。
+    """缺陷 19/21 的测试必须**读取**缺陷载体，不能抄常量。
 
     **这条记录了一次已修的测试缺陷**：
 
@@ -1862,10 +1862,20 @@ def test_rerank_defect_tests_read_the_product_weights() -> None:
     一条都没红，而缺陷 19/21 恰恰是唯一与权重相关的锁。
 
     两个测试改了之后：
-    - 引用 `PREREGISTERED_WEIGHTS["uniform"]` 的**符号**，
-    - 且断言的量（0.1475 / 0.25 / 0.1025 / 相等）确实随权重变化。
+    - 引用 `DEFECT18_WEIGHTS` 的**符号**（不是 `PREREGISTERED_WEIGHTS`——
+      那会让缺陷成立与否绑在"预注册了哪些配置"上），
+    - 且断言的量确实随载体变化。
 
-    **若这条变红**：说明有人又把它改回了抄常量——那会让缺陷 19/21 重新失去保护。
+    **2026-11 的修正**：原先这里还有一条
+    `assert "w.condition" in p21, "缺陷 21 的加成必须用 w.condition"`，
+    而 `w.condition` 在 `test_defects_20_21.py` 里**只出现在 docstring** 中，
+    `RerankWeights` 从来没有 `condition` 字段。它是一条永远绿的断言，
+    守的是一条已废弃的规则（缺陷 21 的等式在 condition 退出加权后失去对象）。
+    **实测删除后全量 1764 passed**，所以它确实冗余：
+    "字段不存在"由 `test_defects_20_21.py` 的 `not hasattr(w, "condition")` 守，
+    "condition 不影响得分"由该文件的行为断言守。
+
+    **若这条变红**：说明有人又把它改回了抄常量或读预注册表。
     """
     q4 = (ROOT / "tests" / "retrieval" / "test_defect18_authority.py").read_text(
         encoding="utf-8"
@@ -1875,8 +1885,8 @@ def test_rerank_defect_tests_read_the_product_weights() -> None:
     )
 
     for name, src in (("缺陷 19", q4), ("缺陷 21", p21)):
-        assert "PREREGISTERED_WEIGHTS" in src, (
-            f"{name}的测试没有引用产品权重表——抄常量会让权重改动不触发它"
+        assert "DEFECT18_WEIGHTS" in src, (
+            f"{name}的测试没有引用缺陷载体——抄常量会让载体改动不触发它"
         )
         assert "    w = 0.25" not in src, (
             f"{name}的测试又把权重抄成了字面量"
@@ -1885,7 +1895,12 @@ def test_rerank_defect_tests_read_the_product_weights() -> None:
     # 而且必须是分别取字段，不是取一个数当四个用
     assert "w.authority" in q4, "缺陷 19 必须用 w.authority，不能拿单一 w 顶替"
     assert "w.base * d_base" in q4, "缺陷 19 的 base 项必须用 w.base"
-    assert "w.condition" in p21, "缺陷 21 的加成必须用 w.condition"
+
+    # 载体必须独立于预注册表：两处测试都不得从 PREREGISTERED_WEIGHTS 取 w
+    for name, src in (("缺陷 19", q4), ("缺陷 21", p21)):
+        assert 'w = PREREGISTERED_WEIGHTS[' not in src, (
+            f"{name}的测试又从预注册表取权重了——那会让缺陷的成立依赖预注册配置"
+        )
 
 
 def test_thread_three_of_the_six_evals_sensitive_tests_are_locked_defect() -> None:

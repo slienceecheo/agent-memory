@@ -73,7 +73,7 @@ def test_handoff_states_v3_has_three_sort_features() -> None:
     from memory.retrieval.rerank import RerankWeights
 
     fields = [f.name for f in dataclasses.fields(RerankWeights)]
-    assert fields == ["base", "authority", "status"], fields
+    assert fields == ["base", "authority", "cosine"], fields
 
     assert "排序特征 = 3" in text, "HANDOFF 未写'排序特征 = 3'"
     assert "condition 退出加权" in text

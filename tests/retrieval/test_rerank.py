@@ -72,18 +72,18 @@ def test_condition_score_full_match() -> None:
 
 def test_weights_must_sum_to_one() -> None:
     with pytest.raises(ValueError, match="和"):
-        RerankWeights(base=0.5, authority=0.5, status=0.5)
+        RerankWeights(base=0.5, authority=0.5, cosine=0.5)
 
 
 def test_weights_accept_valid_set() -> None:
-    weights = RerankWeights(base=0.4, authority=0.4, status=0.2)
+    weights = RerankWeights(base=0.4, authority=0.4, cosine=0.2)
 
     assert weights.total() == pytest.approx(1.0)
 
 
 def test_weights_reject_negative() -> None:
     with pytest.raises(ValueError):
-        RerankWeights(base=1.2, authority=-0.2, status=0.0)
+        RerankWeights(base=1.2, authority=-0.2, cosine=0.0)
 
 
 def test_preregistered_weights_exist_and_sum_to_one() -> None:
@@ -101,26 +101,28 @@ def test_preregistered_count_is_five() -> None:
     assert len(PREREGISTERED_WEIGHTS) <= 5
 
 
-def test_uniform_weights_are_the_preregistered_values() -> None:
-    """缺陷 19/21 的临界点依赖 `uniform` 的**具体数值**，不只是"和为 1"。
+def test_default_weights_are_the_preregistered_values() -> None:
+    """默认权重组的数值。
 
-    实测缺口：`test_preregistered_weights_exist_and_sum_to_one` 只断言和 == 1，
-    所以把 `uniform` 从各 0.25 改成 base 0.24 / condition 0.26 时它仍然通过。
+    **这条替代了原先的 `test_uniform_weights_are_the_preregistered_values`。**
 
-    而缺陷 19 的净差 0.1025、缺陷 21 的"罚分 == 加成"都建立在那四个 0.25 上。
-    权重一变，这两条缺陷的算术就不成立了——那需要重新评估，而不是静默通过。
+    原先那条的 docstring 说它守"缺陷 19/21 的临界点依赖 uniform 的数值"。
+    但缺陷载体已改为独立的 `DEFECT18_WEIGHTS`（见
+    `test_feature_set_cosine.py::test_defect18_numbers_match_weights`），
+    所以"缺陷算术"不再依赖 `uniform`。这条现在只守"默认配置是什么"。
 
-    **若这条变红**：先看是不是有意调权重（v3 修缺陷 19/21），是则同步更新
-    `test_q4_loses_to_unrelated_entries_on_authority` 与
-    `test_authority_penalty_equals_condition_bonus` 的期望值并翻面。
+    **若这条变红**：说明有人改了默认权重。那时要同步检查
+    `DEFECT18_WEIGHTS` 是否仍然高位（缺陷 19 的成立条件是
+    `w.authority > 0.09 × w.base`），而不是无条件跟随改数字。
     """
     from memory.retrieval.rerank import PREREGISTERED_WEIGHTS
 
     w = PREREGISTERED_WEIGHTS["uniform"]
 
+    # commit ① 刻意保持旧数值（0.4/0.3/0.3），数值改动在 commit ③。
     assert w.base == pytest.approx(0.4)
     assert w.authority == pytest.approx(0.3)
-    assert w.status == pytest.approx(0.3)
+    assert w.cosine == pytest.approx(0.3)
     assert not hasattr(w, "condition")
 
 
@@ -135,21 +137,21 @@ class _Candidate:
         base: float,
         condition: float,
         authority: float,
-        status: float,
+        cosine: float,
     ):
         self.item_id = item_id
         self.features = FeatureScores(
-            base=base, condition=condition, authority=authority, status=status
+            base=base, condition=condition, authority=authority, cosine=cosine
         )
 
 
 def test_base_only_reproduces_fusion_order() -> None:
     """只开基础项时，排序必须与纯 RRF 一致。"""
     candidates = [
-        _Candidate("a", base=1.0, condition=0.0, authority=0.0, status=1.0),
-        _Candidate("b", base=0.5, condition=1.0, authority=1.0, status=1.0),
+        _Candidate("a", base=1.0, condition=0.0, authority=0.0, cosine=1.0),
+        _Candidate("b", base=0.5, condition=1.0, authority=1.0, cosine=1.0),
     ]
-    weights = RerankWeights(base=1.0, authority=0.0, status=0.0)
+    weights = RerankWeights(base=1.0, authority=0.0, cosine=0.0)
 
     ranked = rerank(candidates, weights=weights)
 
@@ -158,10 +160,10 @@ def test_base_only_reproduces_fusion_order() -> None:
 
 def test_feature_can_override_base_when_heavy() -> None:
     candidates = [
-        _Candidate("a", base=1.0, condition=0.0, authority=0.0, status=0.0),
-        _Candidate("b", base=0.9, condition=1.0, authority=1.0, status=1.0),
+        _Candidate("a", base=1.0, condition=0.0, authority=0.0, cosine=0.0),
+        _Candidate("b", base=0.9, condition=1.0, authority=1.0, cosine=1.0),
     ]
-    weights = RerankWeights(base=0.2, authority=0.4, status=0.4)
+    weights = RerankWeights(base=0.2, authority=0.4, cosine=0.4)
 
     ranked = rerank(candidates, weights=weights)
 
@@ -172,7 +174,7 @@ def test_base_only_falls_back_to_fusion_order() -> None:
     """**只开融合分**时，排序退化为融合分顺序。
 
     **这条原来的名字是 `test_all_off_falls_back_to_base`，而那个名字是错的**：
-    `disabled_weights()` 返回 `base=1, authority=0, status=0`，
+    `disabled_weights()` 返回 `base=1, authority=0, cosine=0`，
     语义是"只开融合分"，不是"全部关闭"。
 
     而"全部关闭"**根本不可构造**：`RerankWeights` 要求权重和为 1，
@@ -183,11 +185,11 @@ def test_base_only_falls_back_to_fusion_order() -> None:
 
     weights = disabled_weights()
     # 语义明确的断言：它不是"全关"
-    assert (weights.base, weights.authority, weights.status) == (1.0, 0.0, 0.0)
+    assert (weights.base, weights.authority, weights.cosine) == (1.0, 0.0, 0.0)
 
     candidates = [
-        _Candidate("a", base=1.0, condition=0.0, authority=0.0, status=0.0),
-        _Candidate("b", base=0.5, condition=1.0, authority=1.0, status=1.0),
+        _Candidate("a", base=1.0, condition=0.0, authority=0.0, cosine=0.0),
+        _Candidate("b", base=0.5, condition=1.0, authority=1.0, cosine=1.0),
     ]
 
     ranked = rerank(candidates, weights=weights)
@@ -204,15 +206,15 @@ def test_all_zero_weights_are_rejected() -> None:
     from memory.retrieval.rerank import RerankWeights
 
     with pytest.raises(ValueError, match="权重之和必须为 1"):
-        RerankWeights(base=0.0, authority=0.0, status=0.0)
+        RerankWeights(base=0.0, authority=0.0, cosine=0.0)
 
 
 def test_scores_stay_in_unit_interval() -> None:
     candidates = [
-        _Candidate("a", base=1.0, condition=1.0, authority=1.0, status=1.0),
-        _Candidate("b", base=0.0, condition=0.0, authority=0.0, status=0.0),
+        _Candidate("a", base=1.0, condition=1.0, authority=1.0, cosine=1.0),
+        _Candidate("b", base=0.0, condition=0.0, authority=0.0, cosine=0.0),
     ]
-    weights = RerankWeights(base=0.4, authority=0.3, status=0.3)
+    weights = RerankWeights(base=0.4, authority=0.3, cosine=0.3)
 
     ranked = rerank(candidates, weights=weights)
 
@@ -222,8 +224,8 @@ def test_scores_stay_in_unit_interval() -> None:
 
 def test_feature_value_out_of_range_raises() -> None:
     """特征越界必须报错：未限定值域时大数会压过权重，搜索失去意义。"""
-    candidates = [_Candidate("a", base=2.0, condition=0.0, authority=0.0, status=0.0)]
-    weights = RerankWeights(base=1.0, authority=0.0, status=0.0)
+    candidates = [_Candidate("a", base=2.0, condition=0.0, authority=0.0, cosine=0.0)]
+    weights = RerankWeights(base=1.0, authority=0.0, cosine=0.0)
 
     with pytest.raises(ValueError, match="\\[0,1\\]"):
         rerank(candidates, weights=weights)
@@ -243,10 +245,10 @@ def test_ties_keep_input_order() -> None:
     若改回按 id 排，会变成 `a, b`，这条测试就会红。
     """
     candidates = [
-        _Candidate("b", base=0.5, condition=0.5, authority=0.5, status=0.5),
-        _Candidate("a", base=0.5, condition=0.5, authority=0.5, status=0.5),
+        _Candidate("b", base=0.5, condition=0.5, authority=0.5, cosine=0.5),
+        _Candidate("a", base=0.5, condition=0.5, authority=0.5, cosine=0.5),
     ]
-    weights = RerankWeights(base=0.4, authority=0.3, status=0.3)
+    weights = RerankWeights(base=0.4, authority=0.3, cosine=0.3)
 
     ranked = rerank(candidates, weights=weights)
 
@@ -260,11 +262,11 @@ def test_ties_are_deterministic_given_the_same_input() -> None:
     两者都要，因为"保持输入顺序"如果实现成随机洗牌，也会满足上一条的单次断言。
     """
     candidates = [
-        _Candidate("x", base=0.5, condition=0.5, authority=0.5, status=0.5),
-        _Candidate("y", base=0.5, condition=0.5, authority=0.5, status=0.5),
-        _Candidate("z", base=0.5, condition=0.5, authority=0.5, status=0.5),
+        _Candidate("x", base=0.5, condition=0.5, authority=0.5, cosine=0.5),
+        _Candidate("y", base=0.5, condition=0.5, authority=0.5, cosine=0.5),
+        _Candidate("z", base=0.5, condition=0.5, authority=0.5, cosine=0.5),
     ]
-    weights = RerankWeights(base=0.4, authority=0.3, status=0.3)
+    weights = RerankWeights(base=0.4, authority=0.3, cosine=0.3)
 
     first = [item.item_id for item in rerank(candidates, weights=weights)]
     second = [item.item_id for item in rerank(candidates, weights=weights)]

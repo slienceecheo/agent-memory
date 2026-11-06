@@ -26,12 +26,14 @@ DATA = ROOT / "data" / "retrieval-v2"
 
 
 class _Cand:
-    def __init__(self, tag: str, base: float, authority: float = 1.0, status: float = 1.0):
+    def __init__(
+        self, tag: str, base: float, authority: float = 1.0, cosine: float = 1.0
+    ):
         from memory.retrieval.rerank import FeatureScores
 
         self.item_id = tag
         self.features = FeatureScores(
-            base=base, condition=0.0, authority=authority, status=status
+            base=base, condition=0.0, authority=authority, cosine=cosine
         )
 
 
@@ -101,9 +103,9 @@ def test_recompute_helper_matches_two_step_order() -> None:
     from memory.retrieval.rerank import FeatureScores
 
     features_by_tag = {
-        "gold-c1": {"base": 0.5, "authority": 1.0, "status": 1.0},
-        "d-c1-1": {"base": 0.5, "authority": 1.0, "status": 1.0},
-        "d-c1-2": {"base": 0.9, "authority": 1.0, "status": 1.0},
+        "gold-c1": {"base": 0.5, "authority": 1.0, "cosine": 0.0},
+        "d-c1-1": {"base": 0.5, "authority": 1.0, "cosine": 0.0},
+        "d-c1-2": {"base": 0.9, "authority": 1.0, "cosine": 0.0},
     }
     fusion_tags = ["gold-c1", "d-c1-1", "d-c1-2"]
 
@@ -113,7 +115,7 @@ def test_recompute_helper_matches_two_step_order() -> None:
             self.item_id = tag
             self.features = FeatureScores(
                 base=f["base"], condition=0.0,
-                authority=f["authority"], status=f["status"],
+                authority=f["authority"], cosine=f["cosine"],
             )
 
     order = recompute_order(
@@ -132,8 +134,8 @@ def test_recompute_helper_without_fusion_order_differs() -> None:
     from memory.retrieval.rerank import FeatureScores
 
     features = {
-        "gold-c1": {"base": 0.5, "authority": 1.0, "status": 1.0},
-        "d-c1-1": {"base": 0.5, "authority": 1.0, "status": 1.0},
+        "gold-c1": {"base": 0.5, "authority": 1.0, "cosine": 0.0},
+        "d-c1-1": {"base": 0.5, "authority": 1.0, "cosine": 0.0},
     }
 
     class _C:
@@ -142,7 +144,7 @@ def test_recompute_helper_without_fusion_order_differs() -> None:
             self.item_id = tag
             self.features = FeatureScores(
                 base=f["base"], condition=0.0,
-                authority=f["authority"], status=f["status"],
+                authority=f["authority"], cosine=f["cosine"],
             )
 
     with_fusion = recompute_order(

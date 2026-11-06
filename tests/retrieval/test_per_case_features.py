@@ -54,8 +54,9 @@ def _run(subject: str = "sample") -> dict[str, object]:
 
 
 def test_features_recorded() -> None:
-    """每条**已召回 gold** 的 case，`features` **恰好**三个键：`base`/`authority`/`status`。
+    """每条**已召回 gold** 的 case，`features` **恰好**三个键：`base`/`authority`/`cosine`。
 
+    `status` 已删除（池内恒 1.0，见 `recall-active-only-contract`）。
     gold 未被召回时 `features` 为 `None`——那由
     `test_unretrieved_gold_is_declared_by_both_sides` 单独约束。
     """
@@ -70,9 +71,9 @@ def test_features_recorded() -> None:
             continue
         checked += 1
         assert isinstance(features, dict), f"{case['case_id']}: features 不是 dict"
-        assert set(features) == {"base", "authority", "status"}, (
+        assert set(features) == {"base", "authority", "cosine"}, (
             f"{case['case_id']}: features 键是 {sorted(features)}，"
-            "应恰好是 base/authority/status 三项"
+            "应恰好是 base/authority/cosine 三项"
         )
         for name, value in features.items():
             assert isinstance(value, float), f"{case['case_id']}.{name} 不是 float"
@@ -162,7 +163,7 @@ def test_features_recompute_rank() -> None:
                     base=feats["base"],
                     condition=0.0,
                     authority=feats["authority"],
-                    status=feats["status"],
+                    cosine=feats["cosine"],
                 )
 
         cands = [_C(tag, features_by_tag[tag]) for tag in features_by_tag]
@@ -253,9 +254,9 @@ def test_result_with_missing_features_is_rejected() -> None:
             {
                 "case_id": "c1",
                 "has_gold": True,
-                "features": {"base": 1.0, "authority": 1.0, "status": 1.0},
+                "features": {"base": 1.0, "authority": 1.0, "cosine": 0.0},
                 "features_by_tag": {
-                    "gold-c1": {"base": 1.0, "authority": 1.0, "status": 1.0}
+                    "gold-c1": {"base": 1.0, "authority": 1.0, "cosine": 0.0}
                 },
                 "condition_score": None,
             }
@@ -275,7 +276,7 @@ def test_result_with_missing_features_is_rejected() -> None:
         "per_case": [
             {
                 **good["per_case"][0],
-                "features": {"base": 1.0, "status": 1.0},
+                "features": {"base": 1.0, "cosine": 0.0},
             }
         ]
     }

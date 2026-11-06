@@ -110,11 +110,15 @@ def test_authority_penalty_equals_condition_bonus() -> None:
     压倒 base 优势。若会，那缺陷 19 的机制在 v3 仍在（事实如此，见
     `test_q4_loses_to_unrelated_entries_on_authority`）。
 
-    **`w` 必须从 `PREREGISTERED_WEIGHTS` 读，不能抄常量。**
-    """
-    from memory.retrieval.rerank import PREREGISTERED_WEIGHTS, FeatureScores, rerank
+    **`w` 必须从 `DEFECT18_WEIGHTS` 读，不能抄常量，也不能读预注册表。**
 
-    w = PREREGISTERED_WEIGHTS["uniform"]
+    读预注册表会让"缺陷是否成立"绑在"预注册了哪些配置"上——
+    删掉某一组预注册会让缺陷验证静默失效。载体是独立的（见 spec
+    「缺陷载体必须独立于预注册权重」）。
+    """
+    from memory.retrieval.rerank import DEFECT18_WEIGHTS, FeatureScores, rerank
+
+    w = DEFECT18_WEIGHTS
 
     # condition 不再是权重字段——这正是本条要锁的事实
     assert not hasattr(w, "condition"), (
@@ -127,8 +131,8 @@ def test_authority_penalty_equals_condition_bonus() -> None:
             self.item_id = "x"
             self.features = f
 
-    lo = FeatureScores(base=0.5, condition=0.0, authority=1.0, status=1.0)
-    hi = FeatureScores(base=0.5, condition=1.0, authority=1.0, status=1.0)
+    lo = FeatureScores(base=0.5, condition=0.0, authority=1.0, cosine=0.0)
+    hi = FeatureScores(base=0.5, condition=1.0, authority=1.0, cosine=0.0)
     assert rerank([_C(lo)], weights=w)[0].score == pytest.approx(
         rerank([_C(hi)], weights=w)[0].score
     ), "condition 又影响了得分"

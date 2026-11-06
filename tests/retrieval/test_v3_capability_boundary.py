@@ -76,8 +76,8 @@ def probe():
     out: dict[str, dict] = {}
     original = dict(rr.PREREGISTERED_WEIGHTS)
     try:
-        rr.PREREGISTERED_WEIGHTS["__auth"] = RerankWeights(0.0, 1.0, 0.0)
-        rr.PREREGISTERED_WEIGHTS["__base"] = RerankWeights(1.0, 0.0, 0.0)
+        rr.PREREGISTERED_WEIGHTS["__auth"] = RerankWeights(base=0.0, authority=1.0, cosine=0.0)
+        rr.PREREGISTERED_WEIGHTS["__base"] = RerankWeights(base=1.0, authority=0.0, cosine=0.0)
 
         for subject in SUBJECTS:
             ds = load_dataset(DATA / subject)
@@ -409,9 +409,9 @@ def test_leak_guard_catches_doctored_pool() -> None:
     """
     doctored = {
         "features_by_tag": {
-            "gold-x": {"base": 0.1, "authority": 1.0, "status": 1.0},
-            "d-x-0": {"base": 0.9, "authority": 0.66, "status": 1.0},
-            "d-x-1": {"base": 0.8, "authority": 0.33, "status": 1.0},
+            "gold-x": {"base": 0.1, "authority": 1.0, "cosine": 0.0},
+            "d-x-0": {"base": 0.9, "authority": 0.66, "cosine": 0.0},
+            "d-x-1": {"base": 0.8, "authority": 0.33, "cosine": 0.0},
         },
         "fusion_tags": ["d-x-0", "d-x-1", "gold-x"],
         "rerank_order_tags": ["gold-x", "d-x-0", "d-x-1"],

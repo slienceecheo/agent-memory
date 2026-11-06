@@ -73,7 +73,7 @@ def test_rank_recomputes_with_zero_differences(
                 base=f["base"],
                 condition=0.0,
                 authority=f["authority"],
-                status=f["status"],
+                cosine=f["cosine"],
             )
 
     checked = 0
@@ -174,7 +174,7 @@ def test_rank_recomputes_on_multi_path_pool() -> None:
             self.item_id = tag
             self.features = FeatureScores(
                 base=f["base"], condition=0.0,
-                authority=f["authority"], status=f["status"],
+                authority=f["authority"], cosine=f["cosine"],
             )
 
     checked = 0
@@ -219,7 +219,7 @@ def test_gold_rank_equals_index_in_recomputed_order() -> None:
             self.item_id = tag
             self.features = FeatureScores(
                 base=f["base"], condition=0.0,
-                authority=f["authority"], status=f["status"],
+                authority=f["authority"], cosine=f["cosine"],
             )
 
     for case in result["per_case"]:  # type: ignore[union-attr]

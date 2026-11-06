@@ -39,7 +39,7 @@ class _Cand:
     def __init__(self, item_id: str, base: float) -> None:
         self.item_id = item_id
         self.features = FeatureScores(
-            base=base, condition=1.0, authority=1.0, status=1.0
+            base=base, condition=1.0, authority=1.0, cosine=0.0
         )
 
 

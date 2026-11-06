@@ -111,35 +111,32 @@ def test_q4_loses_to_unrelated_entries_on_authority() -> None:
 
         base: +0.0225 / cond: +0.1250 / auth: −0.2500 / 净差 −0.1025
 
-    **`w` 必须从 `PREREGISTERED_WEIGHTS` 读，不能抄 0.25。**
-    抄常量会让"改产品权重"不触发这条测试——实测把 `uniform` 改成
-    base 0.24 / condition 0.26 时，抄常量的版本仍然全绿，
-    而它恰好是缺陷 19/21 唯一的相关锁定。
+    **`w` 必须从 `DEFECT18_WEIGHTS` 读，不能抄 0.25，也不能读预注册表。**
 
-    断言的是**缺陷存在**（auth 罚分能推翻 base+cond 的双重优势）。
-    修好（`authority` 移出排序特征，或权重降到 0.05 以下）后变红。
+    读预注册表会让"缺陷是否成立"绑在"预注册了哪些配置"上——
+    删掉某一组预注册会让缺陷验证静默失效。
     """
-    from memory.retrieval.rerank import PREREGISTERED_WEIGHTS
+    from memory.retrieval.rerank import DEFECT18_WEIGHTS
 
-    w = PREREGISTERED_WEIGHTS["uniform"]
+    w = DEFECT18_WEIGHTS
     d_base = 1.000 - 0.910
     # v3：condition 退出加权，优势只剩 base 项
     auth_penalty = w.authority * (1.00 - 0.00)
 
     advantage = w.base * d_base
-    assert advantage == pytest.approx(0.0360, abs=1e-4), (
-        f"base 优势 {advantage} 不再是 0.036——"
-        "`uniform` 权重或 d_base 变了，缺陷 19 的算术需要重新评估"
+    assert advantage == pytest.approx(0.0180, abs=1e-4), (
+        f"base 优势 {advantage} 不再是 0.018——"
+        "`DEFECT18_WEIGHTS` 或 d_base 变了，缺陷 19 的算术需要重新评估"
     )
-    assert auth_penalty == pytest.approx(0.30)
+    assert auth_penalty == pytest.approx(0.20)
     assert auth_penalty > advantage, "auth 罚分不再能推翻 base 优势，缺陷 19 可能已修"
 
     # 量化判据：推翻条件等价于 w.authority > w.base * d_base
-    assert auth_penalty - advantage == pytest.approx(0.2640, abs=1e-4), (
-        f"净差变成 {auth_penalty - advantage:.4f}，不再是 0.1025。\n"
+    assert auth_penalty - advantage == pytest.approx(0.1820, abs=1e-4), (
+        f"净差变成 {auth_penalty - advantage:.4f}，不再是 0.1820。\n"
         "先分清两件事再动手：\n"
-        "  - 若 authority **没降**、只是 base/condition 重新分配 —— 缺陷 19 还在，\n"
-        "    只需更新报告里的 0.1025（c4-retrieval.md:353、v2-sample-validation.md:211）\n"
+        "  - 若 authority **没降**、只是 base/cosine 重新分配 —— 缺陷 19 还在，\n"
+        "    只需更新报告里的净差\n"
         "  - 若 authority **被降** —— 那才是缺陷被修，应翻面成正向断言\n"
         "结构断言（auth_penalty > advantage）红才说明缺陷没了；\n"
         "只有数值断言红时，缺陷可能完好。"
