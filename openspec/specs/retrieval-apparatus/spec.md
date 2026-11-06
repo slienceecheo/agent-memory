@@ -7,10 +7,13 @@
 
 ### Requirement: 排序特征集
 
-系统 SHALL 用三个特征对候选重排：融合分（`base`）、来源权威（`authority`）、状态惩罚（`status`）。
+系统 SHALL 用三个特征对候选重排：融合分（`base`）、来源权威（`authority`）、语义相似度（`cosine`）。
 每个特征 MUST 落在 `[0, 1]`，且 MUST 可单独关闭。
 
 `condition` MUST NOT 参与排序打分。它 MAY 只用于召回阶段的过滤。
+
+`status` MUST NOT 作为排序特征：三条召回路径只返回 `ACTIVE`，它在池内恒为常数（见
+`evaluation-harness` 的「恒常数字段不得作为排序特征」与「所有召回路径 MUST 只返回 ACTIVE」）。
 
 #### Scenario: 三特征加权求和
 
@@ -30,7 +33,7 @@
 - **AND** 本项目 MUST NOT 提供"三个特征全部关闭"的构造方式：
   权重和恒为 1，而三个都关意味着和为 0，两者不相容
 
-- **AND** `disabled_weights()` 的语义 MUST 是"**只开融合分**"（`base=1, authority=0, status=0`），
+- **AND** `disabled_weights()` 的语义 MUST 是"**只开融合分**"（`base=1, authority=0, cosine=0`），
   MUST NOT 被描述为"全部关闭"
 
 **为什么把旧场景改掉**：v2 的 spec 写的是"四个特征全部关闭 -> 退化为融合分排序"，
@@ -43,6 +46,32 @@
 
 - **WHEN** 两条候选除 `condition` 外三个特征值完全相同
 - **THEN** 两者得分相同，`condition` 不改变任何一条的得分
+
+#### Scenario: 权重与特征值必须用关键字参数构造
+
+- **WHEN** 以位置参数构造 `RerankWeights(0.4, 0.3, 0.3)` 或 `FeatureScores(0.5, 0.0, 1.0, 1.0)`
+- **THEN** MUST 抛出 `TypeError`
+
+- **AND** 理由 MUST 被写明：**字段含义在版本间变过**
+  （`RerankWeights` 第三位：`condition` → `status` → `cosine`；
+  `FeatureScores` 第四位：`status` → `cosine`），
+  位置参数会让"看起来配了 cosine"的代码实际配的是别的字段
+
+**为什么这条是产品契约而不是测试惯例**：它可观察——构造会抛错。
+而"测试里请用关键字"不可观察，写进 spec 也只是惯例。
+
+**这个场景为什么对 `FeatureScores` 尤其必要**：它的字段顺序是
+`base` / `condition` / `authority` / `cosine`，而产物里 `features` 的键是
+`base` / `authority` / `cosine`——`condition` 夹在第 2 位且不进 `features`。
+**所以"按位置对应"的写法从一开始就是错的**，不是改字段后才错。
+`kw_only` 让这种错位从静默变成构造期报错。
+
+**实测的抛错形态**：`takes 1 positional argument but 4 were given`（`RerankWeights`）、
+`but 5 were given`（`FeatureScores`）。所以判据能区分"拒收位置参数"与"别的构造错误"。
+
+**这是全项目唯一使用 `kw_only=True` 的 dataclass**，理由必须写在代码里：
+其他 dataclass（如 `Check("F24", "A 轴未饱和", True, ...)`）的字段含义从未变过。
+**"字段含义会变"才是理由，不是"位置参数不好"。**
 
 ### Requirement: 轴的定义必须可判定
 
@@ -86,7 +115,7 @@
 
 ### Requirement: 逐条特征分必须持久化
 
-每次评测 MUST 把每条 case 的三个排序特征取值写入 `features` 子对象：`base` / `authority` / `status`。
+每次评测 MUST 把每条 case 的三个排序特征取值写入 `features` 子对象：`base` / `authority` / `cosine`。
 
 `condition` 的取值 MUST 单独写入 `condition_score` 字段（数值或 `null`），
 **不放进 `features`**——它不参与排序，但它的分布是判断"条件能否被查询侧获得"的唯一依据。
@@ -94,7 +123,7 @@
 #### Scenario: 每条 case 的 features 含三个键
 
 - **WHEN** 一次评测产生 N 条 case
-- **THEN** 每条 case 的 `features` 恰好含 `base` / `authority` / `status` 三个数值字段，不含 `condition`
+- **THEN** 每条 case 的 `features` 恰好含 `base` / `authority` / `cosine` 三个数值字段，不含 `condition`、不含 `status`
 
 #### Scenario: condition_score 独立记录
 
@@ -143,7 +172,41 @@
 #### Scenario: 复算结果可追溯到具体权重
 
 - **WHEN** 输出一次离线复算的结果
-- **THEN** 该结果 MUST 记录所使用的**三权重**（`base` / `authority` / `status`），
+- **THEN** 该结果 MUST 记录所使用的**三权重**（`base` / `authority` / `cosine`），
   且该三元组 MUST 能被重新加载并产生相同结果
 
 - **AND** MUST NOT 记录四元组：`condition` 已退出加权，记一个零权重会让人以为它仍参与排序
+
+### Requirement: cosine 特征值必须来自向量召回，不得在重排阶段重算
+
+`cosine` 的取值 MUST 由候选在向量召回路径中算出的那一个余弦值**经单调变换**得到，
+MUST NOT 在重排阶段对候选重新做一次 embedding 比较。
+
+变换只有一个：`cosine = max(0.0, raw_cos)`（把 `[-1, 1]` 压进 `rerank` 要求的 `[0, 1]`）。
+
+#### Scenario: 逐条 cosine 等于召回时算出的分
+
+- **WHEN** 一次评测启用了 `vector` 路径
+- **THEN** 对每个进入重排的候选，`features_by_tag[tag]["cosine"]` MUST 等于
+  `max(0.0, recall_by_vector_scored(...)` 给出的该候选原始余弦分`)`，逐位相等，不做四舍五入
+
+- **AND** 判定 MUST 用一次**独立的召回调用**取回分数再比对，
+  MUST NOT 用"`features_by_tag` 里的值与 `features_by_tag` 里的值"自比
+
+- **AND** 排序用的分与记录的 `cosine` MUST 来自同一次召回调用
+
+#### Scenario: 未启用 vector 路径时 cosine 为 0，且不得伪造
+
+- **WHEN** 评测的 `paths` 不含 `vector`
+- **THEN** 每条候选的 `cosine` MUST 为 `0.0`
+- **AND** 结果 MUST 用既有字段表达"这条没有 cosine 信号"：
+  `paths_enabled` 不含 `"vector"` 且 `path_returns["vector"]` 为 `null`
+
+**为什么"不得自比"**：`features_by_tag` 里既存 cosine 又拿来当期望值，
+是同一个数和自己比，任何实现都通过。必须另起一次召回调用。
+
+**为什么不能在重排阶段重算**：`AGENTS.md` 已登记 embedding 的非确定性——
+同一文本重复调用可能出现不同向量（跨变体余弦 0.9976）。
+重算会引入第二次调用，于是"按 cosine 排序"用的分与"记录下来的 cosine"不是同一个数，
+复算验收会以无法归因的方式失败（差异只在缓存未命中时出现）。
+`max(0, x)` 是同一个数的单调变换，不涉及第二次调用，因此不违反这一条。

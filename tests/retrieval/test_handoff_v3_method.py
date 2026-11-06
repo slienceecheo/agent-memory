@@ -308,12 +308,22 @@ def test_section_0_6_records_the_coverage_limit() -> None:
     text = _text()
     section = text.split("### 0.6 自动检查的边界")[1].split("### 0.7")[0]
 
+    # **分母从 `compute()` 读，不写死**：
+    # 写死的数字每次归档都要手改，而"改文档忘了改测试"会变成习惯性修改——
+    # 那时断言就不再是判据，只是一个跟着漂移的常量。
+    from evals.tools.recount_specs import compute
+
+    total_must = compute()["must_lines"]
+
     # MUST/SHALL 分母
-    assert "426 条含 `MUST`/`SHALL` 的行" in section, "未写 MUST/SHALL 总行数"
+    assert f"{total_must} 条含 `MUST`/`SHALL` 的行" in section, (
+        f"未写 MUST/SHALL 总行数（应为 {total_must}）"
+    )
     # 三层表：每层都必须写全"分子/分母 = 百分比"
-    assert "1/426 = 0.2%" in section, "未写函数实现可验证率（带分母）"
-    assert "0/426 = 0.0%" in section, "未写行为符合率（带分母）"
-    assert "3/426 = 0.7%" in section, "未写人工映射率（带分母）"
+    for numerator, pct in ((1, "0.2%"), (0, "0.0%"), (3, "0.6%")):
+        assert f"{numerator}/{total_must} = {pct}" in section, (
+            f"三层表缺 `{numerator}/{total_must} = {pct}`"
+        )
     # 关键区分
     assert "有反引号" in section and "不等于" in section
     # 能力分组
@@ -340,8 +350,15 @@ def test_section_0_6_distinguishes_the_two_1_2_percent() -> None:
         "有它，读者才知道 1.2% 在本节不能脱离分母使用。"
     )
     # 两个分母都必须出现，且各自绑定正确的百分比
-    assert "3/**389**" in section
-    assert "1/**426**" in section
+    from evals.tools.recount_specs import compute
+
+    stats = compute()
+    assert f"3/**{stats['scenarios']}**" in section, (
+        f"Scenario 分母应为 {stats['scenarios']}"
+    )
+    assert f"1/**{stats['must_lines']}**" in section, (
+        f"MUST 分母应为 {stats['must_lines']}"
+    )
     # 且 MUST 侧不能是 1.2%
     assert "1/83 = 1.2%" not in section, "MUST 侧还在用旧分母 83"
 
@@ -354,8 +371,10 @@ def test_section_0_6_records_the_three_layer_split() -> None:
     assert "三层，不是两层" in section
     assert "符号存在" in section
     assert "行为符合" in section
-    # 关键：行为符合是 0%（带分母）
-    assert "0/426 = 0.0%" in section
+    # 关键：行为符合是 0%（带分母，分母从 compute() 读）
+    from evals.tools.recount_specs import compute
+
+    assert f"0/{compute()['must_lines']} = 0.0%" in section
     # 关键：不是 98.8%
     assert "100% 的" in section
 
