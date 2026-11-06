@@ -33,6 +33,7 @@ CAPABILITIES = (
     "llm-and-embedding-io",
     "memory-retrieval",
     "memory-store",
+    "retrieval-apparatus",
 )
 
 #: 规范词的两种写法。**中文词必须一起算**，否则会漏掉大半。
@@ -74,16 +75,19 @@ def test_scenarios_are_not_required_to_carry_normative_words() -> None:
 
     若将来统一了规范词，本测试的断言值需要更新——
     但**不要**把它改成"每个 scenario 必须有规范词"，
-    那会要求改写 175 条，且 `openspec validate --strict` 本来就不要求。
+    那会要求改写一百多条，且 `openspec validate --strict` 本来就不要求。
 
     **判据不能卡整数阈值**：
-    2026-11-06 归档后，这个比例从 51% 掉到 **49.9%**（179/359），
-    刚好跌破 `> 0.5`。而 49.9% 与 50% 在实质上是同一件事——
-    "多数/约半数 scenario 不含规范词"。
+    这个比例曾在一次归档后从 51% 掉到 49.9%，刚好跌破 `> 0.5`。
+    而 49.9% 与 50% 在实质上是同一件事——"约半数 scenario 不含规范词"。
 
-    **所以改成断言一个宽区间** `[0.4, 0.7]`：
+    **所以断言一个宽区间** `[0.4, 0.7]`：
     - 下界 0.4：若有人统一规范词，比例会迅速降到很低
     - 上界 0.7：若有人删掉所有规范词，比例会接近 1.0
+
+    **这里不写任何具体数字**：`bare` / `total` 每次归档都会变，
+    写进 docstring 就等于写死一个没有断言守着的值。
+    **要知道当前值，跑一次并看失败消息里的 `{bare}/{total}`。**
     """
     total = 0
     bare = 0
@@ -101,6 +105,37 @@ def test_scenarios_are_not_required_to_carry_normative_words() -> None:
         f"{bare}/{total} = {ratio:.3f} 条 scenario 不含规范词。\n"
         "若有人统一了规范词（比例骤降）或删光了规范词（比例接近 1），"
         "请更新本断言并在 HANDOFF 里改掉那条误判记录。"
+    )
+
+
+def test_capabilities_list_covers_all_existing_specs() -> None:
+    """**`CAPABILITIES` 必须覆盖 `openspec/specs/` 下所有能力。**
+
+    **这条防的是"清单漂移"**：
+    `CAPABILITIES` 曾漏掉 `retrieval-apparatus`，于是本文件数的是
+    5 个能力的 Scenario，而全仓库有 6 个。
+    结果是"359"这个数字既不等于 5 个能力的当前和（365），
+    也不等于全部（380）——它是归档那一刻的旧值。
+
+    **`retrieval-apparatus` 漏掉不是笔误**：它加得晚，而清单是手写的。
+    所有手写清单都会漂移，所以要有断言守着。
+    """
+    existing = {
+        d.name
+        for d in SPECS.iterdir()
+        if d.is_dir() and (d / "spec.md").exists()
+    }
+    listed = set(CAPABILITIES)
+
+    missing = existing - listed
+    assert not missing, (
+        f"这些能力有 spec 但不在 CAPABILITIES 里：{sorted(missing)}\n"
+        "本文件会漏数它们的 scenario，于是所有基于 total 的比例都失真。"
+    )
+
+    extra = listed - existing
+    assert not extra, (
+        f"CAPABILITIES 里有不存在的 spec：{sorted(extra)}"
     )
 
 
