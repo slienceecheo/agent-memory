@@ -36,10 +36,22 @@ DATA = ROOT / "data" / "retrieval-v2"
 SUBJECTS = ("sample", "billing")
 
 #: 报告 §6.1 的配对数字。改动这里必须同时改报告。
-EXPECTED = {
+#:
+#: **两套装置的数字必须并列保留**（见 spec「报告数字必须标注产生它的权重配置」）。
+#: 用 `uniform` 这个名字读，但两套装置的 `uniform` 取值不同——
+#: 所以这里显式写出权重，避免"同一个名字、两个数"的歧义。
+THREE_FEATURES = {  # base=0.4, authority=0.3, status=0.3（第三项空转）
     "sample": {"n": 6, "lexical_hit": 5, "triple_hit": 3},
     "billing": {"n": 9, "lexical_hit": 8, "triple_hit": 1},
 }
+
+WITH_COSINE = {  # base=0.2, authority=0.2, cosine=0.6
+    "sample": {"n": 6, "lexical_hit": 5, "triple_hit": 3},
+    "billing": {"n": 9, "lexical_hit": 8, "triple_hit": 2},
+}
+
+#: 向后兼容的名字（旧测试用 `EXPECTED`）。指向**当前装置**的数字。
+EXPECTED = WITH_COSINE
 
 
 @pytest.fixture(scope="module")
@@ -65,7 +77,11 @@ def measured():
     out: dict[str, dict] = {}
     original = dict(rr.PREREGISTERED_WEIGHTS)
     try:
-        rr.PREREGISTERED_WEIGHTS["__concl5"] = RerankWeights(base=0.4, authority=0.3, cosine=0.3)
+        # **新装置**：base=0.2, authority=0.2, cosine=0.6
+        # （旧的三项装置数字保留在 THREE_FEATURES 里，见文件头）
+        rr.PREREGISTERED_WEIGHTS["__concl5"] = RerankWeights(
+            base=0.2, authority=0.2, cosine=0.6
+        )
 
         for subject in SUBJECTS:
             ds = load_dataset(DATA / subject)

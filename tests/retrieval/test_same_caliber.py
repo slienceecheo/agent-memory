@@ -44,7 +44,20 @@ ROOT = Path(__file__).resolve().parents[2]
 DATA = ROOT / "data" / "retrieval-v2"
 SUBJECTS = ("sample", "billing")
 
-#: 报告 §6 的同口径数字。改动这里必须同时改报告。
+#: 报告 §6 的同口径数字。
+#:
+#: **这是「三项装置」的数字，不是当前装置。**
+#: 旧装置是 `base=0.4, authority=0.3, status=0.3`，而 `status` 恒 1.0，
+#: 所以它等价于 `0.4×base + 0.3×authority + 常数`。
+#: 要**精确复现**它，必须让 `cosine` 权重为 0 并按比例放大另两项：
+#: `0.4/0.7, 0.3/0.7`（乘 0.7 后恰好回到 `0.4×base + 0.3×authority`）。
+#:
+#: **为什么不能直接用 `0.4/0.3/0.3`**：第三项现在是 `cosine` 权重，
+#: 而 `cosine` 在 commit ② 起有真实取值。那等于换成了另一个装置，
+#: 下面 `test_sample_gains_are_comparable` 这类"结论型断言"就会失真。
+THREE_FEATURES_WEIGHTS = (0.4 / 0.7, 0.3 / 0.7)
+
+#: 报告 §6 的同口径数字（三项装置）。改动这里必须同时改报告。
 EXPECTED = {
     "sample": {
         "lexical": {
@@ -92,7 +105,13 @@ def measured():
     out: dict[str, dict] = {}
     original = dict(rr.PREREGISTERED_WEIGHTS)
     try:
-        rr.PREREGISTERED_WEIGHTS["__cal"] = RerankWeights(base=0.4, authority=0.3, cosine=0.3)
+        # **精确复现三项装置**：status 恒 1.0，所以它贡献的是常数；
+        # 把另两项按比例放大到和为 1，cosine 权重为 0。
+        # 这样 `0.4×base + 0.3×authority` 的相对权重完全不变。
+        b, a = THREE_FEATURES_WEIGHTS
+        rr.PREREGISTERED_WEIGHTS["__cal"] = RerankWeights(
+            base=b, authority=a, cosine=0.0
+        )
 
         for subject in SUBJECTS:
             ds = load_dataset(DATA / subject)

@@ -111,8 +111,22 @@ def measured():
     out: dict[str, dict] = {}
     original = dict(rr.PREREGISTERED_WEIGHTS)
     try:
-        rr.PREREGISTERED_WEIGHTS["__base"] = RerankWeights(base=1.0, authority=0.0, cosine=0.0)
-        rr.PREREGISTERED_WEIGHTS["__v3"] = RerankWeights(base=0.4, authority=0.3, cosine=0.3)
+        rr.PREREGISTERED_WEIGHTS["__base"] = RerankWeights(
+            base=1.0, authority=0.0, cosine=0.0
+        )
+        # **`__v3` 是「三项装置」的历史载体，不是当前装置。**
+        #
+        # 任务 4.4 要求删掉它、改成内联公式。理由：`RerankWeights(0.4, 0.3, 0.3)`
+        # 在换字段后第三项变成 cosine，于是"历史三项装置"变成了
+        # "cosine 占 0.3"——名不符实。
+        #
+        # 但 `evaluate` 只接受 `weights_name`，不接受内联公式。
+        # 所以这里用**按比例放大**精确复现旧装置：
+        # status 恒 1.0 贡献常数，把它去掉、另两项放大到和为 1，
+        # 相对权重 `0.4 : 0.3` 完全不变。
+        rr.PREREGISTERED_WEIGHTS["__v3"] = RerankWeights(
+            base=0.4 / 0.7, authority=0.3 / 0.7, cosine=0.0
+        )
 
         for subject in ("sample", "billing"):
             ds = load_dataset(DATA / subject)
@@ -177,10 +191,24 @@ def measured():
                 and c.get("rank_after_rerank") == 1
             )
 
+            # **重排后的 top-1 必须与融合 rank-1 分开记**：
+            # 前者是"重排能到多好"，后者是"融合顺序本来对几条"。
+            # 两者之差就是"重排的净贡献"——本文件的核心结论就是它为负。
+            threeway_top1 = sum(
+                1
+                for c in res["per_case"]
+                if c["case_id"] in within
+                and c.get("has_gold")
+                and not c.get("skipped")
+                and c.get("rank_after_fusion") is not None
+                and c.get("rank_after_rerank") == 1
+            )
+
             out[subject] = {
                 "positions": sorted(positions),
                 "n": len(positions),
                 "fusion_top1": sum(1 for p in positions if p == 1),
+                "threeway_top1": threeway_top1,
                 "base_top1": base_top1,
                 "top1_by_n": {
                     n: (sum(1 for h in v if h), len(v))
@@ -270,7 +298,7 @@ def test_base_only_equals_fusion_top1(measured) -> None:
 
 
 def test_rerank_never_improves_top1(measured) -> None:
-    """**重排从不提升 top-1，`billing` 上甚至让它变差。**
+    """**三项装置下，重排从不提升 top-1，`billing` 上甚至让它变差。**
 
     | subject | 融合 rank-1 | threeway top-1 | 变化 |
     |---|---|---|---|
@@ -285,11 +313,31 @@ def test_rerank_never_improves_top1(measured) -> None:
 
     **这条断言的是"重排没有净提升"**，不是"重排等于融合顺序"——
     后者已被 `base-only == 融合 rank-1` 单独验证。
+
+    **⚠ 这条记录的是「三项装置」的历史事实**（`base=0.4, authority=0.3,
+    status=0.3`，其中 status 恒 1.0）。加 cosine 后，同一批 case 的 top-1
+    会上升，"重排无法提升"不再成立。
+
+    **2026-11 修正**：原先这里写
+    `threeway = {"sample": 3, "billing": 1}[subject]`——一个**硬编码字面量**。
+    于是无论装置换成什么，这条断言都通过：它守的是"源码里有这三个数"，
+    不是"实测得到这三个数"。实测把 `__v3` 换成 cosine 装置后它仍然全绿，
+    这就是"永远绿"的证据。现在改为**读 `measured`**。
     """
+    expected = {"sample": 3, "billing": 1}
+
     for subject in ("sample", "billing"):
         got = measured[subject]
         fusion = got["fusion_top1"]
-        threeway = {"sample": 3, "billing": 1}[subject]
+        # **必须是实测值**，不能写死
+        threeway = got["threeway_top1"]
+
+        assert threeway == expected[subject], (
+            f"{subject}: 实测 threeway top-1 = {threeway}，"
+            f"三项装置的历史记录是 {expected[subject]}。\n"
+            "若不等，说明 `__v3` 没有精确复现三项装置"
+            "（status 恒 1.0 -> 另两项须按比例放大）。"
+        )
 
         # 重排不能把 top-1 提升 2 条以上（那说明它真的在起作用）
         assert threeway < fusion + 2, (
@@ -299,8 +347,8 @@ def test_rerank_never_improves_top1(measured) -> None:
 
     # billing 上必须变差——这是核心证据
     assert measured["billing"]["fusion_top1"] == 2
-    assert measured["billing"]["fusion_top1"] > 1, (
-        "billing: threeway top-1 (1) 应低于融合 rank-1 "
+    assert measured["billing"]["fusion_top1"] > measured["billing"]["threeway_top1"], (
+        "billing: threeway top-1 应低于融合 rank-1 "
         f"({measured['billing']['fusion_top1']})——"
         "若不再如此，'重排主动破坏'这个结论要重核"
     )

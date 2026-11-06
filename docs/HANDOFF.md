@@ -127,9 +127,18 @@ v2 数据集   2 个 subject：project:ledger（12 记忆）、project:billing�
 协议        tag dataset-v2-protocol-r2（cb9c77f）= 当前有效
             旧 tag dataset-v2-protocol（e6a795a）保留，6 次修订见协议 §0.1
 
-v3 装置     **排序特征 = 3**（base / authority / status），condition 退出加权。
+v3 装置     **排序特征 = 3**（base / authority / cosine），condition 退出加权。
+            status 已删除（池内恒 1.0，见 recall-active-only-contract）。
             `FeatureScores` 仍是四字段——它记录观测事实，不是排序策略。
-            `RerankWeights` 只有三个权重；`PREREGISTERED_WEIGHTS` 四组，各组和为 1。
+            `RerankWeights` 只有三个权重；`PREREGISTERED_WEIGHTS` 三组，各组和为 1。
+
+            **两个 dataclass 用 `kw_only=True`**（本项目唯一）：
+            字段含义在版本间变过（`RerankWeights` 第三位 condition→status→cosine；
+            `FeatureScores` 第四位 status→cosine），位置参数会**静默移位**——
+            不报错、和仍为 1、但语义变了。且 `FeatureScores` 的字段顺序是
+            base/condition/authority/cosine，与产物 `features` 的键序
+            base/authority/cosine 本来就不一致，"按位置对应"从一开始就是错的。
+            实测有 7 处位置参数构造，改字段后会立刻 TypeError（这就是它的作用）。
 
             **三个特征的能力边界（实测，不是推测）**：
 

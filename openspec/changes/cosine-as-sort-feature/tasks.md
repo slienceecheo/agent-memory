@@ -243,25 +243,25 @@
 
 ## 3. commit ②：向量召回带出真 cosine
 
-- [ ] 3.1 写 `tests/retrieval/test_vector_scored.py::test_scored_variant_matches_plain_order`：
+- [x] 3.1 写 `tests/retrieval/test_vector_scored.py::test_scored_variant_matches_plain_order`：
   同一个 store、同一个查询向量，`recall_by_vector_scored` 返回的 `item` 顺序 ==
   `recall_by_vector` 的顺序。验证：预期红（`ImportError`）。
 
-- [ ] 3.2 写 `test_scored_values_are_the_cosine`：手工算
+- [x] 3.2 写 `test_scored_values_are_the_cosine`：手工算
   `dot / (norm × candidate_norm)`，断言与返回的分数逐位相等（`==`，不是 `approx`）。
   验证：预期红。
 
-- [ ] 3.3 `src/memory/retrieval/vector.py`：新增 `recall_by_vector_scored`（把现有循环的
+- [x] 3.3 `src/memory/retrieval/vector.py`：新增 `recall_by_vector_scored`（把现有循环的
   `scored` 列表直接返回 `(store.get(item_id), score)`）；`recall_by_vector` 改成
   `[item for item, _ in recall_by_vector_scored(...)]`。验证：3.1/3.2 转绿，且
   `uv run --no-sync pytest tests/retrieval/test_recall.py tests/retrieval/test_pipeline.py tests/retrieval/test_l6c_paths_return_data.py tests/retrieval/test_recall_active_only.py -q` 全绿。
 
-- [ ] 3.4 `evals/run_retrieval.py` 接线：`vector` 路径改用 `recall_by_vector_scored`，
+- [x] 3.4 `evals/run_retrieval.py` 接线：`vector` 路径改用 `recall_by_vector_scored`，
   把 `tag → cosine` 存进一个 dict；构造 `FeatureScores` 时 `cosine=cos_by_tag.get(tag, 0.0)`；
   `features_by_tag[tag]["cosine"]` 同源。验证：
   `uv run --no-sync pytest tests/retrieval/test_per_case_features.py -q` 全绿。
 
-- [ ] 3.5 写 `test_features_cosine_equals_recall_score`：跑一次
+- [x] 3.5 写 `test_features_cosine_equals_recall_score`：跑一次
   `evaluate(paths=("lexical","vector","adjacency"))`，**另起一次** `recall_by_vector_scored`
   调用取分数，逐 tag 比对 `features_by_tag[tag]["cosine"] == max(0.0, score)`
   （逐位相等）。验证：
@@ -271,28 +271,28 @@
   2. 把比对式改成 `max(0.0, score) + 0.001`，这条也必须红（证明比对的是真值不是形状）。
   若两种改动都仍绿，说明比对是自比（恒真），重写。
 
-- [ ] 3.6 写 `test_cosine_feature_is_truncated_to_unit_interval`：`raw = -0.3` 与 `raw = -0.9`
+- [x] 3.6 写 `test_cosine_feature_is_truncated_to_unit_interval`：`raw = -0.3` 与 `raw = -0.9`
   都映射到 `0.0`；`raw = 0.5` 映射到 `0.5`（不是 `0.75`）。验证：预期红。
 
-- [ ] 3.7 在 `run_retrieval.py` 里实现截断 `max(0.0, raw_cos)`。
+- [x] 3.7 在 `run_retrieval.py` 里实现截断 `max(0.0, raw_cos)`。
   验证：3.6 转绿。
 
-- [ ] 3.8 写 `test_cosine_gap_and_band_are_written`：断言每条已召回 gold 的 case 都含
+- [x] 3.8 写 `test_cosine_gap_and_band_are_written`：断言每条已召回 gold 的 case 都含
   `cosine_gap`（float，可负）与 `cosine_band`（`stable`/`noise`/`negative` 三值之一）。
   验证：预期红（缺键）。
 
-- [ ] 3.9 实现 `cosine_gap = gold_cos - max(其余候选的 cos)` 与三态映射（阈值 0.01），
+- [x] 3.9 实现 `cosine_gap = gold_cos - max(其余候选的 cos)` 与三态映射（阈值 0.01），
   写进 `per_case`。验证：3.8 转绿。
 
-- [ ] 3.10 写 `test_cosine_band_three_states_are_all_used`：在 v2 两个 subject 上，
+- [x] 3.10 写 `test_cosine_band_three_states_are_all_used`：在 v2 两个 subject 上，
   `stable` 与 `negative` 必须都出现，`noise` 可以为 0（实测就是 0）。
   **必须有断言证明"0 不是漏算"**：断言 `positive_gaps_and_negative_count == n`。
   验证：绿。
 
-- [ ] 3.11 更新 `test_per_case_features.py::test_per_case_key_count_is_30` →
+- [x] 3.11 更新 `test_per_case_features.py::test_per_case_key_count_is_30` →
   `..._is_32`：`+cosine_gap` 与 `+cosine_band` 两项。验证：绿。
 
-- [ ] 3.12 全量跑一次：`uv run --no-sync pytest -q`。预期全绿。
+- [x] 3.12 全量跑一次：`uv run --no-sync pytest -q`。预期全绿。
   **若 `test_cosine_band.py` 的 5700 次扰动变红**，先确认 embedding 缓存命中
   （`max|diff|` 应为 0），不要调阈值。
 

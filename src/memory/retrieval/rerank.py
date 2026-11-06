@@ -94,21 +94,30 @@ DEFECT18_WEIGHTS = RerankWeights(base=0.2, authority=0.2, cosine=0.6)
 
 
 #: 默认权重的数值。`uniform` 与 `mixed` 共用它，避免两份数字各自漂移。
-_DEFAULT_WEIGHTS = RerankWeights(base=0.4, authority=0.3, cosine=0.3)
+#:
+#: **0.2/0.2/0.6 不是"随手调的数字"**：它等于 `mixed`，即"给无信号项留余量"的配置。
+#: 选它作默认的理由与选 `mixed` 作稳健性对照相同——比 `cosine_only` 保守。
+_DEFAULT_WEIGHTS = RerankWeights(base=0.2, authority=0.2, cosine=0.6)
 
 
 PREREGISTERED_WEIGHTS: dict[str, RerankWeights] = {
     # `uniform` 是**历史遗留接口名**，它从未在 v3 里"均匀"过：
-    # 四特征时代 0.25×4（唯一一次），三特征时代 0.4/0.3/0.3，
-    # 现在 0.4/0.3/0.3（第三项是 cosine，本 commit 仍恒 0.0）。
+    # 四特征时代 0.25×4（唯一一次），三特征时代 0.4/0.3/0.3，现在 0.2/0.2/0.6。
     #
     # **为什么不改名**：`weights_name="uniform"` 有 48 处调用，
     # 其中 44 处不依赖具体数值（只依赖"这个名字存在且是一组合法权重"）。
-    # 改名会产生与判据无关的 diff。
+    # 改名会产生与判据无关的 diff。而"它不均匀"这件事写在
+    # `evaluation-harness` 的 spec 里，不靠名字暗示。
     "uniform": _DEFAULT_WEIGHTS,
-    "base_heavy": RerankWeights(base=0.8, authority=0.1, cosine=0.1),
-    "auth_heavy": RerankWeights(base=0.2, authority=0.7, cosine=0.1),
-    # status_only 已删除：它的名字指向一个已不存在的特征。
+    # 与默认同值，但**独立的键**：它回答"给无信号项留余量会损失多少"，
+    # 是稳健性对照。哪天默认改了，它仍应指向 0.2/0.2/0.6。
+    "mixed": _DEFAULT_WEIGHTS,
+    # 上界配置：只用有信号的特征能做到多好。
+    "cosine_only": RerankWeights(base=0.0, authority=0.0, cosine=1.0),
+    # 已删除：
+    # - `status_only`：指向已不存在的特征
+    # - `base_heavy` / `auth_heavy`：描述的信号已被证否
+    #   （base 恒等于融合顺序；authority 是分层过滤器而非信号）
 }
 
 

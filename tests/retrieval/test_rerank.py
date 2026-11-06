@@ -101,29 +101,24 @@ def test_preregistered_count_is_five() -> None:
     assert len(PREREGISTERED_WEIGHTS) <= 5
 
 
-def test_default_weights_are_the_preregistered_values() -> None:
-    """默认权重组的数值。
+def test_preregistered_weights_are_all_valid() -> None:
+    """预注册表里每一组都必须是合法权重（和 == 1、非负）。
 
-    **这条替代了原先的 `test_uniform_weights_are_the_preregistered_values`。**
+    **数值本身的断言在 `test_preregistered_naming.py`**——
+    那里按"这一组回答什么问题"来组织，并区分默认/mixed/cosine_only。
+    这里只守"表里没有不合法的构造"。
 
-    原先那条的 docstring 说它守"缺陷 19/21 的临界点依赖 uniform 的数值"。
-    但缺陷载体已改为独立的 `DEFECT18_WEIGHTS`（见
-    `test_feature_set_cosine.py::test_defect18_numbers_match_weights`），
-    所以"缺陷算术"不再依赖 `uniform`。这条现在只守"默认配置是什么"。
-
-    **若这条变红**：说明有人改了默认权重。那时要同步检查
-    `DEFECT18_WEIGHTS` 是否仍然高位（缺陷 19 的成立条件是
-    `w.authority > 0.09 × w.base`），而不是无条件跟随改数字。
+    **为什么不在两处都断言数值**：那会让同一个事实有两条判据，
+    而 commit ③ 改默认值时它们在两个文件里同时红——
+    读者会以为是两个问题。**一个事实一条判据。**
     """
     from memory.retrieval.rerank import PREREGISTERED_WEIGHTS
 
-    w = PREREGISTERED_WEIGHTS["uniform"]
-
-    # commit ① 刻意保持旧数值（0.4/0.3/0.3），数值改动在 commit ③。
-    assert w.base == pytest.approx(0.4)
-    assert w.authority == pytest.approx(0.3)
-    assert w.cosine == pytest.approx(0.3)
-    assert not hasattr(w, "condition")
+    for name, w in PREREGISTERED_WEIGHTS.items():
+        assert w.base >= 0.0 and w.authority >= 0.0 and w.cosine >= 0.0, name
+        assert w.total() == pytest.approx(1.0), name
+        assert not hasattr(w, "condition"), f"{name} 有 condition 字段"
+        assert not hasattr(w, "status"), f"{name} 有 status 字段"
 
 
 # ---------- 组合与消融 ----------
