@@ -85,6 +85,10 @@ def test_scenarios_are_not_required_to_carry_normative_words() -> None:
     - 下界 0.4：若有人统一规范词，比例会迅速降到很低
     - 上界 0.7：若有人删掉所有规范词，比例会接近 1.0
 
+    **但宽区间抓不到漂移**：它防的是"剧变"，而实际发生过的是
+    分母漏项（365 vs 380），比例只变 4 个百分点——区间全程绿。
+    **所以另加一条精确的分母断言**（见函数体内的 `expected_total`）。
+
     **这里不写任何具体数字**：`bare` / `total` 每次归档都会变，
     写进 docstring 就等于写死一个没有断言守着的值。
     **要知道当前值，跑一次并看失败消息里的 `{bare}/{total}`。**
@@ -97,6 +101,23 @@ def test_scenarios_are_not_required_to_carry_normative_words() -> None:
             total += 1
             if not any(word in block for word in NORMATIVE):
                 bare += 1
+
+    # **分母必须是 `CAPABILITIES` 里每个能力的 Scenario 数之和。**
+    #
+    # 宽区间 `[0.4, 0.7]` 只能抓剧变，抓不到"分母漏了一个能力"这种漂移：
+    # 实测第二十六次归档时 CAPABILITIES 漏了 `retrieval-apparatus`，
+    # 分母是 365（正确应是 380），比例 50.7%——**区间全程绿**。
+    #
+    # 所以分母要单独断言，用**独立的求和路径**（不复用上面的循环变量）。
+    expected_total = sum(
+        len(_scenarios((SPECS / c / "spec.md").read_text(encoding="utf-8")))
+        for c in CAPABILITIES
+    )
+    assert total == expected_total, (
+        f"分母是 {total}，而 `CAPABILITIES` 的 Scenario 之和是 {expected_total}。\n"
+        "两者不等说明循环漏了某个能力（或加了过滤）。\n"
+        "**宽区间 `[0.4, 0.7]` 抓不到这个**——它会用一个错的分母算出'看起来正常'的比例。"
+    )
 
     assert total > 200, f"scenario 总数异常：{total}"
 
@@ -114,8 +135,11 @@ def test_capabilities_list_covers_all_existing_specs() -> None:
     **这条防的是"清单漂移"**：
     `CAPABILITIES` 曾漏掉 `retrieval-apparatus`，于是本文件数的是
     5 个能力的 Scenario，而全仓库有 6 个。
-    结果是"359"这个数字既不等于 5 个能力的当前和（365），
-    也不等于全部（380）——它是归档那一刻的旧值。
+
+    > 历史记录：漏项期间分母是 365（第二十六、二十七次归档）。
+    > 补齐后是 380。而当时的 docstring 里写死过一个数字，
+    > 它是第 26 次归档那一刻的值——**只作历史记录，判据不依赖它**。
+    > 当前值跑一次看失败消息。
 
     **`retrieval-apparatus` 漏掉不是笔误**：它加得晚，而清单是手写的。
     所有手写清单都会漂移，所以要有断言守着。

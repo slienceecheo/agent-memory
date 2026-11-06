@@ -114,13 +114,29 @@ def test_handoff_has_the_overestimated_coverage_form() -> None:
     assert vector_row, "第五种的对照表缺少 `vector.py` 那一行"
     assert adjacency_row, "第五种的对照表缺少 `adjacency.py` 那一行"
 
-    # vector：删掉后行为断言与源码断言都红
-    assert vector_row[0].count("红") >= 2, (
-        f"`vector.py` 那行必须两列都是「红」：{vector_row[0][:80]}"
+    def cells_of(row: str) -> list[str]:
+        """取表格行的单元格，去掉加粗标记。
+
+        **不依赖具体措辞**：`绿/红` 与 `通过/失败` 都能比。
+        """
+        return [
+            c.strip().replace("*", "").strip()
+            for c in row.strip("|").split("|")
+        ]
+
+    # vector：删掉后行为断言与源码断言**结论相同**（都红）
+    v = cells_of(vector_row[0])
+    assert len(v) == 3, f"`vector.py` 那行应有 3 列，实际 {v}"
+    assert v[1] == v[2], (
+        f"`vector.py` 那行两列结果应相同（删掉 SQL 后两者都失败）：{v}"
     )
-    # adjacency：删掉后行为断言绿、源码断言红
-    assert "绿" in adjacency_row[0] and "红" in adjacency_row[0], (
-        f"`adjacency.py` 那行必须同时有「绿」和「红」：{adjacency_row[0][:80]}"
+
+    # adjacency：删掉后行为断言与源码断言**结论不同**
+    a = cells_of(adjacency_row[0])
+    assert len(a) == 3, f"`adjacency.py` 那行应有 3 列，实际 {a}"
+    assert a[1] != a[2], (
+        f"`adjacency.py` 那行两列结果不应相同：{a}\n"
+        "**这个差异就是'覆盖范围被高估'的证据**：行为断言没覆盖到那层。"
     )
 
     # 必须指出发现方式
