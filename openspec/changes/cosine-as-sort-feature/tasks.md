@@ -298,62 +298,99 @@
 
 ## 4. commit ③：权重数值、重测与报告双套数字
 
-- [ ] 4.0a 写 `tests/retrieval/test_preregistered_naming.py::test_preregistered_names_describe_questions`：
+- [x] 4.0a 写 `tests/retrieval/test_preregistered_naming.py::test_preregistered_names_describe_questions`：
   断言名字集合恰好是 `{"uniform", "mixed", "cosine_only"}`。
   验证：`uv run --no-sync pytest tests/retrieval/test_preregistered_naming.py -q`，预期红。
 
-- [ ] 4.0b 写同文件 `test_default_weights_are_the_preregistered_values`：断言
+- [x] 4.0b 写同文件 `test_default_weights_are_the_preregistered_values`：断言
   `PREREGISTERED_WEIGHTS["uniform"]` 的三元组 == `(0.2, 0.2, 0.6)`。
   验证：同上，预期红。
 
-- [ ] 4.0c 改 `PREREGISTERED_WEIGHTS` 为终值：`_DEFAULT = RerankWeights(0.2, 0.2, 0.6)`，
+- [x] 4.0c 改 `PREREGISTERED_WEIGHTS` 为终值：`_DEFAULT = RerankWeights(0.2, 0.2, 0.6)`，
   喂给 `uniform` 与 `mixed` 两个键；`cosine_only = RerankWeights(0.0, 0.0, 1.0)`。
   删 `base_heavy` / `auth_heavy` / `status_only`。
   验证：4.0a/4.0b 转绿；`test_preregistered_weights_exist_and_sum_to_one` 与
   `test_preregistered_count_is_five` 仍绿（后者断言 `len <= 5`，3 组通过）。
 
-- [ ] 4.1 `tests/retrieval/test_fusion_dilution.py:68`：把 `__concl5` 换成新装置
+- [x] 4.1 `tests/retrieval/test_fusion_dilution.py:68`：把 `__concl5` 换成新装置
   `RerankWeights(0.2, 0.2, 0.6)`（即 `cosine_only` 或 `mixed`，二选一并写进 docstring）。
   验证：`uv run --no-sync pytest tests/retrieval/test_fusion_dilution.py -q`，**预期红**
   （`EXPECTED` 的 `triple_hit` 与 `n` 会变）。
 
-- [ ] 4.2 把实测的新数字填进 `test_fusion_dilution.py` 的 `EXPECTED`，并**保留旧数字**为
+- [x] 4.2 把实测的新数字填进 `test_fusion_dilution.py` 的 `EXPECTED`，并**保留旧数字**为
   `EXPECTED_V3_THREE_FEATURES`，加一条断言"两套的 `paired n` 相同"（同池才可比）。
   验证：该文件全绿。
 
-- [ ] 4.3 同法处理 `tests/retrieval/test_same_caliber.py:95` 的 `__cal`，
+- [x] 4.3 同法处理 `tests/retrieval/test_same_caliber.py:95` 的 `__cal`，
   保留旧的 `+0.2167 / −0.0278` 作历史。验证：该文件全绿。
 
-- [ ] 4.4 `tests/retrieval/test_rerank_cannot_reorder.py`：删掉 `__v3`，按 design D6
-  改成从产物内联复现三项装置公式（`0.4*base + 0.3*authority + 0.3*1.0`），
-  并在测试开头断言"池内 `status_score` 全为 1.0"这个前提。
-  验证：`test_rerank_never_improves_top1` 绿，且 `billing` 仍是 1/12。
-  **证伪**：把前提断言里的 `1.0` 改成 `0.5`，测试必须红（否则前提没被真的检查）。
+- [x] 4.4 `tests/retrieval/test_rerank_cannot_reorder.py`：把 `__v3` 从
+  `0.4/0.3/0.3` 改成**精确复现三项装置**的权重。
 
-- [ ] 4.5 报告 `docs/reports/v2-what-it-measures.md`：§6.5.1 与 §6.5.2 的表头加
+  **实施时改了做法，必须记录**（原计划 vs 实际）：
+
+  | 项 | 原计划 | 实际 |
+  |---|---|---|
+  | 复现方式 | 在测试里内联公式 `0.4*base + 0.3*authority + 0.3*1.0` | `RerankWeights(base=0.4/0.7, authority=0.3/0.7, cosine=0.0)` |
+  | 原因 | —— | `evaluate` 只接受 `weights_name`，不接受内联公式；改 `evaluate` 的签名会让它同时接受两套装置，那是更大的改动 |
+
+  **两者在数学上等价**：`status` 恒 1.0 贡献一个常数，
+  把它去掉后把另两项按比例放大到和为 1，`base : authority = 0.4 : 0.3` 完全不变。
+  所以"内联公式"与"按比例放大"给出同一排序。
+
+  验证：`test_rerank_never_improves_top1` 绿，`billing` 仍是 1/12。
+  **证伪（已做，双向）**：
+  1. 把 `__v3` 换成 cosine 装置 `(0.2, 0.2, 0.6)` → `billing` 从 1 变成 2，测试**红**；
+  2. 换回按比例放大 → **绿**。
+
+  **这一步还修掉一条真正的坏断言**：原先 `threeway = {"sample": 3, "billing": 1}[subject]`
+  是**硬编码字面量**，根本不读 `measured`。所以无论装置换成什么它都通过——
+  上面第 1 项证伪在修之前是**绿的**，那证明它是"永远绿"。
+  现在改为读 `measured[subject]["threeway_top1"]`（fixture 新增该字段）。
+
+- [x] 4.5 报告 `docs/reports/v2-what-it-measures.md`：§6.5.1 与 §6.5.2 的表头加
   `装置：uniform-v3-three-features（0.4/0.3/0.3）`。验证：`grep -n "uniform-v3-three-features"`
   至少命中 2 处（两张表各一）。
 
-- [ ] 4.6 同报告新增 `### 6.14 结论 5b`：表头写 `装置：uniform-v3-cosine（0.2/0.2/0.6）`，
-  数字栏填"上界估计（手工重排，未经 `run_retrieval`）"，并给出实测后要替换的占位标记。
-  验证：`grep -n "6.14"` 命中；该节内含"上界估计"四字。
+- [x] 4.6 同报告新增 `### 6.14 结论 5b`，表头写 `装置：uniform-v3-cosine（0.2/0.2/0.6）`。
 
-- [ ] 4.7 写 `test_report_numbers_carry_apparatus_label`：解析 §6.5.1 的表头行，
+  **实施时改了计划，必须记录**：原任务说"数字栏填上界估计（手工重排，未经
+  `run_retrieval`），并给出实测后要替换的占位标记"。
+  **实际填的是实测值**，因为 `evaluate` 已经能用 cosine 装置跑通——
+  任务 3.x 完成后就没有理由留着占位符。
+
+  | 项 | 原计划 | 实际 |
+  |---|---|---|
+  | §6.14 的数字 | 上界估计（预测） | **实测**（经 `run_retrieval`，同一份数据同一口径） |
+  | 旧估计的去向 | 占位后替换 | **保留在正文里作对照**，并点明它高估了 |
+
+  **保留旧估计的理由**：实测 `+0.0556` 与手工估计 `+0.7222` 差一个量级。
+  若不写旧估计，读者无法理解"为什么这个数字这么小"。
+  实测偏差的原因是：手工估计按**整池 cosine 全序**重排，
+  没有经过 RRF 融合——它高估了 cosine 能在融合后的排序里挽回多少。
+  **这正是"预测不能当结论"的实例。**
+
+  **结论**：cosine 装置让 `billing` 的负增益转正（−0.0278 → +0.0556），
+  但**没有推翻结论 5**——三路融合的 top-1 仍低于 lexical 单路。
+
+  验证：`uv run --no-sync pytest tests/retrieval/test_report_apparatus_label.py -q` 绿（5 条）。
+
+- [x] 4.7 写 `test_report_numbers_carry_apparatus_label`：解析 §6.5.1 的表头行，
   断言含 `uniform-v3-three-features`；解析 §6.14 表头，断言含 `uniform-v3-cosine`；
   断言两个标签**不相等**（比较单元格值，不比"关键词是否出现"）。
   验证：绿。**证伪**：把 §6.14 表头改成与 §6.5.1 相同，必须红。
 
-- [ ] 4.8 `docs/HANDOFF.md`：更新装置描述（"排序特征 = 3（base / authority / cosine）"），
+- [x] 4.8 `docs/HANDOFF.md`：更新装置描述（"排序特征 = 3（base / authority / cosine）"），
   以及 §0.8 里 `uniform.status = 0.25` 的前提表——加一行"该前提属于三项装置，已失效"。
   验证：`uv run --no-sync pytest tests/retrieval/test_handoff_v3_method.py -q`。
   **注意**：`test_section_0_8_records_the_joint_infimum_is_zero` 断言
   `"w_status=1.00 -> 0" in section`——那句是历史算术，**不要改它**，只在同一节加"已失效"标记。
 
-- [ ] 4.9 全量跑一次：`uv run --no-sync pytest -q`。预期全绿，`results/*.json` 顶层仍 48 个
+- [x] 4.9 全量跑一次：`uv run --no-sync pytest -q`。预期全绿，`results/*.json` 顶层仍 48 个
   （`uv run --no-sync python evals/tools/recount_specs.py` 不涉及，但
   `tests/retrieval/test_result_partitions.py` 会查目录）。
 
-- [ ] 4.10 跑 `openspec validate cosine-as-sort-feature --strict`，必须输出
+- [x] 4.10 跑 `openspec validate cosine-as-sort-feature --strict`，必须输出
   `Change 'cosine-as-sort-feature' is valid`。
 
 ## Workflow follow-up
