@@ -201,14 +201,33 @@ def test_retrieval_entry_now_runs_lexical_and_vector() -> None:
 
     **判定必须看调用位置，不能 `grep -c "recall_by_"`**：
     import 行里就含这些名字，按字符串计数会误报。
+
+    **2026-11 修正**：向量路改用 `recall_by_vector_scored(` 后，
+    原先的 `"recall_by_vector(" in source` 不再命中——**函数改了个名字，
+    判据就失效了**。这是"用名字匹配代替行为"的典型形态：
+    它声称守"入口调用了向量路"，实际守的是"源码里有这个子串"。
+    所以这里改成**正则匹配函数名族**：`recall_by_vector` 与 `recall_by_vector_scored`
+    都算，且必须真的是调用（后跟 `(`）而不是 import。
     """
     source = (ROOT / "evals" / "run_retrieval.py").read_text(encoding="utf-8")
 
-    called = {
-        name
-        for name in ("lexical", "vector", "adjacency")
-        if f"recall_by_{name}(" in source
+    # 每个路径允许的函数名族（名字可以演进，行为不能消失）
+    families = {
+        "lexical": ("recall_by_lexical",),
+        "vector": ("recall_by_vector", "recall_by_vector_scored"),
+        "adjacency": ("recall_by_adjacency",),
     }
+
+    called = set()
+    for path_name, fns in families.items():
+        # 排除 import 行：只在非 import 语句里找 "<fn>(" 
+        for line in source.splitlines():
+            stripped = line.strip()
+            if stripped.startswith(("from ", "import ")):
+                continue
+            if any(f"{fn}(" in line for fn in fns):
+                called.add(path_name)
+                break
 
     assert {"lexical", "vector"} <= called, f"应至少调用词面与向量，实际 {sorted(called)}"
 

@@ -54,7 +54,7 @@ from memory.retrieval.rerank import (
     rerank,
     rrf_norm,
 )
-from memory.retrieval.vector import recall_by_vector
+from memory.retrieval.vector import recall_by_vector_scored
 from memory.store.models import Authority, MemoryItem, Scope, Source, Status
 from memory.store.sqlite import SqliteStore
 
@@ -77,7 +77,6 @@ _UNWIRED: frozenset[str] = frozenset()
 
 
 #: 融合前每路截断到的条数。
-#:
 #: **为什么是 20**：20 相对 RRF 的 `k=60` 是 1/3，满足 `L << k`。
 #: **不要按 `k*4` 推算**——`k` 是平滑常数，不是"列表该有多长"的基准。
 #: 按 `60*4=240` 算会得到远超 `k` 的长度，等于没截。
@@ -89,6 +88,27 @@ _UNWIRED: frozenset[str] = frozenset()
 #: **已知限制**：本 cap 在旧数据上**不生效**（池经 `build_pool` 去重后只剩 14 条，
 #: 小于 20）。它防的是"一路几百条刷分"，防不了"一路本来就召回得多"。
 FUSION_CAP = 20
+
+#: `cosine_band` 的阈值。**必须大于实测最大噪声**（0.0061）。
+#:
+#: 实测：把候选向量旋转 4.36°（约等于 embedding 未命中缓存时的非确定性），
+#: `|Δcos|` 最大 **0.0061**。取 0.006 会让判据卡在自己的边界上抖动；
+#: 0.01 是它的 1.6 倍，留出余量。
+COSINE_BAND_THRESHOLD = 0.01
+
+
+def cosine_feature(raw_cos: float) -> float:
+    """把原始余弦压进 `rerank` 要求的 `[0, 1]`。
+
+    **截断，不做 `(x+1)/2` 映射**：映射会把"毫无关系"（0.0）变成 0.5，
+    而 0.5 在加权里与"中等相似"不可区分。截断保留"0 = 无信号"的语义，
+    与 `authority_score(THIRD_PARTY) = 0.0` 的处理一致。
+
+    **代价**：负余弦的候选之间失去区分度（全部变 0）。
+    实测 v2 数据上最低 gold cosine 是 0.4517，干扰项也全为正，
+    所以这个代价目前不产生差异。若 v3 数据出现负余弦，这条要重新评估。
+    """
+    return max(0.0, raw_cos)
 
 
 def code_version() -> str:
@@ -648,6 +668,10 @@ def evaluate_case(
             path_raw_lengths: dict[str, int | None] = {name: None for name in ALL_PATHS}
             path_fused_lengths: dict[str, int | None] = {name: None for name in ALL_PATHS}
             ranked_lists: dict[str, list[str]] = {}
+            # store.id -> 原始余弦分。**只在 vector 路启用时填**。
+            # 默认空 dict 让"未启用 vector"自然落到 0.0，
+            # 与"cosine 恰好为 0"由 `paths_enabled` / `path_returns` 区分。
+            cosine_by_store_id: dict[str, float] = {}
 
             # 用 active_paths 判定，与 paths_unwired 同源（P0-g）。
             enabled = active_paths(paths)
@@ -668,8 +692,14 @@ def evaluate_case(
 
             if "vector" in enabled and embedder is not None:
                 query_vector = embedder.embed(query, text_type="query")
-                hits = recall_by_vector(store, query_vector, limit=len(pool.items))
-                _record("vector", [i.id for i in hits])
+                # **用带分数的版本**：cosine 是排序特征之一，必须从这次召回带出来，
+                # 不能在重排时重算（embedding 非确定性会让两个数不一致）。
+                scored_hits = recall_by_vector_scored(
+                    store, query_vector, limit=len(pool.items)
+                )
+                _record("vector", [i.id for i, _ in scored_hits])
+                # store.id (uuid4) -> 原始余弦分
+                cosine_by_store_id = {i.id: s for i, s in scored_hits}
 
             if "adjacency" in enabled:
                 # 邻接的输入取自 **gold 的逻辑键**（design 决策 4）：
@@ -747,6 +777,8 @@ def evaluate_case(
             candidates = []
             features_by_tag: dict[str, dict[str, float]] = {}
             condition_by_tag: dict[str, float] = {}
+            # tag -> 原始余弦分（只在 vector 路启用时有值）
+            cosine_by_tag: dict[str, float] = {}
             for tag in fused_after_dedup:
                 item = store.get(id_by_tag[tag])
                 cond = condition_match(
@@ -755,12 +787,20 @@ def evaluate_case(
                 )
                 base = rrf_norm(score_by_id[tag], max_score=max_score)
                 authority = authority_score(item.authority)
-                # commit ①：cosine 先占位为 0.0。
-                # 它的真值在 commit ② 从向量召回带出（见 spec「cosine 特征值必须来自向量召回」）。
+                # **余弦来自召回路径，不在这里重算**。
                 #
-                # **占位为 0.0 而不是删除这个键**：`features` 必须恰好三键，
-                # 少一个键会被 `assert_result_is_complete` 拒绝。
-                cosine = 0.0
+                # 未启用 vector 路时为 0.0：那是"没有 cosine 信号"，
+                # 与"cosine 恰好为 0"由 `paths_enabled` 区分（见 spec）。
+                raw_cos = cosine_by_store_id.get(item.id, 0.0)
+                # 截断到 [0,1]：见 `cosine_feature` 的 docstring。
+                cosine = cosine_feature(raw_cos)
+                # **记截断后的值，不记原始值**。
+                #
+                # `cosine_gap` 与 `features_by_tag["cosine"]` 必须**同源**：
+                # 否则"复算名次"用的分与"解释名次稳定性"用的分是两个数，
+                # 而它们会在负余弦上分岔（原始 -0.3 vs 截断 0.0）。
+                # 那正是本项目反复出现的"两个数都合法、但含义不同"的形态。
+                cosine_by_tag[tag] = cosine
                 # 记整池（融合后、去重后的全部候选）的三项特征。
                 # **必须记整池**：只记 gold 的分，无法复算"gold 排第几"——
                 # 名次是相对于其他候选的，缺别人的分就无从比较。
@@ -801,6 +841,38 @@ def evaluate_case(
     order = [item.item_id for item in ranked]
 
     rank_rerank = order.index(gold_tag) + 1 if gold_tag in order else None
+
+    # ---------- cosine_gap / cosine_band ----------
+    #
+    # `cosine_gap` = gold 的余弦 − 最强干扰项的余弦。
+    # 它回答"这个名次离翻转有多远"，与 `tie_at_top1` 是同一个概念（一个用分差、一个用并列）。
+    #
+    # **用的是 `features_by_tag` 里同一个截断后的值**，不是原始余弦：
+    # 若两处不同源，"复算名次"与"解释稳定性"会用两个数，
+    # 而它们在负余弦上分岔（原始 -0.3 vs 截断 0.0）。
+    #
+    # **只在 gold 已召回且启用 vector 时计算**：
+    # 未召回时"最强干扰"无意义（gold 不在池里）；未启用 vector 时所有 cosine 都是 0，
+    # gap 恒为 0，那会被误读成"刚好在噪声边界"。
+    cosine_gap: float | None = None
+    cosine_band: str | None = None
+    if gold_tag in cosine_by_tag and len(cosine_by_tag) > 1:
+        gold_cos = cosine_by_tag[gold_tag]
+        other_max = max(
+            (cos for tag, cos in cosine_by_tag.items() if tag != gold_tag),
+            default=None,
+        )
+        if other_max is not None:
+            cosine_gap = gold_cos - other_max
+            # 三态，不是布尔：负 gap 是"已排错"（能力边界，不能排除），
+            # 而 0 <= gap < 0.01 是"可能翻转"（可排除）。
+            # 用布尔会把两种"坏"压成一个，得出"25% 不稳定"这种误导性数字。
+            if cosine_gap < 0:
+                cosine_band = "negative"
+            elif cosine_gap < COSINE_BAND_THRESHOLD:
+                cosine_band = "noise"
+            else:
+                cosine_band = "stable"
 
     # 并列参与度：有多少条的名次是被"破并列判据"决定的。
     #
@@ -890,6 +962,13 @@ def evaluate_case(
         ),
         "rank_after_fusion": rank_fusion,
         "rank_after_rerank": rank_rerank,
+        # gold 与最强干扰项的余弦差。**可负**：负值表示 cosine 已经排错，
+        # 那是能力边界，不是"不稳定"。
+        # gold 未召回或未启用 vector 时为 None（不是 0——0 是一个有意义的值）。
+        "cosine_gap": cosine_gap,
+        # 三态：stable / noise / negative。**不是布尔**——
+        # 负 gap（已排错）与噪声带（可能翻转）处置相反。
+        "cosine_band": cosine_band,
         # 以下两项用**稳定 tag**，不是 uuid4：A5 要做跨运行逐位比较，
         # 而 uuid 每次运行都不同（实测两次建库 id 完全不同）。
         "fusion_tags": [tag_by_id.get(item_id, item_id) for item_id in fused_order],

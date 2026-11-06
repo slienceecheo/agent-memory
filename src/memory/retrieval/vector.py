@@ -21,12 +21,22 @@ from memory.store.models import MemoryItem
 from memory.store.sqlite import SqliteStore
 
 
-def recall_by_vector(
+def recall_by_vector_scored(
     store: SqliteStore,
     query_vector: Sequence[float],
     *,
     limit: int = 20,
-) -> list[MemoryItem]:
+) -> list[tuple[MemoryItem, float]]:
+    """向量召回，**同时返回余弦分**。
+
+    **为什么需要带分数**：`cosine` 是三个排序特征之一。若重排时再算一次，
+    就引入了第二次 embedding 比较——而 `AGENTS.md` 已登记 embedding 的非确定性
+    （未命中缓存时 `cos = 0.9971`，跨变体 0.9976）。于是"排序用的分"与
+    "记录的分"可能是两个数，差异只在缓存未命中时出现——最难归因的形态。
+
+    **为什么不让旧函数改返回类型**：`recall_by_vector` 有 6 处调用方，
+    全部只想要 `MemoryItem`。改返回类型会让它们同时改，而其中 5 处不需要分数。
+    """
     expected = store.embedding_dims()
     vector = np.asarray(query_vector, dtype=np.float32)
     if vector.shape != (expected,):
@@ -59,4 +69,21 @@ def recall_by_vector(
         scored.append((score, item_id))
 
     scored.sort(key=lambda pair: (-pair[0], pair[1]))
-    return [store.get(item_id) for _, item_id in scored[:limit]]
+    return [(store.get(item_id), score) for score, item_id in scored[:limit]]
+
+
+def recall_by_vector(
+    store: SqliteStore,
+    query_vector: Sequence[float],
+    *,
+    limit: int = 20,
+) -> list[MemoryItem]:
+    """向量召回，只返回条目（旧签名，**投影**自 `recall_by_vector_scored`）。
+
+    **为什么保留**：6 处调用方只要 `MemoryItem`。
+    保留它让"加分数"这件事不影响那 6 处。
+    """
+    return [
+        item
+        for item, _ in recall_by_vector_scored(store, query_vector, limit=limit)
+    ]

@@ -177,8 +177,8 @@ def test_features_recompute_rank() -> None:
         assert len(got) == len(order_tags), case["case_id"]
 
 
-def test_per_case_key_count_is_30() -> None:
-    """`per_case` 顶层键数 **25 -> 30**（v2 最新批为基线）。
+def test_per_case_key_count_is_32() -> None:
+    """`per_case` 顶层键数 **25 -> 30 -> 32**（v2 最新批为基线）。
 
     **前提限定**：25 指 v2 最新批（`47e4785-dirty` 的 11 份，25 键）。
     v2 还有 20/13/10/8/7/6 键的旧批，**不在本条的比对范围内**。
@@ -193,11 +193,19 @@ def test_per_case_key_count_is_30() -> None:
     +n_competitors     1   轴的定义量（池内同 relation 候选数）
     +axis              1   逐条派生轴（二元）
     = 30
+
+    +cosine_gap        1   gold 与最强干扰的余弦差（可负）
+    +cosine_band       1   stable / noise / negative 三态
+    = 32
     ```
 
     **为什么 `features_by_tag` 是必需的**：名次是相对的。只存 gold 自己的分，
     复算不出"它为什么排第 3"——验收 1（`rank_after_rerank` 可复算）会退化成
     "只验分数、不验名次"。
+
+    **为什么 `cosine_gap` 与 `cosine_band` 都要**：前者是数，后者是它的解释。
+    只有数时，读的人要自己记得 0.01 这个阈值；只有 band 时，无法判断离边界多远。
+    而 band 必须是三态——负 gap 是"已排错"，与"可能翻转"处置相反。
     """
     if not V2_LATEST.exists():
         pytest.skip("v2 最新批结果缺失")
@@ -205,7 +213,7 @@ def test_per_case_key_count_is_30() -> None:
     v2_keys = set(json.loads(V2_LATEST.read_text(encoding="utf-8"))["per_case"][0])
     assert len(v2_keys) == 25, (
         f"基线变了：v2 最新批的 per_case 有 {len(v2_keys)} 键，不是 25。"
-        "先确认基线，再改 30 这个数。"
+        "先确认基线，再改 32 这个数。"
     )
 
     result = _run()
@@ -227,16 +235,19 @@ def test_per_case_key_count_is_30() -> None:
         "condition_score",
         "n_competitors",
         "axis",
+        "cosine_gap",
+        "cosine_band",
     }, (
         f"新增键是 {sorted(added)}。\n"
-        "应为 features / features_by_tag / condition_score / n_competitors / axis。\n"
-        "若多出 base/authority/status，说明 features 被平铺了——"
+        "应为 features / features_by_tag / condition_score / n_competitors / axis "
+        "/ cosine_gap / cosine_band。\n"
+        "若多出 base/authority/cosine，说明 features 被平铺了——"
         "**先修结构，不要改这个数字。**"
     )
-    assert len(keys) == 25 + 5, (
-        f"per_case 键数 {len(keys)} != 30。"
-        "25 + 5 = 30：+features（嵌套三键算一个）+features_by_tag "
-        "+condition_score +n_competitors +axis。"
+    assert len(keys) == 25 + 7, (
+        f"per_case 键数 {len(keys)} != 32。"
+        "25 + 7 = 32：+features（嵌套三键算一个）+features_by_tag "
+        "+condition_score +n_competitors +axis +cosine_gap +cosine_band。"
     )
 
 
