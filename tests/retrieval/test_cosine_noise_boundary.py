@@ -434,19 +434,24 @@ def test_report_registers_future_fields() -> None:
     若不写，下次装置变更会漏掉 `cosine_gap`，
     而它是"名次有多稳"的唯一依据。
 
-    **判据定位到字段表的那两行**：`cosine_gap` 在 §6.12.4 里出现多次。
+    **`cosine_unstable` 已改成 `cosine_band` 三态**（本变更修正）：
+    布尔值会把"可能翻转"与"已排错"压成一个，而两者处置相反。
     """
     sub = _sub()
     rows = [ln.strip() for ln in sub.splitlines() if ln.strip().startswith("|")]
 
     gap_row = [r for r in rows if "`cosine_gap`" in r and "❌" in r]
-    unstable_row = [r for r in rows if "`cosine_unstable`" in r and "❌" in r]
+    band_row = [r for r in rows if "`cosine_band`" in r and "❌" in r]
     tie_row = [r for r in rows if "`tie_at_top1`" in r and "✅" in r]
 
     assert gap_row, "§6.12.4 的字段表缺少 `cosine_gap` 那一行（标记 ❌）"
-    assert unstable_row, "§6.12.4 的字段表缺少 `cosine_unstable` 那一行（标记 ❌）"
+    assert band_row, (
+        "§6.12.4 的字段表缺少 `cosine_band` 那一行（标记 ❌）。\n"
+        "注意：旧的 `cosine_unstable` 布尔已被三态取代。"
+    )
     assert tie_row, "§6.12.4 的字段表必须把 `tie_at_top1` 标为已有（✅）"
 
-    assert "0.01" in unstable_row[0], (
-        f"`cosine_unstable` 那行必须写出阈值 0.01：{unstable_row[0][:80]}"
-    )
+    # 三态的三个取值必须都出现
+    body = _sub()
+    for v in ("stable", "noise", "negative"):
+        assert v in body, f"§6.12.4 必须给出 band 取值 {v}"
