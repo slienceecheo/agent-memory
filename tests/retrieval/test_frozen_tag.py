@@ -133,7 +133,13 @@ def test_frozen_message_records_third_author_gap() -> None:
 
 
 def test_frozen_message_points_at_the_report() -> None:
-    """必须能从这里找到四条结论。"""
+    """必须能从这里找到**当时的**四条结论。
+
+    **读的是 tag 消息，不是报告**：tag 是不可变的历史产物，
+    写于 2026-10-30（结论 5 出现于 2026-11-05）。
+    所以这里断言的是"tag 当时列了四条"，MUST NOT 跟着报告改成五条——
+    那等于要求改写历史，而 tag 的意义正是"不变"。
+    """
     message = _tag_message()
 
     assert "v2-what-it-measures.md" in message

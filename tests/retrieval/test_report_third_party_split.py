@@ -30,13 +30,26 @@ def _report() -> str:
 # ---------- §1.1：按是否需要第三方分类 ----------
 
 
-def test_report_classifies_conclusions_by_third_party_need() -> None:
-    """必须按"是否需要第三方"给四条结论分类。"""
+def test_report_classifies_conclusions_by_dependency() -> None:
+    """报告必须给结论分类，且分类依据是"依赖什么才成立"。
+
+    **这条已被 `test_report_conclusion_coverage.py` 取代**，只保留
+    "分类存在"这一层。原先它叫
+    `test_report_classifies_conclusions_by_third_party_need`，
+    只检查三个关键词存在（"是否需要第三方" / "代码事实" / "涉及查询设计"）——
+    **结论 5 缺席时它仍然绿**，那是"覆盖范围被高估"。
+
+    真正的覆盖检查（集合相等）在
+    `test_report_conclusion_coverage.py::test_every_conclusion_is_classified`。
+
+    **为什么保留这条**：它守"分类这件事存在"，而覆盖检查守"分类是否完整"。
+    两者坏的方式不同：前者在整节被删时红，后者在漏一条时红。
+    """
     text = _report()
 
-    assert "是否需要第三方" in text
-    assert "代码事实" in text
-    assert "涉及查询设计" in text
+    assert "结论成立依赖什么" in text, "§1.1 的分类节消失了"
+    for kind in ("装置实现", "查询表述", "分析口径"):
+        assert kind in text, f"分类缺「{kind}」"
 
 
 def test_report_states_single_author_and_its_consequence() -> None:
