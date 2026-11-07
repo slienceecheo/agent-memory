@@ -95,7 +95,23 @@ def test_preregistered_weights_exist_and_sum_to_one() -> None:
 
 
 def test_preregistered_count_is_five() -> None:
-    """审查要求：预注册不超过 5 组，避免网格搜索选噪声。"""
+    """审查要求：预注册不超过 5 组，避免网格搜索选噪声。
+
+    **这条同时是另一个断言的上界前提**：
+    `test_handoff_v3.py::test_handoff_preregistered_count_matches_reality`
+    用中文数字枚举（一/两/三/…/十）去解析 HANDOFF 里的"两组"，
+    而 `n > 10` 时那个正则会失配。
+    **失配时的报错是误导性的**：它说"找不到 '`PREREGISTERED_WEIGHTS` N 组' 这句话"，
+    而那句话其实在（只是写成了"十一组"）。
+
+    所以**删掉本条之前**，先确认那条断言已改用不会随 n 增长失效的判据
+    （例如要求文档统一写阿拉伯数字 `f"{n} 组"`）。
+
+    **为什么把这条写在这里而不是那里**：依赖方向是
+    "`<= 5` 让中文枚举够用"，所以前提方要记录它支撑了谁。
+    没有这段说明时，删掉 `<= 5` 的人不会知道自己还拆了别的东西——
+    他看到的只是另一条测试报"找不到那句话"。
+    """
     from memory.retrieval.rerank import PREREGISTERED_WEIGHTS
 
     assert len(PREREGISTERED_WEIGHTS) <= 5
