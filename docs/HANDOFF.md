@@ -2400,8 +2400,8 @@ integrity_check     -> 1 条（工作区归档被覆盖时红，动作是还原�
 
 | 序 | 候选 | 为什么在这个位置 |
 |---|---|---|
-| **A** | **修 A 轴难度** | **阻塞一切能力结论**：现在 `condition` 权重 0.25 让同 relation 内几乎自动满分（billing 1.0000，F24）。在它修好之前，任何"A 轴能力"数字都测不出东西 |
-| **B** | 测条件推断 | **依赖 A**：v2 的 `condition` 是领域实体（`华东`、`大客户`），无法从文本推断。若先做 B 而不做 A，新的条件类型仍会被 `query_condition` 直通（缺陷 20）绕过 |
+| **A** | **修 A 轴难度** | **当时阻塞一切能力结论**：`condition` 权重 0.25 让同 relation 内几乎自动满分（billing 1.0000，F24）。<br>**已关闭**（不是「调权重」，是删特征）：`condition` 于 `retrieval-v3-apparatus` 退出加权，`status` 于 `cosine-as-sort-feature` 删除。留下的问题是待办 1 |
+| **B** | 测条件推断 | **依赖 A**：v2 的 `condition` 是领域实体（`华东`、`大客户`），无法从文本推断。若先做 B 而不做 A，新的条件类型仍会被 `query_condition` 直通（缺陷 20）绕过。<br>**A 关闭后 B 也变了**：排序层不再消费 `condition`，而召回层三条路径都不用它——所以 B 现在的前置是待办 2 |
 | **C** | B 轴（历史版本） | **有两层阻塞**，不是一个：召回层不返回历史版本（协议 §2.1）+ **池构造层同 key 最多一条（缺陷 13）**。两层都要修 |
 
 **没有 A 就做 B，会重复 v2 的错**：换了条件类型但没堵住直通，结果仍然满分。
@@ -2803,8 +2803,8 @@ tag：`dataset-v2-protocol`（`e6a795a`）+ `dataset-v2-protocol-r2`（`cb9c77f`
 
 | # | 事项 | 状态 |
 |---|---|---|
-| 1 | **v3：修 A 轴难度** | 未开始。`condition` 权重 0.25 让同 relation 内几乎自动满分 |
-| 2 | **v3：测条件推断** | 未开始。需新 condition 类型（同义表达）+ 文本抽取器 |
+| 1 | **v3：测三特征装置的增益** | 装置已就绪（base / authority / cosine）。需要的数据不是「条件更难」，而是「池内有多条**语义相近、字面不同**的候选」——那才是 cosine 能分辨、lexical 不能分辨的情形 |
+| 2 | **v3：给 `condition` 找一个消费点，或明确永不消费** | 排序层已退出（避免条件直通），召回层从未接入（`lexical` / `vector` 零命中，`adjacency` 用的是 **gold** 的 `condition` 而非 query 侧）。所以 `condition` 现在是**纯审计字段**——记录但无作用。<br>前置：先决定哪条路径消费它（候选：`lexical` 的 FTS 加权、`vector` 的分数修正），**或**明确「只作审计、永不消费」并把它从 `features` 里彻底移除。<br>两条路都要走一条：v2 是「有权重但直通」，v3 是「无权重也无用途」，两种都不好 |
 | 3 | **第二作者 5 个 subject** | 材料已就绪（`docs/requirements/v2-independent-author-brief.md`），尚未发出 |
 | 4 | 补 C 轴样本量 | n=2 / n=3，无统计意义 |
 | 5 | **B 轴单独开变更** | 需改 `memory-retrieval` 的 ACTIVE 过滤，并设计不饱和的指标 |
@@ -2821,7 +2821,7 @@ A 轴易满分是已知的，第三个只会重复它——那是流程价值，
 | `docs/reports/c3-resolver.md` | 第 0 节：自写 100% vs 独立 50% 的落差，以及 15 条错误的根因 |
 | `docs/reports/c4-retrieval.md` | **第 0.1 节（必读）**：查询=答案、排名未发生、方差查错对象 |
 | `docs/requirements/retrieval-dataset-v2.md` | **已冻结**的 v2 协议：§0.1 变更记录、反泄漏条款、三条轴、1–27 项门禁 |
-| `docs/reports/v2-what-it-measures.md` | **v2 的四条结论与各自的限定**（每条带复算命令） |
+| `docs/reports/v2-what-it-measures.md` | **v2 的五条结论与各自的限定**（每条带复算命令）；§1.1 按「依赖什么才成立」分三类 |
 | `docs/reports/v2-axis-a-what-it-measures.md` | A 轴测的到底是什么：条件直通、固定加成、两轴不可比 |
 | `docs/reports/c4-pool-limitation.md` | 同主题池为什么造不出来，以及需要什么 |
 
