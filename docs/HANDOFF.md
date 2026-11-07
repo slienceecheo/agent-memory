@@ -130,7 +130,7 @@ v2 数据集   2 个 subject：project:ledger（12 记忆）、project:billing�
 v3 装置     **排序特征 = 3**（base / authority / cosine），condition 退出加权。
             status 已删除（池内恒 1.0，见 recall-active-only-contract）。
             `FeatureScores` 仍是四字段——它记录观测事实，不是排序策略。
-            `RerankWeights` 只有三个权重；`PREREGISTERED_WEIGHTS` 三组，各组和为 1。
+            `RerankWeights` 只有三个权重；`PREREGISTERED_WEIGHTS` 两组，各组和为 1。
 
             **两个 dataclass 用 `kw_only=True`**（本项目唯一）：
             字段含义在版本间变过（`RerankWeights` 第三位 condition→status→cosine；

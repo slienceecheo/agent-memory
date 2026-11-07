@@ -174,9 +174,11 @@ def test_defect18_numbers_match_weights() -> None:
 def test_defect18_carrier_is_independent_of_preregistered() -> None:
     """清空预注册表后，缺陷算术必须一字不变——这就是"独立"的定义。
 
-    **不能写 `DEFECT18_WEIGHTS != PREREGISTERED_WEIGHTS["mixed"]`**：
+    **不能写 `DEFECT18_WEIGHTS != PREREGISTERED_WEIGHTS["uniform"]`**：
     两者当前同值（0.2/0.2/0.6），那个断言在正确实现上也会红。
     值相等是设计意图（回答同一个算术问题）；耦合与否是**读取路径**的问题。
+    判据是 `is`，不是 `!=`——见
+    `test_preregistered_naming.py::test_anchor_does_not_follow_the_default`。
     """
     from memory.retrieval import rerank as rr
 

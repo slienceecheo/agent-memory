@@ -93,10 +93,17 @@ def disabled_weights() -> RerankWeights:
 DEFECT18_WEIGHTS = RerankWeights(base=0.2, authority=0.2, cosine=0.6)
 
 
-#: 默认权重的数值。`uniform` 与 `mixed` 共用它，避免两份数字各自漂移。
+#: 默认权重的数值。
 #:
-#: **0.2/0.2/0.6 不是"随手调的数字"**：它等于 `mixed`，即"给无信号项留余量"的配置。
-#: 选它作默认的理由与选 `mixed` 作稳健性对照相同——比 `cosine_only` 保守。
+#: **0.2/0.2/0.6 不是"随手调的数字"**：它与缺陷 19 的载体 `DEFECT18_WEIGHTS`
+#: 同值，而那个数值来自一个**可复算的比值**——罚分推翻 base 优势的条件是
+#: `authority / base > d_base`（`d_base = 1.000 - 0.910 = 0.09`）。
+#: 此处 `0.2 / 0.2 = 1.0`，余量 **11.1 倍**。
+#: 判据就是 `test_defect18_authority` 的三个算术断言（0.0180 / 0.2000 / 0.1820）。
+#:
+#: **这不是"唯一正确的值"**：比值 0.75 也成立（余量 8.3 倍，旧配置 0.4/0.3 就是）。
+#: **余量只取决于 `authority/base` 的比值，与绝对值无关**——
+#: 所以改权重时该守的是比值下限 `0.09`，不是某个具体数。
 _DEFAULT_WEIGHTS = RerankWeights(base=0.2, authority=0.2, cosine=0.6)
 
 
@@ -109,15 +116,16 @@ PREREGISTERED_WEIGHTS: dict[str, RerankWeights] = {
     # 改名会产生与判据无关的 diff。而"它不均匀"这件事写在
     # `evaluation-harness` 的 spec 里，不靠名字暗示。
     "uniform": _DEFAULT_WEIGHTS,
-    # 与默认同值，但**独立的键**：它回答"给无信号项留余量会损失多少"，
-    # 是稳健性对照。哪天默认改了，它仍应指向 0.2/0.2/0.6。
-    "mixed": _DEFAULT_WEIGHTS,
     # 上界配置：只用有信号的特征能做到多好。
     "cosine_only": RerankWeights(base=0.0, authority=0.0, cosine=1.0),
     # 已删除：
     # - `status_only`：指向已不存在的特征
     # - `base_heavy` / `auth_heavy`：描述的信号已被证否
     #   （base 恒等于融合顺序；authority 是分层过滤器而非信号）
+    # - `mixed`：与 `uniform` 是**同一个对象**（`is` 为 True），
+    #   提供的对照信息为零；且名字与数据集轴 `Axis.MIXED` 撞车。
+    #   "默认改而锚点不变"这个意图由 `DEFECT18_WEIGHTS` 正确实现
+    #   （独立字面量），不需要给默认值挂第二个键。
 }
 
 

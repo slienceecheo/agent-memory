@@ -81,6 +81,66 @@ def test_handoff_states_v3_has_three_sort_features() -> None:
     assert "A=3 / C=2" not in text, "HANDOFF 里还有旧的'有效特征 A=3 / C=2'"
 
 
+def test_handoff_preregistered_count_matches_reality() -> None:
+    """HANDOFF 里写的预注册组数必须等于 `PREREGISTERED_WEIGHTS` 的长度。
+
+    **这一行漂移过，而且没有断言守着**（实测 git 历史）：
+
+    | 提交 | 该行 | 现实 |
+    |---|---|---|
+    | `e8ca4f7~1`（加 cosine 前） | 四组 | uniform/base_heavy/auth_heavy/status_only |
+    | `e8ca4f7`（加 cosine 后） | 三组 | uniform/mixed/cosine_only |
+    | `drop-mixed-weight-alias` 之后 | 两组 | uniform/cosine_only |
+
+    `e8ca4f7` 那次是**手动同步**的——若漏改，没有任何测试会红。
+
+    **判据从 `len(PREREGISTERED_WEIGHTS)` 算，不从文档反推**：
+    从文档反推等于用同一个数验证它自己。
+
+    **比较的是"数值"，不是"字符串"**：文档用中文数字（"两组"），
+    而初版断言写的是 `f"{n} 组"`（阿拉伯数字），于是它在文档**正确的**时候红了。
+    那正是"匹配形态而非匹配值"——与它要防的问题同一类。
+    现在把文档里的数字解析成 int 再比。
+
+    **组名不由本条守**：组名由
+    `test_preregistered_naming.py::test_preregistered_names_describe_questions` 守。
+    本条只守"数字与长度一致"。
+    """
+    import re
+
+    text = _text()
+    from memory.retrieval.rerank import PREREGISTERED_WEIGHTS
+
+    n = len(PREREGISTERED_WEIGHTS)
+
+    # 文档用中文数字；解析成 int 再比，不比字面
+    # **字符类必须含 `两`**：初版写的是 `[一二三四五六七八九十]`，
+    # 而文档用的是"两组"不是"二组"——于是正则在文档**正确的**时候匹配不上。
+    # 这又是一次"匹配形态而非匹配值"。
+    cn = {
+        1: "一", 2: "两", 3: "三", 4: "四", 5: "五",
+        6: "六", 7: "七", 8: "八", 9: "九", 10: "十",
+    }
+    cn_rev = {v: k for k, v in cn.items()}
+    cn_rev["二"] = 2  # 兼容"二组"写法
+    pattern = r"`PREREGISTERED_WEIGHTS`\s*(\d+|[一二两三四五六七八九十])\s*组"
+    m = re.search(pattern, text)
+
+    assert m is not None, (
+        "HANDOFF 里找不到 '`PREREGISTERED_WEIGHTS` N 组' 这句话。\n"
+        f"实际有 {n} 组：{sorted(PREREGISTERED_WEIGHTS)}"
+    )
+
+    token = m.group(1)
+    written = int(token) if token.isdigit() else cn_rev[token]
+
+    assert written == n, (
+        f"HANDOFF 写的是 {token} 组（{written}），而实际有 {n} 组："
+        f"{sorted(PREREGISTERED_WEIGHTS)}。\n"
+        "这一行曾漂移而无人发现，所以现在有断言守着。"
+    )
+
+
 def test_handoff_billing_policy_is_single_axis() -> None:
     """HANDOFF 写的 `billing` policy 必须与实测一致（`single_axis`，不是 `merged`）。"""
     text = _text()
