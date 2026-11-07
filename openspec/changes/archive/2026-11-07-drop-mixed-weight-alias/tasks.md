@@ -236,20 +236,20 @@
 >
 > 反过来，若在 4.1 之前跑回填，`compute()` 给的是旧数，回填本身没有意义。
 
-- [ ] 5.1 归档后跑 `uv run --no-sync python -m evals.tools.recount_specs`，
+- [x] 5.1 归档后跑 `uv run --no-sync python -m evals.tools.recount_specs`，
   按输出回填 HANDOFF §0.6（MUST 行表 + 统计时点 + 四类细分）与 §0.7
   （Scenario 表 + 统计时点）与「要求数」表。
 
   **三个表要一起改**：`test_per_capability_counts_match_compute` 逐行比对，
   只改一张会让另外两张红。
 
-- [ ] 5.2 确认 `test_must_coverage_numbers_are_real` 与
+- [x] 5.2 确认 `test_must_coverage_numbers_are_real` 与
   `test_per_capability_counts_match_compute` 转绿。
 
   **为什么它们会在归档后红**：它们读 `compute()` 再比对 HANDOFF；
   归档让 `compute()` 的分子变大，而 HANDOFF 还是旧数。
 
-- [ ] 5.3 HANDOFF 的「更新日期」改成最新归档目录的日期
+- [x] 5.3 HANDOFF 的「更新日期」改成最新归档目录的日期
   （`test_handoff_freshness` 守着这一条）。
 
 ## Workflow follow-up

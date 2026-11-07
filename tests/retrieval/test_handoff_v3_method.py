@@ -418,13 +418,29 @@ def test_section_0_6_has_the_four_way_split() -> None:
 
 
 def test_section_0_6_records_scenario_gap() -> None:
-    """**真正的缺口**：258 个 Scenario 只有 3 个有映射测试。"""
+    """**真正的缺口**：Scenario 总数里只有 3 个有映射测试。
+
+    **判据从 `compute()` 取，不写死数字**：初版写的是
+    `assert "389" in section` 与 `assert "0.8%" in section`，
+    于是每次归档都要手改这两个常量——而"改文档忘了改测试"会让它变成
+    跟着漂移的常量，不再是判据。
+
+    比例用 `3 / total` 现算，且容许四舍五入到一位小数。
+    """
+    from evals.tools.recount_specs import compute
+
+    stats = compute()
+    total = stats["scenarios"]
+    ratio = 3 / total * 100
+
     text = _text()
     section = text.split("### 0.6 自动检查的边界")[1].split("### 0.7")[0]
 
-    assert "389" in section
+    assert str(total) in section, f"§0.6 没写 Scenario 总数 {total}"
     assert "Scenario" in section
-    assert "0.8%" in section
+    assert f"{ratio:.1f}%" in section, (
+        f"§0.6 没写 3/{total} = {ratio:.1f}%"
+    )
     # 修复成本更低
     assert "Test:" in section or "引用的测试名" in section
 
